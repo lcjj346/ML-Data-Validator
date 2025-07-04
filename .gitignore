@@ -1,0 +1,18 @@
+# Streamlit Cloud config
+.streamlit/
+
+# Model files
+models/
+*.pkl
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Data files
+*.csv
+*.xlsx
+sample_data/
+
+# Environment files
+.env
