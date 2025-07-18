@@ -23,25 +23,25 @@ This project is a Streamlit-based API that allows users to upload survey data (C
 ML-Data-Validator/
 
  data/
- synthetic_validation_dataset.csv # Sample dataset with common input mistakes
+ - synthetic_validation_dataset.csv # Sample dataset with common input mistakes
 
  ml/
-train_model.py # Script to train the ML model using sample data
-model.pkl # Serialized trained model (generated after training)
-validation_engine.py # Core logic to validate and suggest corrections using the model
+- train_model.py # Script to train the ML model using sample data
+- model.pkl # Serialized trained model (generated after training)
+- validation_engine.py # Core logic to validate and suggest corrections using the model
 
 app/
-streamlit_app.py # Main Streamlit web interface
+- streamlit_app.py # Main Streamlit web interface
 
 assets/ # Images, screenshots
-UIDraft.jpg  
-WorkflowDiagram.jpg  
+- UIDraft.jpg  
+- WorkflowDiagram.jpg  
 
-predict.py # Generates predictions from the trained model (used by validation engine)
-preprocess.py # Data cleaning and preprocessing functions for model input
-requirements.txt # Python package dependencies
-README.md # Project overview and documentation
-.gitignore # Git configuration to ignore unnecessary files
+- predict.py # Generates predictions from the trained model (used by validation engine)
+- preprocess.py # Data cleaning and preprocessing functions for model input
+- requirements.txt # Python package dependencies
+- README.md # Project overview and documentation
+- .gitignore # Git configuration to ignore unnecessary files
 
 ## 🏁 How to Run Locally
 
