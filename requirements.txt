@@ -4,6 +4,4 @@ openpyxl
 scikit-learn
 numpy
 fuzzywuzzy
-python-Levenshtein
 python-dotenv
-openai
