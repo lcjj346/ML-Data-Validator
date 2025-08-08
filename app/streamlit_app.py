@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import openai
 
-st.set_page_config(page_title="AI Data Validator", layout="wide")
-st.title("🧠 AI-Powered Survey Data Validator")
+st.set_page_config(page_title="ML-Data-Validator", layout="wide")
+st.title("ML-Data-Validator")
 
 uploaded_file = st.file_uploader("Upload your CSV or Excel file", type=["csv", "xlsx"])
 if uploaded_file:
@@ -12,11 +12,11 @@ if uploaded_file:
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
-        st.subheader("📊 Uploaded Data")
+        st.subheader("Uploaded Data")
         st.dataframe(df)
 
         # Placeholder for validation
-        st.subheader("⚠️ Detected Issues")
+        st.subheader("Detected Issues")
         st.info("Validation and AI explanation coming soon...")
 
     except Exception as e:
