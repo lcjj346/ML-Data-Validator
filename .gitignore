@@ -10,9 +10,8 @@ __pycache__/
 *.py[cod]
 
 # Data files
-*.csv
-*.xlsx
-sample_data/
+# *.csv
+# *.xlsx
 
 # Environment files
 .env
