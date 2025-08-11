@@ -7,3 +7,7 @@ fuzzywuzzy
 python-Levenshtein
 python-dotenv
 phonenumbers
+
+# May need this in non streamlit version
+streamlit-javascript
+streamlit-aggrid

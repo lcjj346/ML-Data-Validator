@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from utils.phone_validator import is_phone_number_valid  # Import our validation function
+from utils.phone_validator import is_phone_number_valid
+from utils.blood_sugar_validator import is_blood_sugar_valid
 
 st.set_page_config(page_title="ML-Data-Validator", layout="wide")
 st.title("ML-Data-Validator")
@@ -8,41 +9,45 @@ st.title("ML-Data-Validator")
 uploaded_file = st.file_uploader("Upload your CSV or Excel file", type=["csv", "xlsx"])
 if uploaded_file:
     try:
-        # Load CSV or Excel
+        # Read file
         if uploaded_file.name.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
 
-        st.subheader("Uploaded Data")
+        # Remove extra valid-flag columns if they exist
+        df = df.drop(columns=[col for col in df.columns if "Valid" in col], errors="ignore")
 
-        # ---- Phone Number Validation ----
-        if "PhoneNumber" in df.columns:
-            # Apply our custom validation function
-            df["PhoneNumber_Valid_Flag"] = df["PhoneNumber"].apply(is_phone_number_valid)
+        # Count invalid entries
+        # Issue - if column not found, error
+        invalid_phone_count = df["PhoneNumber"].apply(lambda x: not is_phone_number_valid(x)).sum()
+        invalid_blood_sugar_count = df["BloodSugar"].apply(lambda x: not is_blood_sugar_valid(x)).sum()
 
-            # Function to highlight invalid phone numbers with red border
-            def highlight_invalid_phone(val, valid_flag):
-                return 'background-color: rgba(255, 0, 0, 0.2); color: white;' if not valid_flag else ''
+        
 
-            # Apply styling to dataframe
-            styled_df = df.style.apply(
-                lambda row: [
-                    highlight_invalid_phone(row["PhoneNumber"], row["PhoneNumber_Valid_Flag"])
-                    if col == "PhoneNumber" else ''
-                    for col in df.columns
-                ],
-                axis=1
-            )
+        # Apply highlighting
+        def highlight_invalid(val, col_name):
+            if col_name == "PhoneNumber" and not is_phone_number_valid(val):
+                return "border: 2px solid red; background-color: #2b0000;"
+            elif col_name == "BloodSugar" and not is_blood_sugar_valid(val):
+                return "border: 2px solid red; background-color: #2b0000;"
+            return ""
 
-            st.dataframe(styled_df)
-        else:
-            st.warning("No PhoneNumber column found in uploaded file.")
+        styled_df = df.style.apply(
+            lambda row: [
+                highlight_invalid(row[col], col) for col in df.columns
+            ],
+            axis=1
+        )
 
-        # ---- Detected Issues Summary ----
+        # Show table
+        st.subheader("Validated Data")
+        st.dataframe(styled_df)
+
+        # Summary section
         st.subheader("Detected Issues")
-        invalid_count = (~df["PhoneNumber_Valid_Flag"]).sum() if "PhoneNumber_Valid_Flag" in df else 0
-        st.write(f"Invalid Phone Numbers: {invalid_count}")
+        st.write(f"Invalid phone numbers: **{invalid_phone_count}**")
+        st.write(f"Invalid blood sugar entries: **{invalid_blood_sugar_count}**")
 
     except Exception as e:
         st.error(f"Error reading file: {e}")
