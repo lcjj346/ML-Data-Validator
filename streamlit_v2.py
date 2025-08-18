@@ -54,4 +54,4 @@ if uploaded_file:
 
     st.subheader("Export Edited Data")
     csv = edited_df.to_csv(index=False).encode("utf-8")
-    st.download_button("💾 Download Edited CSV", data=csv, file_name="edited_data.csv", mime="text/csv")
+    st.download_button("Download Edited CSV", data=csv, file_name="edited_data.csv", mime="text/csv")
