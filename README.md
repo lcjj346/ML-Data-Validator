@@ -54,5 +54,7 @@ utils/ # Utility scripts for validators & preprocessing
 
 ```bash
 pip install -r requirements.txt
+or
+python -m pip install -r requirements.txt #if pip install doesn't work
 streamlit run streamlit_app.py
 ```
