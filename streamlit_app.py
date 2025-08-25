@@ -46,7 +46,9 @@ if uploaded_file:
         }
         ''')
 
-        gb = GridOptionsBuilder.from_dataframe(df)
+        # Hide validity columns from display but keep for validation
+        display_columns = [col for col in df.columns if not col.endswith('_Valid')]
+        gb = GridOptionsBuilder.from_dataframe(df[display_columns])
         gb.configure_default_column(editable=True, cellStyle=cell_style_jscode)
         gridOptions = gb.build()
 
@@ -57,7 +59,8 @@ if uploaded_file:
             enable_enterprise_modules=False,
             update_mode='MODEL_CHANGED',
             fit_columns_on_grid_load=True,
-            allow_unsafe_jscode=True
+            allow_unsafe_jscode=True,
+            columns_auto_size_mode='FIT_ALL_COLUMNS_TO_VIEW' # optional: fit columns
         )
 
 
