@@ -30,9 +30,9 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
   const hasCorrections = allIssues.some(issue => !issue.isValid && issue.suggestedValue);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Validation Summary</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Validation Summary</h2>
         <div className="flex gap-3">
           {hasCorrections && (
             <button 
@@ -59,38 +59,38 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{totalRows}</p>
-              <p className="text-sm text-gray-600">Total Rows</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalRows}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Total Rows</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-success-50 rounded-lg p-4">
+        <div className="bg-success-50 dark:bg-success-900/20 rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-success-100 dark:bg-success-800 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-success-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-success-700">{validRows}</p>
-              <p className="text-sm text-success-600">Valid Rows</p>
+              <p className="text-2xl font-bold text-success-700 dark:text-success-400">{validRows}</p>
+              <p className="text-sm text-success-600 dark:text-success-500">Valid Rows</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-error-50 rounded-lg p-4">
+        <div className="bg-error-50 dark:bg-error-900/20 rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-error-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-error-100 dark:bg-error-800 rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-error-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-error-700">{invalidRows}</p>
-              <p className="text-sm text-error-600">Invalid Rows</p>
+              <p className="text-2xl font-bold text-error-700 dark:text-error-400">{invalidRows}</p>
+              <p className="text-sm text-error-600 dark:text-error-500">Invalid Rows</p>
             </div>
           </div>
         </div>
@@ -98,13 +98,13 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
 
       {Object.keys(issuesByField).length > 0 && (
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Issues by Field</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Issues by Field</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {Object.entries(issuesByField).map(([field, count]) => (
-              <div key={field} className="bg-error-50 border border-error-200 rounded-lg p-3">
+              <div key={field} className="bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-error-700">{field}</span>
-                  <span className="text-sm text-error-600">{count} issues</span>
+                  <span className="font-medium text-error-700 dark:text-error-400">{field}</span>
+                  <span className="text-sm text-error-600 dark:text-error-500">{count} issues</span>
                 </div>
               </div>
             ))}
