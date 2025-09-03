@@ -52,19 +52,19 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload, isProcessing 
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg p-12 text-center hover:border-primary-400 transition-colors duration-200">
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-primary-400 transition-colors duration-200">
         <div className="flex flex-col items-center gap-4">
           {isProcessing ? (
             <>
               <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Processing your data...</h3>
-              <p className="text-gray-600 dark:text-gray-300">Running ML validation models</p>
+              <h3 className="text-lg font-semibold text-gray-900">Processing your data...</h3>
+              <p className="text-gray-600">Running ML validation models</p>
             </>
           ) : (
             <>
               <Upload className="w-12 h-12 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Upload Survey Data</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Upload Survey Data</h3>
+              <p className="text-gray-600 mb-4">
                 Drop your CSV or Excel file here, or click to browse
               </p>
               <label className="btn-primary cursor-pointer inline-flex items-center gap-2">
@@ -77,7 +77,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload, isProcessing 
                   className="hidden"
                 />
               </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              <p className="text-sm text-gray-500 mt-2">
                 Supports CSV, XLSX, and XLS files
               </p>
             </>
