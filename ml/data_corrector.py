@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 class DataCorrector:
     """Rule-based data correction suggestions."""
