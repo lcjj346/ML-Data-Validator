@@ -7,6 +7,8 @@ from ml.model_trainer import ModelTrainer
 from ml.data_corrector import DataCorrector
 from utils.phone_validator import is_phone_number_valid
 from utils.blood_sugar_validator import is_blood_sugar_valid
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
+import io
 
 # Page configuration
 st.set_page_config(
@@ -34,14 +36,6 @@ st.markdown("""
         border-left: 4px solid #667eea;
         margin: 0.5rem 0;
     }
-    .invalid-cell {
-        background-color: #ffebee !important;
-        color: #c62828 !important;
-    }
-    .valid-cell {
-        background-color: #e8f5e8 !important;
-        color: #2e7d32 !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -59,6 +53,8 @@ if 'validator' not in st.session_state:
     st.session_state.trainer = ModelTrainer()
     st.session_state.corrector = DataCorrector()
     st.session_state.models_trained = False
+    st.session_state.current_df = None
+    st.session_state.validated_df = None
 
 # Sidebar for model management
 with st.sidebar:
@@ -89,142 +85,167 @@ with st.sidebar:
                         st.metric(f"{model_name} Accuracy", f"{metrics['accuracy']:.3f}")
 
 # Main content
-col1, col2 = st.columns([2, 1])
+st.header("📁 Data Upload & Validation")
 
-with col1:
-    st.header("📁 Data Upload & Validation")
-    
-    uploaded_file = st.file_uploader(
-        "Upload your survey data",
-        type=["csv", "xlsx"],
-        help="Upload CSV or Excel files containing survey data"
-    )
-    
-    if uploaded_file:
-        try:
-            # Read file
-            if uploaded_file.name.endswith(".csv"):
-                df = pd.read_csv(uploaded_file)
+uploaded_file = st.file_uploader(
+    "Upload your survey data",
+    type=["csv", "xlsx"],
+    help="Upload CSV or Excel files containing survey data"
+)
+
+if uploaded_file:
+    try:
+        # Read file
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+        
+        st.success(f"File uploaded successfully! Shape: {df.shape}")
+        
+        # Store original data
+        st.session_state.current_df = df.copy()
+        
+        # Show original data preview
+        with st.expander("📊 Original Data Preview", expanded=False):
+            st.dataframe(df.head(10), use_container_width=True)
+        
+        # Validation section
+        st.header("🔍 Data Validation & Editing")
+        
+        # Create validation columns
+        validated_df = df.copy()
+        
+        # Apply validation rules
+        validation_summary = {}
+        
+        for column in df.columns:
+            if column == 'PhoneNumber':
+                validated_df[f"{column}_Valid"] = df[column].apply(is_phone_number_valid)
+                invalid_count = (~validated_df[f"{column}_Valid"]).sum()
+                validation_summary[column] = invalid_count
+            elif column == 'BloodSugar':
+                validated_df[f"{column}_Valid"] = df[column].apply(is_blood_sugar_valid)
+                invalid_count = (~validated_df[f"{column}_Valid"]).sum()
+                validation_summary[column] = invalid_count
             else:
-                df = pd.read_excel(uploaded_file)
-            
-            st.success(f"File uploaded successfully! Shape: {df.shape}")
-            
-            # Show original data preview
-            with st.expander("📊 Original Data Preview", expanded=True):
-                st.dataframe(df.head(10), use_container_width=True)
-            
-            # Data validation section
-            st.header("🔍 AI-Powered Validation")
-            
-            if st.session_state.models_trained:
-                # Create a copy for validation
-                validated_df = df.copy()
+                # Generic validation for other columns
+                def is_valid_general(x):
+                    if pd.isna(x) or str(x).strip() == '':
+                        return False
+                    return True
                 
-                # Apply ML validation for known columns
-                validation_results = {}
-                
-                for column in df.columns:
-                    if column in ['PhoneNumber', 'BloodSugar']:
-                        feature_type = 'phone' if column == 'PhoneNumber' else 'blood_sugar'
-                        
-                        try:
-                            # Get ML predictions
-                            ml_predictions = st.session_state.validator.predict_validity(
-                                df, column, feature_type
-                            )
-                            validated_df[f"{column}_ML_Valid"] = ml_predictions
-                            
-                            # Get rule-based validation for comparison
-                            if column == 'PhoneNumber':
-                                rule_predictions = df[column].apply(is_phone_number_valid)
-                            else:
-                                rule_predictions = df[column].apply(is_blood_sugar_valid)
-                            
-                            validated_df[f"{column}_Rule_Valid"] = rule_predictions
-                            
-                            # Count invalid entries
-                            ml_invalid = (ml_predictions == 0).sum()
-                            rule_invalid = (~rule_predictions).sum()
-                            
-                            validation_results[column] = {
-                                'ml_invalid': ml_invalid,
-                                'rule_invalid': rule_invalid,
-                                'total_rows': len(df)
-                            }
-                            
-                        except Exception as e:
-                            st.warning(f"Could not validate {column} with ML: {str(e)}")
-                
-                # Display validation results
-                if validation_results:
-                    st.subheader("📈 Validation Results")
+                validated_df[f"{column}_Valid"] = df[column].apply(is_valid_general)
+                invalid_count = (~validated_df[f"{column}_Valid"]).sum()
+                validation_summary[column] = invalid_count
+        
+        # Display validation summary
+        if validation_summary:
+            st.subheader("📈 Validation Summary")
+            cols = st.columns(len(validation_summary))
+            
+            for i, (column, invalid_count) in enumerate(validation_summary.items()):
+                with cols[i]:
+                    total_rows = len(df)
+                    percentage = (invalid_count / total_rows) * 100
+                    st.metric(
+                        f"{column}",
+                        f"{invalid_count} invalid",
+                        f"{percentage:.1f}% of data"
+                    )
+        
+        # Create editable grid with validation highlighting
+        st.subheader("📝 Editable Data Table")
+        st.write("Invalid cells are highlighted in red. Click on any cell to edit it.")
+        
+        # JavaScript code for cell styling based on validation
+        cell_style_jscode = JsCode("""
+        function(params) {
+            const field = params.colDef.field;
+            const validField = field + '_Valid';
+            
+            if (params.data[validField] === false) {
+                return {
+                    'backgroundColor': '#ffcdd2',
+                    'color': '#d32f2f',
+                    'fontWeight': 'bold'
+                };
+            } else if (params.data[validField] === true) {
+                return {
+                    'backgroundColor': '#c8e6c9',
+                    'color': '#2e7d32'
+                };
+            }
+            return {};
+        }
+        """)
+        
+        # Configure grid options
+        gb = GridOptionsBuilder.from_dataframe(validated_df)
+        
+        # Make only the original columns editable (not the validation columns)
+        original_columns = [col for col in df.columns]
+        for col in validated_df.columns:
+            if col.endswith('_Valid'):
+                gb.configure_column(col, hide=True)  # Hide validation columns
+            elif col in original_columns:
+                gb.configure_column(col, editable=True, cellStyle=cell_style_jscode)
+        
+        gb.configure_grid_options(
+            enableRangeSelection=True,
+            enableCellTextSelection=True,
+            ensureDomOrder=True
+        )
+        
+        grid_options = gb.build()
+        
+        # Display the grid
+        grid_response = AgGrid(
+            validated_df,
+            gridOptions=grid_options,
+            update_mode=GridUpdateMode.VALUE_CHANGED,
+            allow_unsafe_jscode=True,
+            fit_columns_on_grid_load=True,
+            height=400,
+            reload_data=False
+        )
+        
+        # Get edited data
+        if grid_response['data'] is not None:
+            edited_df = pd.DataFrame(grid_response['data'])
+            
+            # Re-validate after edits
+            for column in original_columns:
+                if column == 'PhoneNumber':
+                    edited_df[f"{column}_Valid"] = edited_df[column].apply(is_phone_number_valid)
+                elif column == 'BloodSugar':
+                    edited_df[f"{column}_Valid"] = edited_df[column].apply(is_blood_sugar_valid)
+                else:
+                    def is_valid_general(x):
+                        if pd.isna(x) or str(x).strip() == '':
+                            return False
+                        return True
+                    edited_df[f"{column}_Valid"] = edited_df[column].apply(is_valid_general)
+            
+            st.session_state.validated_df = edited_df
+        
+        # Correction suggestions section
+        st.header("💡 AI Correction Suggestions")
+        
+        if st.session_state.validated_df is not None:
+            current_data = st.session_state.validated_df
+            
+            for column in original_columns:
+                if f"{column}_Valid" in current_data.columns:
+                    invalid_mask = current_data[f"{column}_Valid"] == False
+                    invalid_count = invalid_mask.sum()
                     
-                    for column, results in validation_results.items():
-                        col_a, col_b, col_c = st.columns(3)
-                        
-                        with col_a:
-                            st.metric(
-                                f"{column} - ML Invalid",
-                                results['ml_invalid'],
-                                f"{results['ml_invalid']/results['total_rows']*100:.1f}%"
-                            )
-                        
-                        with col_b:
-                            st.metric(
-                                f"{column} - Rule Invalid", 
-                                results['rule_invalid'],
-                                f"{results['rule_invalid']/results['total_rows']*100:.1f}%"
-                            )
-                        
-                        with col_c:
-                            agreement = np.mean(
-                                validated_df[f"{column}_ML_Valid"] == validated_df[f"{column}_Rule_Valid"].astype(int)
-                            )
-                            st.metric("ML-Rule Agreement", f"{agreement:.3f}")
-                
-                # Show validated data with highlighting
-                st.subheader("🎯 Validated Data with Highlights")
-                
-                # Create a styled dataframe
-                def highlight_invalid(row):
-                    styles = [''] * len(row)
-                    for i, (col, value) in enumerate(row.items()):
-                        if col.endswith('_ML_Valid'):
-                            continue
-                        
-                        # Check if there's a corresponding validity column
-                        valid_col = f"{col}_ML_Valid"
-                        if valid_col in validated_df.columns:
-                            is_valid = row.get(valid_col, True)
-                            if not is_valid:
-                                styles[i] = 'background-color: #ffcdd2; color: #d32f2f'
-                    return styles
-                
-                # Display only original columns for clarity
-                display_df = validated_df[[col for col in df.columns]]
-                
-                # Apply styling
-                styled_df = display_df.style.apply(highlight_invalid, axis=1)
-                st.dataframe(styled_df, use_container_width=True)
-                
-                # Correction suggestions
-                st.subheader("💡 AI Correction Suggestions")
-                
-                corrections_made = False
-                corrected_df = df.copy()
-                
-                for column in df.columns:
-                    if column in validation_results:
-                        invalid_mask = validated_df[f"{column}_ML_Valid"] == 0
-                        invalid_count = invalid_mask.sum()
-                        
-                        if invalid_count > 0:
-                            st.write(f"**{column}**: {invalid_count} invalid entries found")
+                    if invalid_count > 0:
+                        with st.expander(f"🔧 {column} - {invalid_count} issues found"):
+                            invalid_data = current_data[invalid_mask]
                             
-                            # Generate corrections
                             corrections = []
-                            for idx, (_, row) in enumerate(df[invalid_mask].iterrows()):
+                            for idx, row in invalid_data.iterrows():
                                 original_value = row[column]
                                 
                                 if column == 'PhoneNumber':
@@ -235,110 +256,99 @@ with col1:
                                     suggested = st.session_state.corrector.suggest_general_correction(original_value, column)
                                 
                                 corrections.append({
-                                    'Row': row.name,
+                                    'Row': idx,
                                     'Original': original_value,
-                                    'Suggested': suggested
+                                    'Suggested': suggested,
+                                    'Apply': False
                                 })
                             
                             if corrections:
                                 corrections_df = pd.DataFrame(corrections)
                                 st.dataframe(corrections_df, use_container_width=True)
                                 
-                                # Apply corrections button
-                                if st.button(f"Apply All {column} Corrections"):
+                                if st.button(f"Apply All {column} Corrections", key=f"apply_{column}"):
+                                    applied_count = 0
                                     for correction in corrections:
                                         if correction['Suggested'] is not None:
-                                            corrected_df.loc[correction['Row'], column] = correction['Suggested']
-                                    corrections_made = True
-                                    st.success(f"Applied {len(corrections)} corrections to {column}")
-                
-                # Export section
-                if corrections_made or st.checkbox("Export current data"):
-                    st.subheader("📥 Export Cleaned Data")
-                    
-                    export_format = st.selectbox("Choose export format", ["CSV", "Excel"])
-                    
-                    if export_format == "CSV":
-                        csv_data = corrected_df.to_csv(index=False)
-                        st.download_button(
-                            "Download Cleaned CSV",
-                            csv_data,
-                            file_name="cleaned_data.csv",
-                            mime="text/csv"
-                        )
-                    else:
-                        # Convert to Excel
-                        import io
-                        output = io.BytesIO()
-                        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                            corrected_df.to_excel(writer, index=False, sheet_name='Cleaned_Data')
-                        
-                        st.download_button(
-                            "Download Cleaned Excel",
-                            output.getvalue(),
-                            file_name="cleaned_data.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
+                                            st.session_state.validated_df.loc[correction['Row'], column] = correction['Suggested']
+                                            applied_count += 1
+                                    
+                                    if applied_count > 0:
+                                        st.success(f"Applied {applied_count} corrections to {column}")
+                                        st.rerun()
+        
+        # Export section
+        st.header("📥 Export Cleaned Data")
+        
+        if st.session_state.validated_df is not None:
+            # Get final data without validation columns
+            export_df = st.session_state.validated_df[[col for col in original_columns]].copy()
             
-            else:
-                st.warning("⚠️ Please train or load ML models first using the sidebar options")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # CSV export
+                csv_data = export_df.to_csv(index=False)
+                st.download_button(
+                    "📄 Download as CSV",
+                    csv_data,
+                    file_name="cleaned_data.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+            
+            with col2:
+                # Excel export
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    export_df.to_excel(writer, index=False, sheet_name='Cleaned_Data')
                 
-                # Fallback to rule-based validation
-                st.subheader("📋 Rule-Based Validation (Fallback)")
+                st.download_button(
+                    "📊 Download as Excel",
+                    output.getvalue(),
+                    file_name="cleaned_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+            
+            # Show final statistics
+            st.subheader("📊 Final Data Quality")
+            total_cells = len(export_df) * len(export_df.columns)
+            
+            if st.session_state.validated_df is not None:
+                valid_cells = 0
+                for col in original_columns:
+                    if f"{col}_Valid" in st.session_state.validated_df.columns:
+                        valid_cells += st.session_state.validated_df[f"{col}_Valid"].sum()
                 
-                rule_validated_df = df.copy()
-                
-                # Apply rule-based validation
-                if 'PhoneNumber' in df.columns:
-                    rule_validated_df['PhoneNumber_Valid'] = df['PhoneNumber'].apply(is_phone_number_valid)
-                    invalid_phones = (~rule_validated_df['PhoneNumber_Valid']).sum()
-                    st.metric("Invalid Phone Numbers", invalid_phones)
-                
-                if 'BloodSugar' in df.columns:
-                    rule_validated_df['BloodSugar_Valid'] = df['BloodSugar'].apply(is_blood_sugar_valid)
-                    invalid_blood_sugar = (~rule_validated_df['BloodSugar_Valid']).sum()
-                    st.metric("Invalid Blood Sugar Values", invalid_blood_sugar)
-                
-                # Show rule-based results
-                display_columns = [col for col in rule_validated_df.columns if not col.endswith('_Valid')]
-                st.dataframe(rule_validated_df[display_columns], use_container_width=True)
-        
-        except Exception as e:
-            st.error(f"Error processing file: {str(e)}")
+                quality_percentage = (valid_cells / total_cells) * 100
+                st.metric("Data Quality", f"{quality_percentage:.1f}%", f"{valid_cells}/{total_cells} valid cells")
 
-with col2:
-    st.header("📊 Model Statistics")
-    
-    if st.session_state.models_trained:
-        st.success("✅ Models are trained and ready")
-        
-        # Show model info
-        if hasattr(st.session_state.validator, 'models'):
-            for model_name in st.session_state.validator.models.keys():
-                with st.expander(f"📈 {model_name} Model"):
-                    st.write("**Model Type**: Random Forest Classifier")
-                    st.write("**Features**: Extracted automatically from data patterns")
-                    st.write("**Status**: Ready for prediction")
-    else:
-        st.info("🔄 No models loaded. Use sidebar to train or load models.")
-    
-    # Sample data info
-    st.header("📋 Sample Data")
-    
-    sample_files = [
-        "data/sample_data/synthetic_data_for_training_correction.csv",
-        "data/sample_data/synthetic_testing_validation_phone.csv",
-        "data/sample_data/synthetic_testing_validation_health.csv"
-    ]
-    
-    for file_path in sample_files:
-        if os.path.exists(file_path):
-            file_name = os.path.basename(file_path)
-            if st.button(f"Load {file_name}"):
+    except Exception as e:
+        st.error(f"Error processing file: {str(e)}")
+        st.write("Please check your file format and try again.")
+
+# Sample data section
+st.header("📋 Load Sample Data")
+
+sample_files = {
+    "Phone Validation Sample": "data/sample_data/synthetic_testing_validation_phone.csv",
+    "Health Data Sample": "data/sample_data/synthetic_testing_validation_health.csv",
+    "Training Data Sample": "data/sample_data/synthetic_data_for_training_correction.csv"
+}
+
+cols = st.columns(len(sample_files))
+
+for i, (name, file_path) in enumerate(sample_files.items()):
+    with cols[i]:
+        if st.button(name, use_container_width=True):
+            if os.path.exists(file_path):
                 sample_df = pd.read_csv(file_path)
-                st.session_state.sample_data = sample_df
-                st.success(f"Loaded {file_name}")
-                st.dataframe(sample_df.head(), use_container_width=True)
+                st.session_state.current_df = sample_df
+                st.success(f"Loaded {name}")
+                st.rerun()
+            else:
+                st.error(f"File not found: {file_path}")
 
 # Footer
 st.markdown("---")

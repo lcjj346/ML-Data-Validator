@@ -129,10 +129,10 @@ class MLValidator:
     
     def load_models(self, filepath: str):
         """Load trained models from disk."""
-        if os.path.exists(filepath):
-            model_data = joblib.load(filepath)
-            self.models = model_data.get('models', {})
-            self.feature_columns = model_data.get('feature_columns', {})
-            self.correction_models = model_data.get('correction_models', {})
-            return True
+        # if os.path.exists(filepath):
+        #     model_data = joblib.load(filepath)
+        #     self.models = model_data.get('models', {})
+        #     self.feature_columns = model_data.get('feature_columns', {})
+        #     self.correction_models = model_data.get('correction_models', {})
+        #     return True
         return False
