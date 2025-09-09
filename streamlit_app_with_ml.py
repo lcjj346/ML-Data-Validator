@@ -330,9 +330,69 @@ if uploaded_file:
                             
                             if suggestions:
                                 try:
-                                    suggestions_df = pd.DataFrame(suggestions)
-                                    st.dataframe(suggestions_df, use_container_width=True)
-                                    st.info("💡 Copy the suggested values and paste them into the table above to fix the issues")
+                                    # Display suggestions with apply buttons
+                                    for i, suggestion in enumerate(suggestions):
+                                        col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+                                        
+                                        with col1:
+                                            st.write(f"**Row {suggestion['Row']}**")
+                                        
+                                        with col2:
+                                            st.write(f"Current: `{suggestion['Current Value']}`")
+                                        
+                                        with col3:
+                                            st.write(f"Suggested: `{suggestion['Suggested Fix']}`")
+                                        
+                                        with col4:
+                                            # Create unique button key
+                                            button_key = f"apply_{col}_{suggestion['Row']}_{i}"
+                                            if st.button("Apply", key=button_key):
+                                                try:
+                                                    # Find the actual row index in the dataframe
+                                                    row_idx = suggestion['Row'] - 1  # Convert to 0-based index
+                                                    suggested_value = suggestion['Suggested Fix']
+                                                    
+                                                    # Apply the suggestion to session state dataframe
+                                                    st.session_state.current_df.loc[row_idx, col] = str(suggested_value)
+                                                    
+                                                    # Re-validate the updated data
+                                                    updated_data = validate_data(st.session_state.current_df[original_columns])
+                                                    st.session_state.current_df = updated_data
+                                                    
+                                                    st.success(f"Applied suggestion for Row {suggestion['Row']}")
+                                                    st.rerun()
+                                                    
+                                                except Exception as e:
+                                                    st.error(f"Error applying suggestion: {str(e)}")
+                                        
+                                        # Add separator line
+                                        if i < len(suggestions) - 1:
+                                            st.markdown("---")
+                                    
+                                    # Add bulk apply button
+                                    st.markdown("---")
+                                    bulk_button_key = f"apply_all_{col}"
+                                    if st.button(f"Apply All {col} Suggestions", key=bulk_button_key):
+                                        try:
+                                            applied_count = 0
+                                            for suggestion in suggestions:
+                                                row_idx = suggestion['Row'] - 1
+                                                suggested_value = suggestion['Suggested Fix']
+                                                
+                                                # Apply each suggestion
+                                                st.session_state.current_df.loc[row_idx, col] = str(suggested_value)
+                                                applied_count += 1
+                                            
+                                            # Re-validate all updated data
+                                            updated_data = validate_data(st.session_state.current_df[original_columns])
+                                            st.session_state.current_df = updated_data
+                                            
+                                            st.success(f"Applied {applied_count} suggestions to {col}")
+                                            st.rerun()
+                                            
+                                        except Exception as e:
+                                            st.error(f"Error applying bulk suggestions: {str(e)}")
+                                            
                                 except Exception as e:
                                     st.error("Error displaying suggestions: " + str(e))
                             else:
@@ -342,7 +402,7 @@ if uploaded_file:
                 continue
         
         if not suggestions_found:
-            st.success("🎉 No invalid data found - all data looks good!")
+            st.success("No invalid data found - all data looks good!")
 
         # Export section
         st.subheader("Export Clean Data")
@@ -394,6 +454,6 @@ with st.sidebar:
         st.info("Using rule-based validation")
     
     st.header("Supported Data Types")
-    st.write("• Phone Numbers (ML/Rule-based)")
-    st.write("• Blood Sugar (Rule-based)")
-    st.write("• Generic Data (Basic validation)")
+    st.write("- Phone Numbers (ML/Rule-based)")
+    st.write("- Blood Sugar (Rule-based)")
+    st.write("- Generic Data (Basic validation)")

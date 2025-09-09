@@ -2,7 +2,7 @@
 
 A clean, professional Streamlit-based data validation tool that uses Machine Learning to detect and suggest corrections for invalid survey data. Built specifically for cleaning CSV/Excel files before feeding them into analytics pipelines.
 
-## 🎯 Features
+## Features
 
 - **Smart Data Upload** - Support for CSV and Excel files
 - **ML-Powered Validation** - Random Forest model for intelligent phone number validation
@@ -12,7 +12,7 @@ A clean, professional Streamlit-based data validation tool that uses Machine Lea
 - **Professional Export** - Clean data export with validation reports
 - **Robust Error Handling** - Graceful handling of mixed data types and edge cases
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 ```bash
@@ -38,7 +38,7 @@ streamlit run streamlit_app_with_ml.py
 4. Edit data directly in the table
 5. Export clean, validated data
 
-## 📊 How It Works
+## How It Works
 
 ### Workflow
 ```
@@ -56,7 +56,7 @@ Upload CSV → ML Validation → Interactive Dashboard → Manual Editing → Cl
 - **Intelligent Suggestions** with character correction (e.g., 'e' → '3')
 - **Real-time Re-validation** after manual edits
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 ML-Data-Validator/
@@ -81,7 +81,7 @@ ML-Data-Validator/
         └── synthetic_testing_validation_phone.csv
 ```
 
-## 🔧 Technical Implementation
+## Technical Implementation
 
 ### Core Technologies
 - **Streamlit** - Web interface
@@ -104,7 +104,7 @@ ML-Data-Validator/
 "+65 invalid" → "+6512345678"  # Pattern completion
 ```
 
-## 📱 Supported Data Types
+## Supported Data Types
 
 | Data Type | Validation Method | Example Valid | Example Invalid |
 |-----------|------------------|---------------|-----------------|
@@ -112,7 +112,7 @@ ML-Data-Validator/
 | Blood Sugar | Rule-based | `85` | `ewqewq` |
 | Generic Data | Basic checks | `Valid Text` | `null` |
 
-## 🎨 User Interface
+## User Interface
 
 ### Dashboard Metrics
 - **Overall Quality** - Percentage of valid data
@@ -121,10 +121,10 @@ ML-Data-Validator/
 
 ### Data Table Features
 - **Color-coded Validation**:
-  - 🔴 Red: Invalid data
-  - 🟢 Green: High-confidence valid data (≥90%)
-  - 🟠 Orange: Medium-confidence valid data (70-90%)
-  - 🔵 Blue: Low-confidence valid data (<70%)
+  - Red: Invalid data
+  - Green: High-confidence valid data (≥90%)
+  - Orange: Medium-confidence valid data (70-90%)
+  - Blue: Low-confidence valid data (<70%)
 - **Click-to-Edit** - Direct cell editing with auto-revalidation
 - **Session Persistence** - Edits are saved during the session
 
@@ -133,7 +133,7 @@ ML-Data-Validator/
 - **Copy-Paste Friendly** - Easy to apply suggested corrections
 - **Smart Filtering** - Only shows actionable suggestions
 
-## 📤 Export Options
+## Export Options
 
 ### CSV Export
 - Clean data without validation columns
@@ -144,24 +144,24 @@ ML-Data-Validator/
 - **Clean_Data** sheet - Validated data
 - **ML_Validation_Report** sheet (if ML model used) - Detailed metrics
 
-## 🔍 Example Usage
+## Example Usage
 
 ### Sample Data Processing
 ```python
 # Input CSV with issues:
 PhoneNumber,BloodSugar
-+1234567890,95        # ✅ Valid
-+1555444ee3,ewqewq    # ❌ Invalid
-1234567890,-10        # ❌ Invalid
++1234567890,95        # Valid
++1555444ee3,ewqewq    # Invalid
+1234567890,-10        # Invalid
 
 # After ML processing:
 PhoneNumber,BloodSugar
-+1234567890,95        # ✅ Unchanged (valid)
-+1555444333,85        # ✅ Corrected by ML suggestions
-+11234567890,80       # ✅ Fixed manually or by suggestions
++1234567890,95        # Unchanged (valid)
++1555444333,85        # Corrected by ML suggestions
++11234567890,80       # Fixed manually or by suggestions
 ```
 
-## 🛡️ Robust Error Handling
+## Robust Error Handling
 
 The application handles various data challenges:
 - **Mixed data types** (strings, integers, floats)
@@ -170,14 +170,14 @@ The application handles various data challenges:
 - **Unicode and encoding issues**
 - **Large file processing** with memory optimization
 
-## 🚀 Performance Features
+## Performance Features
 
 - **Session State Management** - Preserves data across interactions
 - **Efficient Re-validation** - Only re-validates changed data
 - **Batch ML Processing** - Optimized for multiple records
 - **Memory-safe Export** - Handles large datasets
 
-## 🔧 Development Notes
+## Development Notes
 
 ### Recent Improvements
 - **Complete code cleanup** - Removed debugging clutter and complex logic
@@ -191,7 +191,7 @@ The application handles various data challenges:
 - **User-Centric Design** - Simple, intuitive interface
 - **Maintainable Code** - Clean, readable implementation
 
-## 📋 Requirements
+## Requirements
 
 ```
 streamlit>=1.28.0
@@ -202,7 +202,7 @@ phonenumbers>=8.13.0
 openpyxl>=3.1.0
 ```
 
-## 🤝 Contributing
+## Contributing
 
 This project prioritizes clean, maintainable code. When contributing:
 1. Keep functions focused and single-purpose
@@ -210,10 +210,10 @@ This project prioritizes clean, maintainable code. When contributing:
 3. Maintain type safety throughout
 4. Test with various data formats and edge cases
 
-## 📄 License
+## License
 
 This project is designed for data cleaning and validation tasks in survey data processing pipelines.
 
 ---
 
-**Ready to clean your data?** Run `streamlit run streamlit_app_with_ml.py` and upload your CSV file to get started! 🚀
+**Ready to clean your data?** Run `streamlit run streamlit_app_with_ml.py` and upload your CSV file to get started!
