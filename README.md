@@ -61,8 +61,7 @@ Upload CSV → ML Validation → Interactive Dashboard → Auto-Apply Suggestion
 
 ```
 ML-Data-Validator/
-├── streamlit_app_with_ml.py     # Main Streamlit application (clean version)
-├── streamlit_app_messy_backup.py # Previous messy version (backup)
+├── streamlit_app_with_ml.py     # Main Streamlit application
 ├── requirements.txt              # Python dependencies
 ├── README.md                    # This documentation
 ├── 
@@ -70,8 +69,9 @@ ML-Data-Validator/
 │   ├── phone_validator.py       # ML phone validation (inference only)
 │   ├── phone_model_trainer.py   # ML model training
 │   ├── train_model.py          # High-level training interface
-│   └── trained_models/         # Stored ML models
-│       └── phone_validator_model.pkl
+│   └── ml/
+│       └── trained_models/     # Stored ML models
+│           └── phone_validator_model.pkl
 ├── 
 ├── utils/                       # Validation utilities
 │   ├── phone_validator.py      # Rule-based phone validation
@@ -79,6 +79,8 @@ ML-Data-Validator/
 ├── 
 └── data/                        # Sample and test data
     └── sample_data/
+        ├── synthetic_data_for_training_correction.csv
+        ├── synthetic_testing_validation_health.csv
         └── synthetic_testing_validation_phone.csv
 ```
 
