@@ -45,7 +45,7 @@ The trained model is automatically saved and can be used by phone_validator.py
 
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 import re
@@ -60,7 +60,7 @@ class PhoneModelTrainer:
     """
     
     def __init__(self):
-        self.model = RandomForestClassifier(n_estimators=100, random_state=42)
+        self.model = LogisticRegression(random_state=42, max_iter=1000)
         self.is_trained = False
         
     def extract_features(self, phone_numbers):
@@ -197,7 +197,7 @@ class PhoneModelTrainer:
         )
         
         # Train model
-        print("Training Random Forest model...")
+        print("Training Logistic Regression model...")
         self.model.fit(X_train, y_train)
         
         # Evaluate model
@@ -224,22 +224,22 @@ class PhoneModelTrainer:
     def train_from_csv(self, csv_file_path):
         """
         Train model from CSV file.
-        CSV must have columns: 'PhoneNumber' and 'PhoneNumber_Valid'
+        CSV must have columns: 'PhoneNumber' and 'Valid'
         """
         if not os.path.exists(csv_file_path):
             raise FileNotFoundError(f"CSV file not found: {csv_file_path}")
-        
+
         print(f"Loading training data from {csv_file_path}...")
         df = pd.read_csv(csv_file_path)
-        
+
         # Check required columns
-        if 'PhoneNumber' not in df.columns or 'PhoneNumber_Valid' not in df.columns:
-            raise ValueError("CSV must have 'PhoneNumber' and 'PhoneNumber_Valid' columns")
-        
+        if 'PhoneNumber' not in df.columns or 'Valid' not in df.columns:
+            raise ValueError("CSV must have 'PhoneNumber' and 'Valid' columns")
+
         # Prepare training data
         training_data = pd.DataFrame({
             'phone': df['PhoneNumber'],
-            'is_valid': df['PhoneNumber_Valid']
+            'is_valid': df['Valid']
         })
         
         print(f"Training on {len(training_data)} examples from CSV...")
@@ -260,25 +260,25 @@ class PhoneModelTrainer:
         joblib.dump(model_data, filepath)
         print(f"Trained model saved to {filepath}")
     
-    def get_feature_importance(self):
-        """Get feature importance from the trained model"""
+    def get_feature_coefficients(self):
+        """Get feature coefficients from the trained logistic regression model"""
         if not self.is_trained:
             raise ValueError("Model must be trained first")
-        
+
         feature_names = [
             'length', 'starts_with_plus', 'digit_count', 'non_digit_count',
             'has_spaces', 'has_dashes', 'has_parentheses', 'has_letters',
             'consecutive_digits', 'valid_length'
         ]
-        
-        importance = self.model.feature_importances_
-        feature_importance = dict(zip(feature_names, importance))
-        
-        return feature_importance
+
+        coefficients = self.model.coef_[0]  # Get coefficients for logistic regression
+        feature_coefficients = dict(zip(feature_names, coefficients))
+
+        return feature_coefficients
 
 
 # High-level training functions
-def train_phone_model(save_path='ml/trained_models/phone_validator_model.pkl'):
+def train_phone_model(save_path='../saved_models/phone_validator_model.pkl'):
     """
     Train and save a phone validation model using synthetic data.
     Returns: (trainer_instance, training_results)
@@ -298,7 +298,7 @@ def train_phone_model(save_path='ml/trained_models/phone_validator_model.pkl'):
     return trainer, results
 
 
-def train_from_csv_file(csv_path, save_path='ml/trained_models/phone_validator_model.pkl'):
+def train_from_csv_file(csv_path, save_path='../saved_models/phone_validator_model.pkl'):
     """
     Train and save a phone validation model from CSV file.
     Returns: (trainer_instance, training_results)
@@ -326,14 +326,14 @@ if __name__ == "__main__":
     
     It will:
     1. Create 2000 synthetic phone examples (1000 valid, 1000 invalid)
-    2. Train a Random Forest model on these examples
+    2. Train a Logistic Regression model on these examples
     3. Show you the accuracy and detailed metrics
     4. Save the model to ml/trained_models/phone_validator_model.pkl
     5. Display which features are most important for classification
     
     Expected output:
     - Accuracy should be close to 1.000 (100%)
-    - Most important features are usually: length, valid_length, digit_count
+    - Most important features (highest absolute coefficients) are usually: length, valid_length, digit_count
     """
     
     print("=" * 60)
@@ -347,11 +347,11 @@ if __name__ == "__main__":
     print(f"\n>>> FINAL ACCURACY: {results['accuracy']:.3f} ({results['accuracy']*100:.1f}%)")
     
     # Show feature importance (what the model learned is most important)
-    print("\n>>> FEATURE IMPORTANCE (what the model considers most important):")
+    print("\n>>> MODEL COEFFICIENTS (feature weights):")
     print("-" * 50)
-    importance = trainer.get_feature_importance()
-    for feature, score in sorted(importance.items(), key=lambda x: x[1], reverse=True):
-        print(f"{feature:<20}: {score:.3f} ({score*100:.1f}%)")
+    coefficients = trainer.get_feature_coefficients()
+    for feature, coef in sorted(coefficients.items(), key=lambda x: abs(x[1]), reverse=True):
+        print(f"{feature:<20}: {coef:.3f}")
     
     print(f"\n>>> Model saved and ready for use!")
     print(f">>> Location: ml/trained_models/phone_validator_model.pkl")

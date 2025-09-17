@@ -58,7 +58,7 @@ This file is created when you run the trainer.
 
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 import re
 import joblib
 import os
@@ -70,7 +70,7 @@ class PhoneValidator:
     This class is focused purely on validation - no training functionality.
     """
     
-    def __init__(self, model_path='ml/ml/trained_models/phone_validator_model.pkl'):
+    def __init__(self, model_path='../saved_models/phone_validator_model.pkl'):
         self.model = None
         self.is_trained = False
         self.model_path = model_path
@@ -182,7 +182,7 @@ class PhoneValidator:
 
 
 # Convenience functions for easy usage
-def validate_single_phone(phone_number, model_path='ml/ml/trained_models/phone_validator_model.pkl'):
+def validate_single_phone(phone_number, model_path='../saved_models/phone_validator_model.pkl'):
     """
     Validate a single phone number using the default model.
     Returns: (is_valid: bool, confidence: float)
@@ -194,7 +194,7 @@ def validate_single_phone(phone_number, model_path='ml/ml/trained_models/phone_v
     return validator.validate_phone(phone_number)
 
 
-def validate_phone_list(phone_numbers, model_path='ml/ml/trained_models/phone_validator_model.pkl'):
+def validate_phone_list(phone_numbers, model_path='../saved_models/phone_validator_model.pkl'):
     """
     Validate a list of phone numbers using the default model.
     Returns: list of tuples [(is_valid: bool, confidence: float), ...]

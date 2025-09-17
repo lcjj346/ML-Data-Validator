@@ -5,7 +5,7 @@ A clean, professional Streamlit-based data validation tool that uses Machine Lea
 ## Features
 
 - **Smart Data Upload** - Support for CSV and Excel files
-- **ML-Powered Validation** - Random Forest model for intelligent phone number validation
+- **ML-Powered Validation** - Logistic Regression model for intelligent phone number validation
 - **Interactive Data Editor** - Click-to-edit table with real-time validation
 - **One-Click Suggestions** - AI-generated corrections with instant apply buttons
 - **Dual Editing Modes** - Auto-apply suggestions OR manual table editing
@@ -23,13 +23,13 @@ pip install -r requirements.txt
 ### 1. Train the ML Model (One-time setup)
 ```bash
 cd ml
-python train_model.py
+python model_trainer.py
 ```
-This creates the Random Forest model file: `ml/trained_models/phone_validator_model.pkl`
+This creates the Logistic Regression model file: `saved_models/phone_validator_model.pkl`
 
 ### 2. Run the Application
 ```bash
-streamlit run streamlit_app_with_ml.py
+streamlit run app.py
 ```
 
 ### 3. Upload and Validate Data
@@ -47,7 +47,7 @@ Upload CSV → ML Validation → Interactive Dashboard → Auto-Apply Suggestion
 ```
 
 ### Validation Methods
-- **Phone Numbers**: Machine Learning (Random Forest) + Rule-based fallback
+- **Phone Numbers**: Machine Learning (Logistic Regression) with rule-based fallback
 - **Blood Sugar**: Rule-based validation (50-500 mg/dL range)
 - **Generic Data**: Basic validation for empty/null values
 
@@ -61,27 +61,20 @@ Upload CSV → ML Validation → Interactive Dashboard → Auto-Apply Suggestion
 
 ```
 ML-Data-Validator/
-├── streamlit_app_with_ml.py     # Main Streamlit application
-├── requirements.txt              # Python dependencies
+├── app.py                       # Main Streamlit application
+├── requirements.txt             # Python dependencies
 ├── README.md                    # This documentation
-├── 
+├──
 ├── ml/                          # Machine Learning components
-│   ├── phone_validator.py       # ML phone validation (inference only)
-│   ├── phone_model_trainer.py   # ML model training
-│   ├── train_model.py          # High-level training interface
-│   └── ml/
-│       └── trained_models/     # Stored ML models
-│           └── phone_validator_model.pkl
-├── 
-├── utils/                       # Validation utilities
-│   ├── phone_validator.py      # Rule-based phone validation
-│   └── blood_sugar_validator.py # Rule-based blood sugar validation
-├── 
-└── data/                        # Sample and test data
-    └── sample_data/
-        ├── synthetic_data_for_training_correction.csv
-        ├── synthetic_testing_validation_health.csv
-        └── synthetic_testing_validation_phone.csv
+│   ├── validator.py             # ML phone validation (inference only)
+│   └── model_trainer.py         # ML model training
+├──
+├── saved_models/                # Stored ML models
+│   └── phone_validator_model.pkl
+├──
+└── data/                        # Training and test data
+    ├── training_data.csv        # Training data for ML model
+    └── test_data.csv            # Test data for validation
 ```
 
 ## Technical Implementation
@@ -89,14 +82,14 @@ ML-Data-Validator/
 ### Core Technologies
 - **Streamlit** - Web interface
 - **Pandas** - Data manipulation
-- **Scikit-learn** - Machine Learning (Random Forest)
+- **Scikit-learn** - Machine Learning (Logistic Regression)
 - **AgGrid** - Interactive data table
 - **Phonenumbers** - Phone validation library
 
 ### ML Model Details
-- **Algorithm**: Random Forest Classifier
+- **Algorithm**: Logistic Regression Classifier
 - **Features**: 10 engineered features (length, digit count, format patterns, etc.)
-- **Training Data**: 2000 synthetic phone number examples
+- **Training Data**: 3000 synthetic phone number examples with + sign and at least 7 digits rule
 - **Performance**: 100% accuracy on validation set
 
 ### Smart Phone Suggestions
@@ -233,4 +226,4 @@ This project is designed for data cleaning and validation tasks in survey data p
 
 ---
 
-**Ready to clean your data?** Run `streamlit run streamlit_app_with_ml.py` and upload your CSV file to get started!
+**Ready to clean your data?** Run `streamlit run app.py` and upload your CSV file to get started!

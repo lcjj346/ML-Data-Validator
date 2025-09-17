@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import re
-from utils.phone_validator import is_phone_number_valid
-from utils.blood_sugar_validator import is_blood_sugar_valid
-from ml.phone_validator import PhoneValidator
+# Removed old rule-based validator - now using ML approach
+# Removed blood sugar validator - focusing on phone validation only
+from ml.validator import PhoneValidator
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 import io
 
@@ -71,39 +71,24 @@ def generate_phone_suggestion(invalid_phone):
     
     return ""  # Can't suggest for very invalid data
 
-def generate_blood_sugar_suggestion(invalid_value):
-    """Generate suggestions for invalid blood sugar values"""
-    if not invalid_value or pd.isna(invalid_value):
-        return "90"
-    
-    value_str = str(invalid_value).lower().strip()
-    
-    # Handle obvious invalid cases
-    if value_str in ['nan', '', 'null', 'none'] or value_str == '-10':
-        return "90"  # Normal fasting blood sugar
-    
-    # If it contains letters, suggest normal value
-    if any(c.isalpha() for c in value_str):
-        return "85"  # Normal blood sugar
-    
-    # Try to parse as number and adjust
-    try:
-        val = float(value_str)
-        if val < 50:
-            return "80"  # Too low, suggest normal
-        elif val > 500:
-            return "120"  # Too high, suggest normal-high
-        else:
-            return "90"  # Default normal
-    except:
-        return "90"  # Safe fallback
+# Removed blood sugar suggestion function - focusing on phone validation only
 
 st.set_page_config(page_title="ML-Data-Validator", layout="wide")
 
 # Initialize ML validator
 if 'ml_phone_validator' not in st.session_state:
-    st.session_state.ml_phone_validator = PhoneValidator()
-    st.session_state.ml_model_loaded = st.session_state.ml_phone_validator.is_model_loaded()
+    try:
+        # Use absolute path for Streamlit app
+        st.session_state.ml_phone_validator = PhoneValidator('saved_models/phone_validator_model.pkl')
+        st.session_state.ml_model_loaded = st.session_state.ml_phone_validator.is_model_loaded()
+        if st.session_state.ml_model_loaded:
+            st.session_state.model_load_error = None
+        else:
+            st.session_state.model_load_error = "Model file exists but failed to load"
+    except Exception as e:
+        st.session_state.ml_phone_validator = None
+        st.session_state.ml_model_loaded = False
+        st.session_state.model_load_error = f"Failed to initialize validator: {str(e)}"
 
 # Header
 st.title("ML-Data-Validator")
@@ -139,19 +124,18 @@ if uploaded_file:
             for col in dataframe.columns:
                 if col == "PhoneNumber":
                     if st.session_state.ml_model_loaded:
-                        # Use ML validation
+                        # Use ML validation (logistic regression)
                         phones = dataframe[col].tolist()
                         ml_results = st.session_state.ml_phone_validator.validate_phone_batch(phones)
                         result_df[f"{col}_Valid"] = [result[0] for result in ml_results]
                         result_df[f"{col}_Confidence"] = [result[1] for result in ml_results]
                     else:
-                        # Use rule-based validation
-                        result_df[f"{col}_Valid"] = dataframe[col].apply(is_phone_number_valid)
-                        result_df[f"{col}_Confidence"] = [1.0] * len(dataframe)
+                        # No model available - mark all as invalid
+                        st.error("Logistic regression model not loaded! Please train the model first.")
+                        result_df[f"{col}_Valid"] = [False] * len(dataframe)
+                        result_df[f"{col}_Confidence"] = [0.0] * len(dataframe)
                 
-                elif col == "BloodSugar":
-                    result_df[f"{col}_Valid"] = dataframe[col].apply(is_blood_sugar_valid)
-                    result_df[f"{col}_Confidence"] = [1.0] * len(dataframe)
+# Removed BloodSugar validation - focusing on phone validation only
                 
                 else:
                     # Generic validation - check if not empty and not NaN
@@ -212,19 +196,19 @@ if uploaded_file:
             
             if (params.data[validField] === false) {
                 return { 
-                    'backgroundColor': '#ffcdd2', 
-                    'color': '#d32f2f',
+                    'backgroundColor': '#750E21', 
+                    'color': '#ffffff',
                     'fontWeight': 'bold'
                 };
             } else if (params.data[validField] === true) {
                 const confField = field + '_Confidence';
                 const confidence = params.data[confField] || 1.0;
                 if (confidence >= 0.9) {
-                    return { 'backgroundColor': '#c8e6c9', 'color': '#2e7d32' };
+                    return { 'backgroundColor': '#1F7D53', 'color': '#ffffff' };
                 } else if (confidence >= 0.7) {
-                    return { 'backgroundColor': '#fff3e0', 'color': '#f57c00' };
+                    return { 'backgroundColor': '#DCA06D', 'color': '#ffffff' };
                 } else {
-                    return { 'backgroundColor': '#e1f5fe', 'color': '#0277bd' };
+                    return { 'backgroundColor': '#DCA06D', 'color': '#ffffff' };
                 }
             }
             return {};
@@ -279,9 +263,9 @@ if uploaded_file:
         st.subheader("ML-Powered Suggestions")
         
         if st.session_state.ml_model_loaded:
-            st.success("Smart corrections powered by Random Forest ML model")
+            st.success("Smart corrections powered by Logistic Regression ML model")
         else:
-            st.info("ML model not available - using rule-based suggestions")
+            st.warning("ML model not loaded - train the model first")
         
         # Generate suggestions for invalid data
         suggestions_found = False
@@ -309,8 +293,7 @@ if uploaded_file:
                                     # Generate suggestions based on column type
                                     if str(col) == "PhoneNumber":
                                         suggested_value = str(generate_phone_suggestion(original_value))
-                                    elif str(col) == "BloodSugar":
-                                        suggested_value = str(generate_blood_sugar_suggestion(original_value))
+# Removed BloodSugar suggestions - focusing on phone validation only
                                     else:
                                         suggested_value = "Review manually"
                                     
@@ -445,15 +428,42 @@ if uploaded_file:
 # Sidebar
 with st.sidebar:
     st.header("ML Model Info")
-    
+
     if st.session_state.ml_model_loaded:
-        st.success("Random Forest Model Loaded")
-        st.info("Phone validation using ML model")
+        st.success("Logistic Regression Model Loaded")
+        st.info("Phone validation using ML model (+ sign + at least 7 digits rule)")
     else:
         st.warning("ML Model Not Available")
-        st.info("Using rule-based validation")
+        if hasattr(st.session_state, 'model_load_error') and st.session_state.model_load_error:
+            st.error(f"Error: {st.session_state.model_load_error}")
+        else:
+            st.error("Please train the logistic regression model first")
+
+        # Add training button
+        if st.button("Train Model Now", key="train_model_btn"):
+            with st.spinner("Training logistic regression model..."):
+                try:
+                    from ml.model_trainer import train_from_csv_file
+                    trainer, results = train_from_csv_file('data/training_data.csv')
+
+                    # Reload the validator
+                    st.session_state.ml_phone_validator = PhoneValidator('saved_models/phone_validator_model.pkl')
+                    st.session_state.ml_model_loaded = st.session_state.ml_phone_validator.is_model_loaded()
+                    st.session_state.model_load_error = None
+
+                    if st.session_state.ml_model_loaded:
+                        st.success(f"Model trained successfully! Accuracy: {results['accuracy']:.3f}")
+                        st.rerun()  # Refresh the app
+                    else:
+                        st.error("Training completed but model still not loading")
+                except Exception as e:
+                    st.error(f"Training failed: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
     
     st.header("Supported Data Types")
-    st.write("- Phone Numbers (ML/Rule-based)")
-    st.write("- Blood Sugar (Rule-based)")
+    st.write("- Phone Numbers (Logistic Regression ML)")
+# Removed Blood Sugar validation - focusing on phone validation only
     st.write("- Generic Data (Basic validation)")
+
+# Removed debug section - app working correctly
