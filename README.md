@@ -1,17 +1,17 @@
 # ML-Data-Validator
 
-A clean, professional Streamlit-based data validation tool that uses Machine Learning to detect and suggest corrections for invalid survey data. Built specifically for cleaning CSV/Excel files before feeding them into analytics pipelines.
+A focused, professional Streamlit application that uses **Logistic Regression Machine Learning** to validate and correct phone numbers in CSV/Excel files. Streamlined for efficiency with one-click suggestion application and real-time validation.
 
 ## Features
 
 - **Smart Data Upload** - Support for CSV and Excel files
-- **ML-Powered Validation** - Logistic Regression model for intelligent phone number validation
-- **Interactive Data Editor** - Click-to-edit table with real-time validation
-- **One-Click Suggestions** - AI-generated corrections with instant apply buttons
-- **Dual Editing Modes** - Auto-apply suggestions OR manual table editing
-- **Visual Data Quality Dashboard** - Clear metrics and confidence scores
-- **Professional Export** - Clean data export with validation reports
-- **Robust Error Handling** - Graceful handling of mixed data types and edge cases
+- **ML-Powered Phone Validation** - Logistic Regression model with 100% training accuracy
+- **One-Click Apply System** - Instant suggestion application with individual and bulk "Apply" buttons
+- **Real-Time Interactive Editor** - Click-to-edit table with automatic re-validation
+- **Smart Suggestion Engine** - Character-level corrections (e.g., 'e' → '3') with confidence scoring
+- **Visual Quality Dashboard** - Color-coded validation with ML confidence metrics
+- **Streamlined Architecture** - Clean separation of training vs validation logic
+- **Professional Export** - Clean data export ready for analytics pipelines
 
 ## Quick Start
 
@@ -47,15 +47,15 @@ Upload CSV → ML Validation → Interactive Dashboard → Auto-Apply Suggestion
 ```
 
 ### Validation Methods
-- **Phone Numbers**: Machine Learning (Logistic Regression) with rule-based fallback
-- **Blood Sugar**: Rule-based validation (50-500 mg/dL range)
+- **Phone Numbers**: Machine Learning (Logistic Regression) with feature engineering
 - **Generic Data**: Basic validation for empty/null values
 
 ### ML Features
-- **100% Training Accuracy** on phone pattern recognition
-- **Confidence Scores** for each validation
-- **Intelligent Suggestions** with character correction (e.g., 'e' → '3')
-- **Real-time Re-validation** after manual edits
+- **100% Training Accuracy** on synthetic phone validation dataset
+- **10 Engineered Features** - Length, digit patterns, format validation, etc.
+- **Confidence Scoring** - Each prediction includes ML confidence percentage
+- **Smart Character Corrections** - Intelligent substitutions (e.g., 'e' → '3', 'o' → '0')
+- **Automatic Re-validation** - Instant validation after any data changes
 
 ## Project Structure
 
@@ -88,9 +88,9 @@ ML-Data-Validator/
 
 ### ML Model Details
 - **Algorithm**: Logistic Regression Classifier
-- **Features**: 10 engineered features (length, digit count, format patterns, etc.)
-- **Training Data**: 3000 synthetic phone number examples with + sign and at least 7 digits rule
-- **Performance**: 100% accuracy on validation set
+- **Features**: 10 engineered features (length, digit count, format patterns, character analysis)
+- **Training Data**: 2000+ synthetic phone examples with validation rule: "+ sign + at least 7 digits"
+- **Performance**: 100% accuracy on validation set with comprehensive feature engineering
 
 ### Smart Phone Suggestions
 ```python
@@ -104,8 +104,7 @@ ML-Data-Validator/
 
 | Data Type | Validation Method | Example Valid | Example Invalid |
 |-----------|------------------|---------------|-----------------|
-| Phone Numbers | ML + Rules | `+1234567890` | `+1555444ee3` |
-| Blood Sugar | Rule-based | `85` | `ewqewq` |
+| Phone Numbers | ML (Logistic Regression) | `+1234567890` | `+1555444ee3` |
 | Generic Data | Basic checks | `Valid Text` | `null` |
 
 ## User Interface
@@ -125,11 +124,11 @@ ML-Data-Validator/
 - **Session Persistence** - Edits are saved during the session
 
 ### ML Suggestions
-- **Expandable Sections** - Organized by data column with issue counts
-- **One-Click Apply** - Individual "Apply" buttons for each suggestion
-- **Bulk Operations** - "Apply All" buttons for multiple suggestions
-- **Instant Updates** - Real-time table refresh after applying suggestions
-- **Smart Filtering** - Only shows actionable, high-quality suggestions
+- **Expandable Sections** - Organized by column with precise issue counts
+- **Individual Apply Buttons** - One-click application for each suggestion
+- **Bulk Apply Operations** - "Apply All" buttons for mass corrections
+- **Real-Time Updates** - Instant table refresh with automatic re-validation
+- **High-Quality Filtering** - Only displays actionable ML-generated suggestions
 
 ## Export Options
 
@@ -146,22 +145,21 @@ ML-Data-Validator/
 
 ### Sample Data Processing
 ```python
-# Input CSV with issues:
-PhoneNumber,BloodSugar
-+1234567890,95        # Valid
-+1555444ee3,ewqewq    # Invalid
-1234567890,-10        # Invalid
+# Input CSV with phone number issues:
+PhoneNumber
++1234567890          # Valid
++1555444ee3          # Invalid (letters in number)
+1234567890           # Invalid (missing country code)
 
 # ML Suggestions Display:
-Row 6    Current: +1555444ee3    Suggested: +1555444333    [Apply]
-Row 7    Current: ewqewq         Suggested: 85             [Apply]
-Row 8    Current: -10            Suggested: 80             [Apply]
+Row 2    Current: +1555444ee3    Suggested: +1555444333    [Apply]
+Row 3    Current: 1234567890     Suggested: +11234567890   [Apply]
 
 # After clicking Apply buttons:
-PhoneNumber,BloodSugar
-+1234567890,95        # Unchanged (valid)
-+1555444333,85        # Fixed with one-click apply
-+11234567890,80       # Fixed with one-click apply
+PhoneNumber
++1234567890          # Unchanged (valid)
++1555444333          # Fixed with ML suggestion
++11234567890         # Fixed with country code addition
 ```
 
 ### Two Ways to Fix Data
@@ -188,12 +186,13 @@ The application handles various data challenges:
 
 ## Development Notes
 
-### Recent Improvements
-- **One-Click Apply Functionality** - Added instant suggestion application
-- **Complete code cleanup** - Removed debugging clutter and complex logic
-- **Fixed string concatenation errors** - Eliminated f-string type mixing issues
-- **Simplified architecture** - Focus on core functionality
-- **Enhanced error handling** - Graceful failure recovery
+### Recent Improvements (Latest Updates)
+- **Focused Single-Purpose Design** - Streamlined to phone validation only (removed blood sugar validation)
+- **One-Click Apply System** - Individual and bulk suggestion application with real-time updates
+- **Code Architecture Cleanup** - Complete separation of training (`model_trainer.py`) vs validation (`validator.py`)
+- **Enhanced ML Pipeline** - Synthetic training data generation with 10 engineered features
+- **Error Handling Improvements** - Eliminated string concatenation errors and type mixing issues
+- **Dependency Optimization** - Removed unnecessary packages, kept core ML functionality
 
 ### Architecture Principles
 - **Separation of Concerns** - Training vs. validation logic separated
@@ -204,12 +203,13 @@ The application handles various data challenges:
 ## Requirements
 
 ```
-streamlit>=1.28.0
-pandas>=1.5.0
-scikit-learn>=1.3.0
-streamlit-aggrid>=0.3.4
-phonenumbers>=8.13.0
-openpyxl>=3.1.0
+streamlit
+pandas
+scikit-learn
+streamlit-aggrid
+phonenumbers
+openpyxl
+numpy
 ```
 
 ## Contributing
