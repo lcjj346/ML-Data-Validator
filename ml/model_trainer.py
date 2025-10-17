@@ -95,93 +95,6 @@ class PhoneModelTrainer:
             return max(len(match) for match in matches)
         return 0
     
-    def create_synthetic_training_data(self, size=2000):
-        """Create synthetic training data for phone validation"""
-        np.random.seed(42)
-        
-        # Valid phone patterns
-        valid_patterns = [
-            '+1{}{}{}{}{}{}{}{}{}{}',   # US format - 10 digits
-            '+65{}{}{}{}{}{}{}{}',      # Singapore format - 8 digits
-            '+44{}{}{}{}{}{}{}{}{}',    # UK format - 9 digits
-            '{}{}{}{}{}{}{}{}{}{}',     # 10 digit format
-            '({}{}{}) {}{}{}-{}{}{}{}', # US with formatting - 10 digits
-        ]
-        
-        # Invalid patterns
-        invalid_patterns = [
-            '{}{}{}abc',              # Too short with letters
-            '+{}{}{}{}{}{}{}{}{}{}{}{}{}{}', # Too long
-            '++{}{}{}{}{}{}{}{}',      # Double plus
-            '',                       # Empty
-            'not_a_phone',           # Text
-            '123',                   # Too short
-            '+1234567890123456789',  # Way too long
-        ]
-        
-        data = []
-        
-        # Generate valid phone numbers
-        for _ in range(size // 2):
-            pattern = np.random.choice(valid_patterns)
-            # Generate appropriate number of digits for each pattern
-            if '+65' in pattern:
-                digits = [str(np.random.randint(0, 10)) for _ in range(8)]
-            elif '+44' in pattern:
-                digits = [str(np.random.randint(0, 10)) for _ in range(9)]
-            else:
-                digits = [str(np.random.randint(0, 10)) for _ in range(10)]
-            
-            try:
-                phone = pattern.format(*digits)
-                data.append({'phone': phone, 'is_valid': 1})
-            except IndexError:
-                # Fallback to simple 10-digit format
-                digits = [str(np.random.randint(0, 10)) for _ in range(10)]
-                phone = ''.join(digits)
-                data.append({'phone': phone, 'is_valid': 1})
-        
-        # Generate invalid phone numbers
-        for _ in range(size // 2):
-            if np.random.random() < 0.3:
-                # Use invalid patterns
-                pattern = np.random.choice(invalid_patterns)
-                if '{}' in pattern:
-                    digits = [str(np.random.randint(0, 10)) for _ in range(3)]
-                    try:
-                        phone = pattern.format(*digits)
-                    except IndexError:
-                        phone = pattern
-                else:
-                    phone = pattern
-            else:
-                # Corrupt valid patterns
-                pattern = np.random.choice(valid_patterns)
-                # Generate appropriate number of digits
-                if '+65' in pattern:
-                    digits = [str(np.random.randint(0, 10)) for _ in range(8)]
-                elif '+44' in pattern:
-                    digits = [str(np.random.randint(0, 10)) for _ in range(9)]
-                else:
-                    digits = [str(np.random.randint(0, 10)) for _ in range(10)]
-                
-                try:
-                    phone = pattern.format(*digits)
-                    # Add corruption
-                    corruption_type = np.random.choice(['add_letters', 'remove_digits', 'add_symbols'])
-                    if corruption_type == 'add_letters':
-                        phone = phone + 'abc'
-                    elif corruption_type == 'remove_digits':
-                        phone = phone[:len(phone)//2]
-                    else:  # add_symbols
-                        phone = phone + '@#$'
-                except IndexError:
-                    phone = 'invalid_phone_' + str(np.random.randint(1000, 9999))
-            
-            data.append({'phone': phone, 'is_valid': 0})
-        
-        return pd.DataFrame(data)
-    
     def train_from_data(self, training_data):
         """
         Train the phone validation model from provided data.
@@ -215,10 +128,26 @@ class PhoneModelTrainer:
             'classification_report': classification_report(y_test, y_pred, output_dict=True)
         }
     
-    def train_from_synthetic_data(self, size=2000):
-        """Train model using synthetic data generation"""
-        print("Creating synthetic training data...")
-        training_data = self.create_synthetic_training_data(size)
+    def train_from_default_data(self):
+        """Train model from saved training data file"""
+        default_path = '../data/logistic_regression_training.csv'
+
+        if not os.path.exists(default_path):
+            raise FileNotFoundError(
+                f"Training data not found at {default_path}\n"
+                f"Please run 'python generate_training_data.py' first to create the training data."
+            )
+
+        print(f"Loading training data from {default_path}...")
+        df = pd.read_csv(default_path)
+
+        # Prepare training data
+        training_data = pd.DataFrame({
+            'phone': df['phone'],
+            'is_valid': df['is_valid']
+        })
+
+        print(f"Loaded {len(training_data)} training examples")
         return self.train_from_data(training_data)
     
     def train_from_csv(self, csv_file_path):
@@ -280,21 +209,21 @@ class PhoneModelTrainer:
 # High-level training functions
 def train_phone_model(save_path='../saved_models/phone_validator_model.pkl'):
     """
-    Train and save a phone validation model using synthetic data.
+    Train and save a phone validation model from saved training data.
     Returns: (trainer_instance, training_results)
     """
     print("Initializing Phone Model Trainer...")
     trainer = PhoneModelTrainer()
-    
-    # Train the model with synthetic data
-    results = trainer.train_from_synthetic_data(2000)
-    
+
+    # Train the model from saved data
+    results = trainer.train_from_default_data()
+
     # Save the trained model
     trainer.save_model(save_path)
-    
+
     print(f"\nPhone validation model training completed!")
     print(f"Final accuracy: {results['accuracy']:.3f}")
-    
+
     return trainer, results
 
 
@@ -321,16 +250,18 @@ def train_from_csv_file(csv_path, save_path='../saved_models/phone_validator_mod
 if __name__ == "__main__":
     """
     MAIN TRAINING SCRIPT
-    
-    This runs when you execute: python phone_model_trainer.py
-    
+
+    This runs when you execute: python model_trainer.py
+
     It will:
-    1. Create 2000 synthetic phone examples (1000 valid, 1000 invalid)
+    1. Load training data from data/logistic_regression_training.csv
     2. Train a Logistic Regression model on these examples
     3. Show you the accuracy and detailed metrics
-    4. Save the model to ml/trained_models/phone_validator_model.pkl
+    4. Save the model to saved_models/phone_validator_model.pkl
     5. Display which features are most important for classification
-    
+
+    Note: If training data doesn't exist, run 'python generate_training_data.py' first
+
     Expected output:
     - Accuracy should be close to 1.000 (100%)
     - Most important features (highest absolute coefficients) are usually: length, valid_length, digit_count
