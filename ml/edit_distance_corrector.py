@@ -1,36 +1,50 @@
 """
-EDIT DISTANCE PHONE CORRECTOR - ML-based character-level editing
+Edit Distance Phone Corrector - ML-based character-level phone number correction.
 
-Uses XGBoost to learn character-level edit operations:
+Uses XGBoost to learn character-level edit operations for correcting invalid phone numbers:
 - Keep character as-is
 - Delete character
-- Replace with digit
-- Insert country code
+- Replace with specific digit (0-9)
+- Insert country code or + sign
 
-Much more effective than seq2seq for phone number correction!
+Example usage:
+    from ml.edit_distance_corrector import EditDistanceCorrector
 
-TRAINING:
-To train this model, first generate training data:
-    python generate_training_data.py
+    corrector = EditDistanceCorrector()
+    corrector.train_from_csv('data/xgboost_corrector_training.csv')
+    corrector.save('saved_models/edit_distance_corrector.pkl')
 
-Then train the model:
-    python edit_distance_corrector.py
+    corrected = corrector.correct_phone("1234567e90")
+    print(corrected)  # Output: +11234567890
 """
 
+import os
+import pickle
+from typing import List, Dict, Optional, Any
 import numpy as np
 import pandas as pd
-import pickle
-import os
-from collections import defaultdict
 import xgboost as xgb
 
 
 class EditDistanceCorrector:
-    """Learn to correct phone numbers using edit operations"""
+    """
+    XGBoost-based phone number corrector using character-level edit operations.
+
+    This class learns to apply edit operations (keep, delete, replace, insert) to
+    correct invalid phone numbers at the character level.
+
+    Attributes:
+        model: Trained XGBoost classifier
+        label_encoder: Maps operation names to integer labels
+        label_decoder: Maps integer labels back to operation names
+        typo_map: Common letter-to-digit typo mappings
+        inference_label_map: Mapping for remapped labels during inference
+    """
 
     def __init__(self):
-        self.model = None
-        self.label_encoder = {
+        """Initialize EditDistanceCorrector with operation mappings."""
+        self.model: Optional[xgb.XGBClassifier] = None
+        self.label_encoder: Dict[str, int] = {
             'keep': 0,
             'delete': 1,
             'replace_0': 2, 'replace_1': 3, 'replace_2': 4, 'replace_3': 5,
@@ -39,10 +53,10 @@ class EditDistanceCorrector:
             'insert_+': 12,
             'insert_country': 13,
         }
-        self.label_decoder = {v: k for k, v in self.label_encoder.items()}
+        self.label_decoder: Dict[int, str] = {v: k for k, v in self.label_encoder.items()}
 
-        # Letter to digit mapping for typos
-        self.typo_map = {
+        # Letter to digit mapping for common typos
+        self.typo_map: Dict[str, str] = {
             'o': '0', 'O': '0',
             'l': '1', 'L': '1', 'I': '1', 'i': '1',
             'e': '3', 'E': '3',
@@ -50,45 +64,60 @@ class EditDistanceCorrector:
             'b': '8', 'B': '8',
             'g': '9', 'G': '9',
         }
+        self.inference_label_map: Dict[int, int] = {}
 
-    def extract_features(self, phone_str, position):
-        """Extract features for a character at given position"""
+    def extract_features(self, phone_str: str, position: int) -> List[int]:
+        """
+        Extract features for a character at a given position.
+
+        Extracts 16 features describing the character and its context:
+        - Character type (digit, alpha, +, space, special)
+        - Position information (index, total length, first/last)
+        - Context (left/right characters)
+        - Global features (starts with +, digit count)
+        - Typo likelihood
+
+        Args:
+            phone_str: Phone number string
+            position: Character position (0-indexed)
+
+        Returns:
+            List of 16 integer features
+        """
         features = []
 
         # Character at position
         char = phone_str[position] if position < len(phone_str) else ''
 
-        # Character type features
+        # Character type features (5 features)
         features.append(1 if char.isdigit() else 0)
         features.append(1 if char.isalpha() else 0)
         features.append(1 if char == '+' else 0)
         features.append(1 if char == ' ' else 0)
         features.append(1 if char in '-()./' else 0)
 
-        # Position features
+        # Position features (4 features)
         features.append(position)
         features.append(len(phone_str))
         features.append(1 if position == 0 else 0)
         features.append(1 if position == len(phone_str) - 1 else 0)
 
-        # Context features (left)
+        # Context features - left (2 features)
         left_char = phone_str[position - 1] if position > 0 else ''
         features.append(1 if left_char.isdigit() else 0)
         features.append(1 if left_char == '+' else 0)
 
-        # Context features (right)
+        # Context features - right (2 features)
         right_char = phone_str[position + 1] if position < len(phone_str) - 1 else ''
         features.append(1 if right_char.isdigit() else 0)
         features.append(1 if right_char.isalpha() else 0)
 
-        # Starts with + (global feature)
+        # Global features (2 features)
         features.append(1 if phone_str.startswith('+') else 0)
-
-        # Digit count so far
         digit_count = sum(1 for c in phone_str[:position] if c.isdigit())
         features.append(digit_count)
 
-        # Typo likelihood
+        # Typo likelihood (1 feature)
         features.append(1 if char in self.typo_map else 0)
 
         return features

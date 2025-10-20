@@ -1,141 +1,104 @@
 """
-PHONE MODEL TRAINER - Train ML models for phone number validation
+Phone Model Trainer - Train ML models for phone number validation.
 
-HOW TO TRAIN A MODEL:
+This module provides training functionality for Logistic Regression phone validators.
+Features are extracted using the centralized PhoneFeatureExtractor class.
 
-Method 1: Train with synthetic data (recommended for general use)
----------------------------------------------------------
-cd ml
-python phone_model_trainer.py
+Example usage:
+    from ml.model_trainer import PhoneModelTrainer
 
-Method 2: Train from your own CSV data
----------------------------------------------------------
-# Your CSV must have columns: 'PhoneNumber' and 'PhoneNumber_Valid'
-# Example CSV format:
-# PhoneNumber,PhoneNumber_Valid
-# +1234567890,1
-# invalid_phone,0
-# +6591234567,1
-
-from phone_model_trainer import train_from_csv_file
-trainer, results = train_from_csv_file('path/to/your/data.csv')
-print(f"Accuracy: {results['accuracy']:.3f}")
-
-Method 3: Using the high-level training functions
----------------------------------------------------------
-from phone_model_trainer import train_phone_model
-trainer, results = train_phone_model()
-
-HOW TO VIEW ACCURACY AND RESULTS:
----------------------------------------------------------
-# After training, results contains:
-# - results['accuracy']: Overall accuracy (0.0 to 1.0)
-# - results['classification_report']: Detailed metrics per class
-
-# To see feature importance (what the model considers most important):
-importance = trainer.get_feature_importance()
-for feature, score in sorted(importance.items(), key=lambda x: x[1], reverse=True):
-    print(f"{feature}: {score:.3f}")
-
-WHERE MODELS ARE SAVED:
----------------------------------------------------------
-Default location: ml/trained_models/phone_validator_model.pkl
-The trained model is automatically saved and can be used by phone_validator.py
+    trainer = PhoneModelTrainer()
+    results = trainer.train_from_default_data()
+    trainer.save_model('saved_models/phone_validator_model.pkl')
+    print(f"Accuracy: {results['accuracy']:.1%}")
 """
 
+import os
+from typing import Dict, Tuple, Any
 import pandas as pd
-import numpy as np
+import joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
-import re
-import joblib
-import os
+from ml.feature_extractor import PhoneFeatureExtractor
 
 
 class PhoneModelTrainer:
     """
-    Phone validation model trainer.
-    This class is focused purely on training ML models for phone validation.
+    Phone validation model trainer using Logistic Regression.
+
+    This class focuses purely on training ML models for phone validation.
+    Features are extracted using PhoneFeatureExtractor.
+
+    Attributes:
+        model: LogisticRegression instance
+        is_trained: Boolean flag indicating if model has been trained
     """
-    
+
     def __init__(self):
-        self.model = LogisticRegression(random_state=42, max_iter=1000)
-        self.is_trained = False
-        
-    def extract_features(self, phone_numbers):
-        """Extract features from phone numbers for ML training"""
-        features = []
-        
-        for phone in phone_numbers:
-            phone_str = str(phone) if phone is not None else ""
-            
-            # Basic features
-            feature_dict = {
-                'length': len(phone_str),
-                'starts_with_plus': int(phone_str.startswith('+')),
-                'digit_count': len(re.findall(r'\d', phone_str)),
-                'non_digit_count': len(re.findall(r'\D', phone_str)),
-                'has_spaces': int(' ' in phone_str),
-                'has_dashes': int('-' in phone_str),
-                'has_parentheses': int('(' in phone_str or ')' in phone_str),
-                'has_letters': int(bool(re.search(r'[a-zA-Z]', phone_str))),
-                'consecutive_digits': self._count_consecutive_digits(phone_str),
-                'valid_length': int(8 <= len(re.findall(r'\d', phone_str)) <= 15),
-            }
-            
-            features.append(feature_dict)
-        
-        return pd.DataFrame(features)
+        """Initialize PhoneModelTrainer with a Logistic Regression model."""
+        self.model: LogisticRegression = LogisticRegression(random_state=42, max_iter=1000)
+        self.is_trained: bool = False
     
-    def _count_consecutive_digits(self, phone_str):
-        """Count maximum consecutive digits"""
-        matches = re.findall(r'\d+', phone_str)
-        if matches:
-            return max(len(match) for match in matches)
-        return 0
-    
-    def train_from_data(self, training_data):
+    def train_from_data(self, training_data: pd.DataFrame) -> Dict[str, Any]:
         """
         Train the phone validation model from provided data.
-        training_data should be a DataFrame with columns: 'phone', 'is_valid'
+
+        Args:
+            training_data: DataFrame with columns 'phone' and 'is_valid'
+
+        Returns:
+            Dictionary containing:
+                - accuracy: Overall accuracy score (0.0 to 1.0)
+                - classification_report: Detailed metrics dict
+
+        Raises:
+            KeyError: If required columns are missing from training_data
         """
         print("Extracting features for training...")
-        X = self.extract_features(training_data['phone'])
+        X = PhoneFeatureExtractor.extract_features(training_data['phone'].tolist())
         y = training_data['is_valid']
-        
+
         # Split data for training and testing
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
         )
-        
+
         # Train model
         print("Training Logistic Regression model...")
         self.model.fit(X_train, y_train)
-        
+
         # Evaluate model
         y_pred = self.model.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
-        
+
         print(f"Training completed!")
         print(f"Model accuracy: {accuracy:.3f}")
         print("\nDetailed Classification Report:")
         print(classification_report(y_test, y_pred))
-        
+
         self.is_trained = True
         return {
             'accuracy': accuracy,
             'classification_report': classification_report(y_test, y_pred, output_dict=True)
         }
-    
-    def train_from_default_data(self):
-        """Train model from saved training data file"""
+
+    def train_from_default_data(self) -> Dict[str, Any]:
+        """
+        Train model from saved training data file.
+
+        Returns:
+            Dictionary containing training results (accuracy, classification report)
+
+        Raises:
+            FileNotFoundError: If default training data file doesn't exist
+        """
         default_path = '../data/logistic_regression_training.csv'
 
         if not os.path.exists(default_path):
             raise FileNotFoundError(
                 f"Training data not found at {default_path}\n"
-                f"Please run 'python generate_training_data.py' first to create the training data."
+                f"Please run 'python generate_aligned_training_data.py' first."
             )
 
         print(f"Loading training data from {default_path}...")
@@ -149,11 +112,20 @@ class PhoneModelTrainer:
 
         print(f"Loaded {len(training_data)} training examples")
         return self.train_from_data(training_data)
-    
-    def train_from_csv(self, csv_file_path):
+
+    def train_from_csv(self, csv_file_path: str) -> Dict[str, Any]:
         """
         Train model from CSV file.
-        CSV must have columns: 'PhoneNumber' and 'Valid'
+
+        Args:
+            csv_file_path: Path to CSV file with 'PhoneNumber' and 'Valid' columns
+
+        Returns:
+            Dictionary containing training results
+
+        Raises:
+            FileNotFoundError: If CSV file doesn't exist
+            ValueError: If required columns are missing
         """
         if not os.path.exists(csv_file_path):
             raise FileNotFoundError(f"CSV file not found: {csv_file_path}")
@@ -170,27 +142,43 @@ class PhoneModelTrainer:
             'phone': df['PhoneNumber'],
             'is_valid': df['Valid']
         })
-        
+
         print(f"Training on {len(training_data)} examples from CSV...")
         return self.train_from_data(training_data)
-    
-    def save_model(self, filepath):
-        """Save the trained model"""
+
+    def save_model(self, filepath: str) -> None:
+        """
+        Save the trained model to file.
+
+        Args:
+            filepath: Path where model should be saved (.pkl file)
+
+        Raises:
+            ValueError: If model hasn't been trained yet
+        """
         if not self.is_trained:
             raise ValueError("Model must be trained before saving")
-        
+
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
+
         model_data = {
             'model': self.model,
             'is_trained': self.is_trained
         }
-        
+
         joblib.dump(model_data, filepath)
         print(f"Trained model saved to {filepath}")
     
-    def get_feature_coefficients(self):
-        """Get feature coefficients from the trained logistic regression model"""
+    def get_feature_coefficients(self) -> Dict[str, float]:
+        """
+        Get feature coefficients from the trained logistic regression model.
+
+        Returns:
+            Dictionary mapping feature names to their coefficients
+
+        Raises:
+            ValueError: If model hasn't been trained yet
+        """
         if not self.is_trained:
             raise ValueError("Model must be trained first")
 
@@ -200,17 +188,24 @@ class PhoneModelTrainer:
             'consecutive_digits', 'valid_length'
         ]
 
-        coefficients = self.model.coef_[0]  # Get coefficients for logistic regression
+        coefficients = self.model.coef_[0]
         feature_coefficients = dict(zip(feature_names, coefficients))
 
         return feature_coefficients
 
 
-# High-level training functions
-def train_phone_model(save_path='../saved_models/phone_validator_model.pkl'):
+# High-level training functions for convenience
+def train_phone_model(save_path: str = '../saved_models/phone_validator_model.pkl') -> Tuple[PhoneModelTrainer, Dict[str, Any]]:
     """
     Train and save a phone validation model from saved training data.
-    Returns: (trainer_instance, training_results)
+
+    Convenience function that handles the full training pipeline.
+
+    Args:
+        save_path: Path where trained model should be saved
+
+    Returns:
+        Tuple of (trainer_instance, training_results)
     """
     print("Initializing Phone Model Trainer...")
     trainer = PhoneModelTrainer()
@@ -227,23 +222,34 @@ def train_phone_model(save_path='../saved_models/phone_validator_model.pkl'):
     return trainer, results
 
 
-def train_from_csv_file(csv_path, save_path='../saved_models/phone_validator_model.pkl'):
+def train_from_csv_file(
+    csv_path: str,
+    save_path: str = '../saved_models/phone_validator_model.pkl'
+) -> Tuple[PhoneModelTrainer, Dict[str, Any]]:
     """
     Train and save a phone validation model from CSV file.
-    Returns: (trainer_instance, training_results)
+
+    Convenience function that handles the full training pipeline from custom data.
+
+    Args:
+        csv_path: Path to CSV file with training data
+        save_path: Path where trained model should be saved
+
+    Returns:
+        Tuple of (trainer_instance, training_results)
     """
     print("Initializing Phone Model Trainer...")
     trainer = PhoneModelTrainer()
-    
+
     # Train from CSV
     results = trainer.train_from_csv(csv_path)
-    
+
     # Save the trained model
     trainer.save_model(save_path)
-    
+
     print(f"\nPhone validation model training from CSV completed!")
     print(f"Final accuracy: {results['accuracy']:.3f}")
-    
+
     return trainer, results
 
 

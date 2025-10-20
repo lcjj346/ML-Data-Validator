@@ -1,85 +1,10 @@
 import streamlit as st
 import pandas as pd
-import re
 import os
-# Removed old rule-based validator - now using ML approach
-# Removed blood sugar validator - focusing on phone validation only
-from ml.validator import PhoneValidator
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 import io
-
-# Suggestion generation functions
-def generate_phone_suggestion(invalid_phone):
-    """
-    Generate intelligent suggestions for invalid phone numbers using XGBoost ML model.
-    Falls back to rule-based approach if XGBoost model is not available.
-    """
-    if not invalid_phone or pd.isna(invalid_phone):
-        return ""
-
-    phone_str = str(invalid_phone).strip()
-
-    # PRIORITY 1: Try XGBoost Edit Distance Corrector (ML-based)
-    if st.session_state.get('edit_distance_loaded', False):
-        try:
-            corrected = st.session_state.edit_distance_corrector.correct_phone(phone_str)
-            # XGBoost returns None if it can't correct
-            if corrected and corrected != phone_str:
-                return corrected
-        except Exception as e:
-            # If XGBoost fails, fall through to rule-based approach
-            pass
-
-    # FALLBACK: Rule-based approach (simple corrections)
-    # This only runs if XGBoost is not loaded or fails
-
-    # Replace common letter typos with similar-looking digits
-    corrections = {
-        'o': '0', 'O': '0',  # o to 0
-        'l': '1', 'L': '1', 'I': '1', 'i': '1',  # l/I to 1
-        'e': '3', 'E': '3',  # e to 3
-        's': '5', 'S': '5',  # s to 5
-        'b': '8', 'B': '8',  # b to 8
-        'g': '9', 'G': '9',  # g to 9
-        'a': '2', 'A': '2',  # a to 2
-    }
-
-    suggestion = phone_str
-    for letter, digit in corrections.items():
-        suggestion = suggestion.replace(letter, digit)
-
-    # Remove spaces, dashes, dots, parentheses
-    suggestion = suggestion.replace(' ', '').replace('-', '').replace('.', '').replace('(', '').replace(')', '')
-
-    # Remove any remaining non-digit characters except +
-    cleaned = ''
-    for char in suggestion:
-        if char.isdigit() or char == '+':
-            cleaned += char
-    suggestion = cleaned
-
-    # Ensure it starts with +
-    if suggestion and not suggestion.startswith('+'):
-        digit_count = len([c for c in suggestion if c.isdigit()])
-
-        if digit_count == 10:
-            suggestion = '+1' + suggestion  # Assume US
-        elif digit_count == 11 and suggestion.startswith('1'):
-            suggestion = '+' + suggestion  # US with country code
-        elif digit_count >= 8:
-            suggestion = '+' + suggestion  # International
-
-    # Validate final result
-    if not suggestion or len(suggestion) < 8 or suggestion.count('+') > 1:
-        return ""
-
-    digit_count = sum(c.isdigit() for c in suggestion)
-    if digit_count < 7 or digit_count > 15:
-        return ""
-
-    return suggestion
-
-# Removed blood sugar suggestion function - focusing on phone validation only
+from ml.validator import PhoneValidator
+from utils.phone_corrector import generate_phone_suggestion
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 st.set_page_config(page_title="ML-Data-Validator", layout="wide")
 
@@ -332,8 +257,8 @@ with tab_validation:
                                         
                                         # Generate suggestions based on column type
                                         if str(col) == "PhoneNumber":
-                                            suggested_value = str(generate_phone_suggestion(original_value))
-    # Removed BloodSugar suggestions - focusing on phone validation only
+                                            corrector = st.session_state.get('edit_distance_corrector')
+                                            suggested_value = str(generate_phone_suggestion(original_value, corrector))
                                         else:
                                             suggested_value = "Review manually"
                                         

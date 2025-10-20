@@ -1,171 +1,143 @@
 """
-PHONE VALIDATOR - Use trained ML models to validate phone numbers
+Phone Validator - Use trained ML models to validate phone numbers.
 
-BEFORE USING THIS FILE, YOU MUST TRAIN A MODEL FIRST:
----------------------------------------------------------
-cd ml
-python phone_model_trainer.py
+This module provides phone number validation using a trained Logistic Regression model.
+Features are extracted using the centralized PhoneFeatureExtractor class.
 
-HOW TO USE THE VALIDATOR:
+Example usage:
+    from ml.validator import PhoneValidator
 
-Method 1: Quick validation of single phone numbers
----------------------------------------------------------
-from phone_validator import validate_single_phone
-
-is_valid, confidence = validate_single_phone("+1234567890")
-print(f"Valid: {is_valid}, Confidence: {confidence*100:.1f}%")
-
-Method 2: Validate multiple phone numbers at once
----------------------------------------------------------
-from phone_validator import validate_phone_list
-
-phones = ["+1234567890", "invalid_phone", "+6591234567"]
-results = validate_phone_list(phones)
-
-for phone, (is_valid, confidence) in zip(phones, results):
-    status = "✅ Valid" if is_valid else "❌ Invalid" 
-    print(f"{phone:<15} -> {status} ({confidence*100:.1f}% confidence)")
-
-Method 3: Using the PhoneValidator class directly
----------------------------------------------------------
-from phone_validator import PhoneValidator
-
-validator = PhoneValidator()
-if validator.is_model_loaded():
-    is_valid, confidence = validator.validate_phone("+1234567890")
-    print(f"Phone is {'valid' if is_valid else 'invalid'} with {confidence*100:.1f}% confidence")
-else:
-    print("No trained model found! Run phone_model_trainer.py first")
-
-INTEGRATION WITH YOUR APP:
----------------------------------------------------------
-# In your main application, you can use:
-from ml.phone_validator import PhoneValidator
-
-validator = PhoneValidator()
-def check_phone(phone_number):
+    validator = PhoneValidator('saved_models/phone_validator_model.pkl')
     if validator.is_model_loaded():
-        is_valid, confidence = validator.validate_phone(phone_number)
-        return is_valid and confidence > 0.8  # 80% confidence threshold
-    else:
-        return False  # Fallback if no model available
-
-MODEL LOCATION:
----------------------------------------------------------
-Expected model file: ml/trained_models/phone_validator_model.pkl
-This file is created when you run the trainer.
+        is_valid, confidence = validator.validate_phone("+1234567890")
+        print(f"Valid: {is_valid}, Confidence: {confidence*100:.1f}%")
 """
 
-import pandas as pd
-import numpy as np
-from sklearn.linear_model import LogisticRegression
-import re
-import joblib
 import os
+from typing import List, Tuple, Optional
+import joblib
+from sklearn.linear_model import LogisticRegression
+from ml.feature_extractor import PhoneFeatureExtractor
 
 
 class PhoneValidator:
     """
-    Phone number validator using trained ML model.
-    This class is focused purely on validation - no training functionality.
+    Phone number validator using trained Logistic Regression model.
+
+    This class focuses purely on validation - no training functionality.
+    Features are extracted using PhoneFeatureExtractor.
+
+    Attributes:
+        model: Trained LogisticRegression model instance
+        is_trained: Boolean flag indicating if model is loaded
+        model_path: Path to the model file
     """
-    
-    def __init__(self, model_path='../saved_models/phone_validator_model.pkl'):
-        self.model = None
-        self.is_trained = False
-        self.model_path = model_path
-        
+
+    def __init__(self, model_path: str = '../saved_models/phone_validator_model.pkl'):
+        """
+        Initialize PhoneValidator and optionally load pre-trained model.
+
+        Args:
+            model_path: Path to saved model file (.pkl)
+        """
+        self.model: Optional[LogisticRegression] = None
+        self.is_trained: bool = False
+        self.model_path: str = model_path
+
         # Try to load pre-trained model
         if os.path.exists(model_path):
             self.load_model(model_path)
-    
-    def extract_features(self, phone_numbers):
-        """Extract features from phone numbers for ML validation"""
-        features = []
-        
-        for phone in phone_numbers:
-            phone_str = str(phone) if phone is not None else ""
-            
-            # Basic features for validation
-            feature_dict = {
-                'length': len(phone_str),
-                'starts_with_plus': int(phone_str.startswith('+')),
-                'digit_count': len(re.findall(r'\d', phone_str)),
-                'non_digit_count': len(re.findall(r'\D', phone_str)),
-                'has_spaces': int(' ' in phone_str),
-                'has_dashes': int('-' in phone_str),
-                'has_parentheses': int('(' in phone_str or ')' in phone_str),
-                'has_letters': int(bool(re.search(r'[a-zA-Z]', phone_str))),
-                'consecutive_digits': self._count_consecutive_digits(phone_str),
-                'valid_length': int(8 <= len(re.findall(r'\d', phone_str)) <= 15),
-            }
-            
-            features.append(feature_dict)
-        
-        return pd.DataFrame(features)
-    
-    def _count_consecutive_digits(self, phone_str):
-        """Count maximum consecutive digits"""
-        matches = re.findall(r'\d+', phone_str)
-        if matches:
-            return max(len(match) for match in matches)
-        return 0
 
-    def validate_phone(self, phone_number):
+    def validate_phone(self, phone_number: str) -> Tuple[bool, float]:
         """
         Validate a single phone number.
-        Returns: (is_valid: bool, confidence: float)
+
+        Args:
+            phone_number: Phone number string to validate
+
+        Returns:
+            Tuple of (is_valid, confidence) where:
+                - is_valid: Boolean indicating if phone is valid
+                - confidence: Float between 0-1 indicating model confidence
+
+        Raises:
+            ValueError: If model is not loaded
         """
         if not self.is_trained:
             raise ValueError("Model must be loaded before validation. Train the model first.")
-        
-        predictions, probabilities = self.predict([phone_number])
+
+        predictions, probabilities = self._predict([phone_number])
         is_valid = bool(predictions[0])
         confidence = float(max(probabilities[0]))
-        
+
         return is_valid, confidence
-    
-    def validate_phone_batch(self, phone_numbers):
+
+    def validate_phone_batch(self, phone_numbers: List[str]) -> List[Tuple[bool, float]]:
         """
-        Validate multiple phone numbers at once.
-        Returns: list of tuples [(is_valid: bool, confidence: float), ...]
+        Validate multiple phone numbers at once (optimized batch processing).
+
+        Args:
+            phone_numbers: List of phone number strings
+
+        Returns:
+            List of tuples [(is_valid, confidence), ...] for each phone
+
+        Raises:
+            ValueError: If model is not loaded
         """
         if not self.is_trained:
             raise ValueError("Model must be loaded before validation. Train the model first.")
-        
-        predictions, probabilities = self.predict(phone_numbers)
-        
+
+        predictions, probabilities = self._predict(phone_numbers)
+
         results = []
         for pred, prob in zip(predictions, probabilities):
             is_valid = bool(pred)
             confidence = float(max(prob))
             results.append((is_valid, confidence))
-        
+
         return results
-    
-    def predict(self, phone_numbers):
+
+    def _predict(self, phone_numbers: List[str]) -> Tuple:
         """
         Internal prediction method.
-        Returns: (predictions, probabilities)
+
+        Args:
+            phone_numbers: List of phone numbers (or single phone as list)
+
+        Returns:
+            Tuple of (predictions, probabilities)
+
+        Raises:
+            ValueError: If model is not loaded
         """
         if not self.is_trained:
             raise ValueError("Model must be loaded before making predictions")
-        
+
         if isinstance(phone_numbers, str):
             phone_numbers = [phone_numbers]
-        
-        X = self.extract_features(phone_numbers)
+
+        # Use centralized feature extractor
+        X = PhoneFeatureExtractor.extract_features(phone_numbers)
         predictions = self.model.predict(X)
         probabilities = self.model.predict_proba(X)
-        
+
         return predictions, probabilities
-    
-    def load_model(self, filepath):
-        """Load a pre-trained model"""
+
+    def load_model(self, filepath: str) -> bool:
+        """
+        Load a pre-trained model from file.
+
+        Args:
+            filepath: Path to saved model (.pkl file)
+
+        Returns:
+            True if model loaded successfully, False otherwise
+        """
         if not os.path.exists(filepath):
             print(f"Model file not found: {filepath}")
             return False
-        
+
         try:
             model_data = joblib.load(filepath)
             self.model = model_data['model']
@@ -175,34 +147,67 @@ class PhoneValidator:
         except Exception as e:
             print(f"Error loading model: {e}")
             return False
-    
-    def is_model_loaded(self):
-        """Check if a model is loaded and ready for validation"""
+
+    def is_model_loaded(self) -> bool:
+        """
+        Check if a model is loaded and ready for validation.
+
+        Returns:
+            True if model is loaded and trained, False otherwise
+        """
         return self.is_trained and self.model is not None
 
 
 # Convenience functions for easy usage
-def validate_single_phone(phone_number, model_path='../saved_models/phone_validator_model.pkl'):
+def validate_single_phone(
+    phone_number: str,
+    model_path: str = '../saved_models/phone_validator_model.pkl'
+) -> Tuple[bool, float]:
     """
     Validate a single phone number using the default model.
-    Returns: (is_valid: bool, confidence: float)
+
+    Convenience function for quick validation without creating a validator instance.
+
+    Args:
+        phone_number: Phone number string to validate
+        model_path: Path to saved model file
+
+    Returns:
+        Tuple of (is_valid, confidence)
+
+    Raises:
+        ValueError: If no trained model is available
     """
     validator = PhoneValidator(model_path)
     if not validator.is_model_loaded():
         raise ValueError("No trained model available. Please train the model first.")
-    
+
     return validator.validate_phone(phone_number)
 
 
-def validate_phone_list(phone_numbers, model_path='../saved_models/phone_validator_model.pkl'):
+def validate_phone_list(
+    phone_numbers: List[str],
+    model_path: str = '../saved_models/phone_validator_model.pkl'
+) -> List[Tuple[bool, float]]:
     """
     Validate a list of phone numbers using the default model.
-    Returns: list of tuples [(is_valid: bool, confidence: float), ...]
+
+    Convenience function for batch validation without creating a validator instance.
+
+    Args:
+        phone_numbers: List of phone number strings
+        model_path: Path to saved model file
+
+    Returns:
+        List of tuples [(is_valid, confidence), ...]
+
+    Raises:
+        ValueError: If no trained model is available
     """
     validator = PhoneValidator(model_path)
     if not validator.is_model_loaded():
         raise ValueError("No trained model available. Please train the model first.")
-    
+
     return validator.validate_phone_batch(phone_numbers)
 
 
