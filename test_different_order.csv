@@ -1,0 +1,6 @@
+Age,Calories,Name,Email,Weight,PhoneNumber,BloodSugar,Height,HeartRate
+34,2000,Alice Johnson,alice@example.com,65,+1234567890,120,165,72
+39,2500,Bob Smith,bob.smith@gmail.com,80,+6591234567,95,178,68
+32,2200,Charlie Brown,charlie@domain.co.uk,75,+4407123456789,180,172,75
+150,50000,Invalid User,notanemail,300,invalid_phone,500,20,250
+29,1800,Eve Wilson,eve.wilson@mail.com,62,+11234567890,85,168,65
