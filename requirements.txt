@@ -1,14 +1,79 @@
-streamlit
-pandas
-openpyxl
-scikit-learn
-numpy<2.0
-fuzzywuzzy
-python-Levenshtein
-python-dotenv
-phonenumbers
-xgboost
+# ============================================================================
+# ML-Based CSV Data Validator - Requirements
+# ============================================================================
+#
+# This file contains all dependencies for the 2-stage ML validation pipeline:
+# - Stage 1: Validation (text_validator, numeric_validator)
+# - Stage 2: Suggestion (text_corrector, numeric_corrector, categorical_corrector)
+#
+# ============================================================================
 
-# May need this in non streamlit version
-streamlit-javascript
-streamlit-aggrid
+# ============================================================================
+# Core Data Science Libraries
+# ============================================================================
+numpy>=1.24.0,<2.0          # Core numerical computing (pinned < 2.0 for compatibility)
+pandas>=2.0.0               # Data manipulation and analysis
+scipy>=1.10.0               # Scientific computing utilities
+
+# ============================================================================
+# Machine Learning Frameworks
+# ============================================================================
+
+# Scikit-learn (Classical ML)
+scikit-learn>=1.3.0         # ML algorithms: IsolationForest, Ridge, RandomForest, LogisticRegression
+
+# XGBoost (Gradient Boosting)
+xgboost>=2.0.0              # Text validator (pattern classification)
+
+# PyTorch (Deep Learning)
+torch>=2.0.0                # LSTM Seq2Seq text corrector
+torchvision>=0.15.0         # PyTorch vision utilities (optional dependency)
+
+# ============================================================================
+# Streamlit Frontend
+# ============================================================================
+streamlit>=1.28.0           # Web UI framework
+streamlit-aggrid>=0.3.4     # Interactive data grid with cell editing
+streamlit-javascript        # JavaScript integration (optional)
+
+# ============================================================================
+# Data Processing & File Handling
+# ============================================================================
+openpyxl>=3.1.0             # Excel file support (.xlsx)
+xlrd>=2.0.0                 # Excel file reading (.xls, older format)
+
+# ============================================================================
+# Text Processing & Fuzzy Matching
+# ============================================================================
+fuzzywuzzy>=0.18.0          # Fuzzy string matching
+python-Levenshtein>=0.21.0  # Fast Levenshtein distance computation
+
+# ============================================================================
+# Utilities
+# ============================================================================
+joblib>=1.3.0               # Model serialization (pickle alternative)
+python-dotenv>=1.0.0        # Environment variable management
+tqdm>=4.65.0                # Progress bars for training
+
+# ============================================================================
+# Optional: Phone Number Processing
+# ============================================================================
+phonenumbers>=8.13.0        # Phone number parsing and validation (optional)
+
+# ============================================================================
+# Development & Testing (Optional - uncomment if needed)
+# ============================================================================
+# pytest>=7.4.0             # Testing framework
+# pytest-cov>=4.1.0         # Test coverage
+# black>=23.0.0             # Code formatting
+# flake8>=6.0.0             # Linting
+# mypy>=1.5.0               # Type checking
+
+# ============================================================================
+# Notes:
+# ============================================================================
+# 1. Install with: pip install -r requirements.txt
+# 2. For GPU support (CUDA), install PyTorch from: https://pytorch.org/
+# 3. Some packages may require C++ build tools on Windows
+# 4. Total install size: ~2-3 GB (PyTorch is large)
+# 5. Python version: 3.8+ recommended (tested on 3.10)

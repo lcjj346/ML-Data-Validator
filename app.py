@@ -12,12 +12,11 @@ import os
 import io
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
-# Import the new plugin system
 from ml.init_validators import initialize_validators, get_validator_status
 from ml.validator_registry import get_global_registry
 from ml.column_type_detector import ColumnTypeDetector
 
-st.set_page_config(page_title="ML-Data-Validator", layout="wide", page_icon="✓")
+st.set_page_config(page_title="ML-Data-Validator", layout="wide")
 
 # ==================== INITIALIZATION ====================
 
@@ -33,15 +32,15 @@ detector = st.session_state.detector
 
 # ==================== HEADER ====================
 
-st.title("🔍 ML Data Validator")
+st.title("ML Data Validator")
 st.markdown("**General-purpose ML-based data validation for any CSV/Excel file**")
 
 # ==================== TABS ====================
 
 tab_validation, tab_training, tab_status = st.tabs([
-    "📊 Data Validation",
-    "🎓 Model Training",
-    "ℹ️ System Status"
+    "Data Validation",
+    "Model Training",
+    "System Status"
 ])
 
 # ==================== SYSTEM STATUS TAB ====================
@@ -67,14 +66,14 @@ with tab_status:
     for data_type, info in sorted(status['types'].items()):
         data_types_list.append({
             'Data Type': data_type,
-            'Validator': '✓' if info['has_validator'] else '✗',
-            'Corrector': '✓' if info['has_corrector'] else '✗',
+            'Validator': 'Yes' if info['has_validator'] else 'No',
+            'Corrector': 'Yes' if info['has_corrector'] else 'No',
             'Status': 'Ready' if (info['has_validator'] or info['has_corrector']) else 'Not Available'
         })
 
     st.dataframe(pd.DataFrame(data_types_list), use_container_width=True, hide_index=True)
 
-    with st.expander("📖 Supported Data Types Documentation"):
+    with st.expander("Supported Data Types Documentation"):
         st.markdown("""
         ### Phone Numbers
         - **Validator**: Logistic Regression ML model
@@ -121,27 +120,13 @@ with tab_validation:
             else:
                 df = pd.read_excel(uploaded_file)
 
-            st.success(f"✓ File uploaded successfully! Shape: {df.shape}")
+            st.success(f"File uploaded successfully! Shape: {df.shape}")
 
             # Auto-detect column types
             with st.spinner("Detecting column types..."):
                 detected_types = detector.detect_all_columns(df)
 
-            # Show detected types
-            with st.expander("🔍 Auto-Detected Column Types", expanded=True):
-                col_info = []
-                for col_name, data_type in detected_types.items():
-                    has_validator = registry.has_validator(data_type)
-                    has_corrector = registry.has_corrector(data_type)
-
-                    col_info.append({
-                        'Column': col_name,
-                        'Detected Type': data_type,
-                        'Validator': '✓' if has_validator else '✗',
-                        'Corrector': '✓' if has_corrector else '✗'
-                    })
-
-                st.dataframe(pd.DataFrame(col_info), use_container_width=True, hide_index=True)
+            # Column type detection happens in background (table removed per user request)
 
             # Validation function using the plugin system
             def validate_data(dataframe, column_types):
@@ -181,14 +166,21 @@ with tab_validation:
                 st.session_state.column_types = detected_types
                 st.session_state.file_name = uploaded_file.name
                 st.session_state.data_version = 0
+                # Initialize modified cells tracking
+                st.session_state.modified_cells = set()
+                # Add Modified columns
+                for col in list(df.columns):
+                    st.session_state.current_df[f"{col}_Modified"] = False
 
             # Ensure data_version exists
             if 'data_version' not in st.session_state:
                 st.session_state.data_version = 0
+            if 'modified_cells' not in st.session_state:
+                st.session_state.modified_cells = set()
 
             # ==================== DATA QUALITY DASHBOARD ====================
 
-            st.subheader("📈 Data Quality Dashboard")
+            st.subheader("Data Quality Dashboard")
 
             original_columns = st.session_state.original_columns
             invalid_counts = {}
@@ -224,14 +216,25 @@ with tab_validation:
 
             # ==================== INTERACTIVE DATA TABLE ====================
 
-            st.subheader("📝 Interactive Data Editor")
-            st.write("Invalid data highlighted in red. Valid data in green. Click cells to edit.")
+            st.subheader("Interactive Data Editor")
+            st.write("Invalid data highlighted in red. Modified data in orange. Valid data in green. Click cells to edit.")
 
-            # Cell styling: red for invalid, green for valid
+            # Cell styling: red for invalid, orange for modified, green for valid
             cell_style_jscode = JsCode('''
             function(params) {
                 const field = params.colDef.field;
                 const validField = field + '_Valid';
+                const modifiedField = field + '_Modified';
+
+                // Check if modified first (takes priority)
+                if (params.data[modifiedField] === true) {
+                    // ORANGE for modified
+                    return {
+                        'backgroundColor': '#E67E22',
+                        'color': '#ffffff',
+                        'fontWeight': 'bold'
+                    };
+                }
 
                 if (params.data[validField] === false) {
                     // RED for invalid
@@ -256,7 +259,7 @@ with tab_validation:
 
             # Make original columns editable, hide validation columns
             for col in st.session_state.current_df.columns:
-                if col.endswith('_Valid') or col.endswith('_Confidence') or col.endswith('_DataType'):
+                if col.endswith('_Valid') or col.endswith('_Confidence') or col.endswith('_DataType') or col.endswith('_Modified'):
                     gb.configure_column(col, hide=True)
                 elif col in original_columns:
                     # Check if column should show decimals
@@ -284,19 +287,48 @@ with tab_validation:
                         # Text, phone, email, date: default formatting
                         gb.configure_column(col, editable=True, cellStyle=cell_style_jscode)
 
-            gb.configure_grid_options(enableRangeSelection=True, enableCellTextSelection=True)
+            gb.configure_grid_options(
+                enableRangeSelection=True,
+                enableCellTextSelection=True
+            )
             grid_options = gb.build()
 
             # Display grid with versioned key to force refresh
+            # Calculate dynamic height based on number of rows
+            num_rows = len(st.session_state.current_df)
+            # Each row is approximately 35px, header is ~40px, add some padding
+            calculated_height = min(max(num_rows * 35 + 80, 200), 600)  # Min 200px, Max 600px
+
             grid_key = f"data_grid_{st.session_state.get('data_version', 0)}"
+
+            # Use custom CSS to make table responsive and prevent blank space
+            st.markdown("""
+                <style>
+                /* Make grid container responsive */
+                .ag-theme-streamlit, .ag-theme-alpine {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+                .ag-center-cols-viewport {
+                    width: 100% !important;
+                }
+                /* Ensure columns spread properly */
+                .ag-header-cell, .ag-cell {
+                    overflow: visible !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
             grid_response = AgGrid(
                 st.session_state.current_df,
                 gridOptions=grid_options,
                 update_mode='VALUE_CHANGED',
                 allow_unsafe_jscode=True,
                 fit_columns_on_grid_load=True,
-                height=400,
-                key=grid_key
+                height=calculated_height,
+                theme='streamlit',
+                key=grid_key,
+                reload_data=False
             )
 
             # Handle manual edits
@@ -309,19 +341,94 @@ with tab_validation:
                 # Update session state
                 st.session_state.current_df = validated_edited_df
 
-                # Show update message
-                changes_made = not edited_df[original_columns].equals(df)
-                if changes_made:
-                    st.info("ℹ️ Data has been updated. Validation refreshed automatically.")
-
             # ==================== ML-POWERED SUGGESTIONS ====================
 
-            st.subheader("💡 ML-Powered Correction Suggestions")
+            st.subheader("ML-Powered Correction Suggestions")
 
-            # Show model status
-            st.info("🤖 Using plugin-based ML correctors for intelligent suggestions")
+            # First pass: collect all suggestions across all columns
+            all_suggestions_by_column = {}
+            total_suggestions_count = 0
 
-            # Generate suggestions for invalid data
+            for col in original_columns:
+                try:
+                    valid_col_name = f"{col}_Valid"
+                    data_type = detected_types.get(col, 'text')
+
+                    if valid_col_name in st.session_state.current_df.columns:
+                        invalid_mask = st.session_state.current_df[valid_col_name] == False
+                        invalid_count = int(invalid_mask.sum())
+
+                        if invalid_count > 0:
+                            invalid_data = st.session_state.current_df[invalid_mask]
+                            col_suggestions = []
+
+                            for idx, row in invalid_data.iterrows():
+                                try:
+                                    original_value = row[col]
+                                    row_number = int(idx) + 1
+
+                                    correction_result = None
+                                    if registry.has_corrector(data_type):
+                                        correction_result = registry.correct_value(data_type, original_value)
+
+                                    if correction_result and correction_result.was_corrected():
+                                        col_suggestions.append({
+                                            'Row': row_number,
+                                            'Index': idx,
+                                            'Current Value': str(original_value),
+                                            'Suggested Fix': str(correction_result.corrected_value),
+                                            'Confidence': correction_result.confidence,
+                                            'Type': correction_result.correction_type or 'correction'
+                                        })
+                                except Exception:
+                                    continue
+
+                            if col_suggestions:
+                                all_suggestions_by_column[col] = col_suggestions
+                                total_suggestions_count += len(col_suggestions)
+                except Exception:
+                    continue
+
+            # Show global Apply All button if there are any suggestions
+            if total_suggestions_count > 0:
+                global_apply_all_key = f"global_apply_all_{st.session_state.get('data_version', 0)}"
+                if st.button(f"Apply All {total_suggestions_count} Suggestions Across All Columns", key=global_apply_all_key, type="primary"):
+                    try:
+                        # Create a fresh copy to avoid dtype issues
+                        temp_df = st.session_state.current_df[original_columns].copy()
+
+                        total_applied = 0
+                        # Apply all suggestions for all columns
+                        for col, col_suggestions in all_suggestions_by_column.items():
+                            temp_df[col] = temp_df[col].astype(str)
+                            for suggestion in col_suggestions:
+                                row_idx = suggestion['Index']
+                                suggested_value = suggestion['Suggested Fix']
+                                temp_df.at[row_idx, col] = str(suggested_value)
+                                total_applied += 1
+
+                        # Re-validate all with the updated data
+                        updated_data = validate_data(temp_df, detected_types)
+                        st.session_state.current_df = updated_data
+
+                        # Mark all as modified
+                        for col, col_suggestions in all_suggestions_by_column.items():
+                            for suggestion in col_suggestions:
+                                row_idx = suggestion['Index']
+                                st.session_state.current_df.at[row_idx, f"{col}_Modified"] = True
+                                st.session_state.modified_cells.add(f"{col}_{row_idx}")
+
+                        # Increment version to force grid refresh
+                        st.session_state.data_version = st.session_state.get('data_version', 0) + 1
+
+                        st.success(f"Applied {total_applied} suggestions across all columns!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error applying all suggestions: {str(e)}")
+
+                st.markdown("---")
+
+            # Generate suggestions for invalid data (display pass)
             suggestions_found = False
             for col in original_columns:
                 try:
@@ -332,56 +439,139 @@ with tab_validation:
                         invalid_mask = st.session_state.current_df[valid_col_name] == False
                         invalid_count = int(invalid_mask.sum())
 
-                        if invalid_count > 0 and registry.has_corrector(data_type):
+                        if invalid_count > 0:
                             suggestions_found = True
                             expander_title = f"{col} - {invalid_count} issues found ({data_type})"
 
                             with st.expander(expander_title, expanded=True):
                                 invalid_data = st.session_state.current_df[invalid_mask]
                                 suggestions = []
+                                manual_input_items = []
 
+                                # Try to get suggestions for each invalid cell
                                 for idx, row in invalid_data.iterrows():
                                     try:
                                         original_value = row[col]
+                                        row_number = int(idx) + 1
 
-                                        # Get correction from registry
-                                        correction_result = registry.correct_value(data_type, original_value)
+                                        # Try to get correction from registry
+                                        correction_result = None
+                                        if registry.has_corrector(data_type):
+                                            correction_result = registry.correct_value(data_type, original_value)
 
                                         if correction_result and correction_result.was_corrected():
-                                            row_number = int(idx) + 1
                                             suggestions.append({
                                                 'Row': row_number,
+                                                'Index': idx,
                                                 'Current Value': str(original_value),
                                                 'Suggested Fix': str(correction_result.corrected_value),
                                                 'Confidence': correction_result.confidence,
                                                 'Type': correction_result.correction_type or 'correction'
                                             })
+                                        else:
+                                            # No suggestion available - needs manual input
+                                            manual_input_items.append({
+                                                'Row': row_number,
+                                                'Index': idx,
+                                                'Current Value': str(original_value)
+                                            })
                                     except Exception:
+                                        # If error, add to manual input
+                                        manual_input_items.append({
+                                            'Row': int(idx) + 1,
+                                            'Index': idx,
+                                            'Current Value': str(row[col])
+                                        })
                                         continue
 
+                                # Combine suggestions and manual input items into one list for display
+                                all_items = []
+
+                                # Add suggestions to the list
+                                for suggestion in suggestions:
+                                    all_items.append({
+                                        'Row': suggestion['Row'],
+                                        'Index': suggestion['Index'],
+                                        'Current Value': suggestion['Current Value'],
+                                        'Suggested Fix': suggestion.get('Suggested Fix'),
+                                        'Confidence': suggestion.get('Confidence'),
+                                        'Type': 'suggestion'
+                                    })
+
+                                # Add manual input items to the list
+                                for item in manual_input_items:
+                                    all_items.append({
+                                        'Row': item['Row'],
+                                        'Index': item['Index'],
+                                        'Current Value': item['Current Value'],
+                                        'Suggested Fix': None,
+                                        'Confidence': None,
+                                        'Type': 'manual'
+                                    })
+
+                                # Sort by row number
+                                all_items.sort(key=lambda x: x['Row'])
+
+                                # Show Apply All button at the top if there are suggestions
                                 if suggestions:
-                                    # Display suggestions with apply buttons
-                                    for i, suggestion in enumerate(suggestions):
+                                    bulk_button_key_top = f"apply_all_top_{col}_{st.session_state.get('data_version', 0)}"
+                                    if st.button(f"Apply All {len(suggestions)} Suggestions", key=bulk_button_key_top, type="primary"):
+                                        try:
+                                            # Create a fresh copy to avoid dtype issues
+                                            temp_df = st.session_state.current_df[original_columns].copy()
+                                            temp_df[col] = temp_df[col].astype(str)
+
+                                            applied_count = 0
+                                            for suggestion in suggestions:
+                                                row_idx = suggestion['Index']
+                                                suggested_value = suggestion['Suggested Fix']
+                                                temp_df.at[row_idx, col] = str(suggested_value)
+                                                applied_count += 1
+
+                                            # Re-validate all with the updated data
+                                            updated_data = validate_data(temp_df, detected_types)
+                                            st.session_state.current_df = updated_data
+
+                                            # Mark all as modified
+                                            for suggestion in suggestions:
+                                                row_idx = suggestion['Index']
+                                                st.session_state.current_df.at[row_idx, f"{col}_Modified"] = True
+                                                st.session_state.modified_cells.add(f"{col}_{row_idx}")
+
+                                            # Increment version to force grid refresh
+                                            st.session_state.data_version = st.session_state.get('data_version', 0) + 1
+
+                                            st.success(f"Applied {applied_count} suggestions to {col}")
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"Error applying bulk suggestions: {str(e)}")
+
+                                    st.markdown("---")
+
+                                # Display all items (suggestions + manual input)
+                                for i, item in enumerate(all_items):
+                                    if item['Type'] == 'suggestion':
+                                        # Display suggestion with apply button
                                         col1, col2, col3, col4, col5 = st.columns([1, 2, 2, 1, 1])
 
                                         with col1:
-                                            st.write(f"**Row {suggestion['Row']}**")
+                                            st.write(f"**Row {item['Row']}**")
 
                                         with col2:
-                                            st.write(f"Current: `{suggestion['Current Value']}`")
+                                            st.write(f"Current: `{item['Current Value']}`")
 
                                         with col3:
-                                            st.write(f"Suggested: `{suggestion['Suggested Fix']}`")
+                                            st.write(f"Suggested: `{item['Suggested Fix']}`")
 
                                         with col4:
-                                            st.write(f"{suggestion['Confidence']:.0%}")
+                                            st.write(f"{item['Confidence']:.0%}")
 
                                         with col5:
-                                            button_key = f"apply_{col}_{suggestion['Row']}_{i}_{st.session_state.get('data_version', 0)}"
+                                            button_key = f"apply_{col}_{item['Row']}_{i}_{st.session_state.get('data_version', 0)}"
                                             if st.button("Apply", key=button_key):
                                                 try:
-                                                    row_idx = suggestion['Row'] - 1
-                                                    suggested_value = suggestion['Suggested Fix']
+                                                    row_idx = item['Index']
+                                                    suggested_value = item['Suggested Fix']
 
                                                     # Create a fresh copy to avoid dtype issues
                                                     temp_df = st.session_state.current_df[original_columns].copy()
@@ -394,58 +584,46 @@ with tab_validation:
                                                     updated_data = validate_data(temp_df, detected_types)
                                                     st.session_state.current_df = updated_data
 
+                                                    # Mark as modified
+                                                    st.session_state.current_df.at[row_idx, f"{col}_Modified"] = True
+                                                    st.session_state.modified_cells.add(f"{col}_{row_idx}")
+
                                                     # Increment version to force grid refresh
                                                     st.session_state.data_version = st.session_state.get('data_version', 0) + 1
 
-                                                    st.success(f"✓ Applied suggestion for Row {suggestion['Row']}")
+                                                    st.success(f"Applied suggestion for Row {item['Row']}")
                                                     st.rerun()
                                                 except Exception as e:
                                                     st.error(f"Error applying suggestion: {str(e)}")
+                                    else:
+                                        # Display manual input item - spread evenly across full width
+                                        col1, col2, col3 = st.columns([1, 4, 4])
 
-                                        if i < len(suggestions) - 1:
-                                            st.markdown("---")
+                                        with col1:
+                                            st.write(f"**Row {item['Row']}**")
 
-                                    # Add bulk apply button
-                                    st.markdown("---")
-                                    bulk_button_key = f"apply_all_{col}_{st.session_state.get('data_version', 0)}"
-                                    if st.button(f"Apply All {len(suggestions)} Suggestions", key=bulk_button_key):
-                                        try:
-                                            # Create a fresh copy to avoid dtype issues
-                                            temp_df = st.session_state.current_df[original_columns].copy()
+                                        with col2:
+                                            st.write(f"Current: `{item['Current Value']}`")
 
-                                            # Convert column to string type to avoid dtype conflicts
-                                            temp_df[col] = temp_df[col].astype(str)
+                                        with col3:
+                                            st.markdown("**Need Manual Input**")
 
-                                            applied_count = 0
-                                            for suggestion in suggestions:
-                                                row_idx = suggestion['Row'] - 1
-                                                suggested_value = suggestion['Suggested Fix']
-                                                temp_df.at[row_idx, col] = str(suggested_value)
-                                                applied_count += 1
+                                    if i < len(all_items) - 1:
+                                        st.markdown("---")
 
-                                            # Re-validate all with the updated data
-                                            updated_data = validate_data(temp_df, detected_types)
-                                            st.session_state.current_df = updated_data
-
-                                            # Increment version to force grid refresh
-                                            st.session_state.data_version = st.session_state.get('data_version', 0) + 1
-
-                                            st.success(f"✓ Applied {applied_count} suggestions to {col}")
-                                            st.rerun()
-                                        except Exception as e:
-                                            st.error(f"Error applying bulk suggestions: {str(e)}")
-                                else:
-                                    st.info("No automatic suggestions available for these values")
+                                # If no items at all
+                                if not all_items:
+                                    st.info("No invalid data found in this column.")
 
                 except Exception:
                     continue
 
             if not suggestions_found:
-                st.success("✅ No invalid data found - all data looks good!")
+                st.success("No invalid data found - all data looks good!")
 
             # ==================== EXPORT SECTION ====================
 
-            st.subheader("📥 Export Clean Data")
+            st.subheader("Export Clean Data")
 
             # Prepare export data (remove validation columns)
             export_df = st.session_state.current_df[original_columns].copy()
@@ -458,7 +636,7 @@ with tab_validation:
                 csv_data = export_df.to_csv(index=False)
                 timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
                 st.download_button(
-                    "📄 Download Clean CSV",
+                    "Download Clean CSV",
                     csv_data,
                     file_name=f"validated_data_{timestamp}.csv",
                     mime="text/csv",
@@ -472,7 +650,7 @@ with tab_validation:
                     export_df.to_excel(writer, index=False, sheet_name='Clean_Data')
 
                 st.download_button(
-                    "📊 Download Excel",
+                    "Download Excel",
                     output.getvalue(),
                     file_name=f"validated_data_{timestamp}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -488,7 +666,7 @@ with tab_training:
     from ml.model_trainer import PhoneModelTrainer
     import xgboost as xgb
 
-    st.header("🎓 Model Training Center")
+    st.header("Model Training Center")
     st.markdown("""
     Train or retrain ML models with your own data. Upload custom training CSV files to improve model accuracy.
     """)
@@ -576,13 +754,13 @@ with tab_training:
                         save_path = 'saved_models/phone_validator_model.pkl'
                         trainer.save_model(save_path)
 
-                        st.success("✅ Training completed successfully!")
+                        st.success("Training completed successfully!")
 
                         col1, col2 = st.columns(2)
                         with col1:
                             st.metric("Accuracy", f"{results['accuracy']:.1%}")
                         with col2:
-                            st.metric("Model Saved", "✓")
+                            st.metric("Model Saved", "Yes")
 
                         st.info(f"Model saved to: `{save_path}`")
                         st.info("Refresh the page to load the new model")
@@ -691,13 +869,13 @@ with tab_training:
                         save_path = 'saved_models/edit_distance_corrector.pkl'
                         corrector.save(save_path)
 
-                        st.success("✅ Training completed successfully!")
+                        st.success("Training completed successfully!")
 
                         col1, col2 = st.columns(2)
                         with col1:
                             st.metric("Training Accuracy", f"{accuracy:.1%}")
                         with col2:
-                            st.metric("Model Saved", "✓")
+                            st.metric("Model Saved", "Yes")
 
                         st.info(f"Model saved to: `{save_path}`")
                         st.info("Refresh the page to load the new model")
