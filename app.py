@@ -334,11 +334,53 @@ with tab_validation:
             if grid_response['data'] is not None:
                 edited_df = pd.DataFrame(grid_response['data'])
 
-                # Re-validate after edits
-                validated_edited_df = validate_data(edited_df[original_columns], detected_types)
+                # Check if data actually changed from current state
+                data_changed = False
+                for col in original_columns:
+                    if col in st.session_state.current_df.columns:
+                        for idx in edited_df.index:
+                            old_value = str(st.session_state.current_df.at[idx, col]) if pd.notna(st.session_state.current_df.at[idx, col]) else ''
+                            new_value = str(edited_df.at[idx, col]) if pd.notna(edited_df.at[idx, col]) else ''
 
-                # Update session state
-                st.session_state.current_df = validated_edited_df
+                            if old_value != new_value:
+                                data_changed = True
+                                break
+                    if data_changed:
+                        break
+
+                # Only process if data actually changed
+                if data_changed:
+                    # Re-validate after edits
+                    validated_edited_df = validate_data(edited_df[original_columns], detected_types)
+
+                    # Track which cells were manually edited by comparing with previous state
+                    for col in original_columns:
+                        modified_col = f"{col}_Modified"
+
+                        # Initialize the Modified column if it doesn't exist
+                        if modified_col not in validated_edited_df.columns:
+                            validated_edited_df[modified_col] = False
+
+                        # Copy existing Modified flags from previous state
+                        if modified_col in st.session_state.current_df.columns:
+                            validated_edited_df[modified_col] = st.session_state.current_df[modified_col].copy()
+
+                        # Check each cell to detect new manual changes
+                        if col in st.session_state.current_df.columns:
+                            for idx in validated_edited_df.index:
+                                old_value = str(st.session_state.current_df.at[idx, col]) if pd.notna(st.session_state.current_df.at[idx, col]) else ''
+                                new_value = str(validated_edited_df.at[idx, col]) if pd.notna(validated_edited_df.at[idx, col]) else ''
+
+                                # If value changed, mark as manually modified
+                                if old_value != new_value:
+                                    validated_edited_df.at[idx, modified_col] = True
+
+                    # Update session state
+                    st.session_state.current_df = validated_edited_df
+                    # Increment version to force grid refresh
+                    st.session_state.data_version += 1
+                    # Force rerun to show changes
+                    st.rerun()
 
             # ==================== ML-POWERED SUGGESTIONS ====================
 
