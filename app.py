@@ -71,7 +71,7 @@ with tab_status:
             'Status': 'Ready' if (info['has_validator'] or info['has_corrector']) else 'Not Available'
         })
 
-    st.dataframe(pd.DataFrame(data_types_list), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(data_types_list), width='stretch', hide_index=True)
 
     with st.expander("Supported Data Types Documentation"):
         st.markdown("""
@@ -322,13 +322,12 @@ with tab_validation:
             grid_response = AgGrid(
                 st.session_state.current_df,
                 gridOptions=grid_options,
-                update_mode='VALUE_CHANGED',
+                update_on=['cellValueChanged'],
                 allow_unsafe_jscode=True,
                 fit_columns_on_grid_load=True,
                 height=calculated_height,
                 theme='streamlit',
-                key=grid_key,
-                reload_data=False
+                key=grid_key
             )
 
             # Handle manual edits
@@ -639,8 +638,7 @@ with tab_validation:
                     "Download Clean CSV",
                     csv_data,
                     file_name=f"validated_data_{timestamp}.csv",
-                    mime="text/csv",
-                    use_container_width=True
+                    mime="text/csv"
                 )
 
             with col2:
@@ -653,8 +651,7 @@ with tab_validation:
                     "Download Excel",
                     output.getvalue(),
                     file_name=f"validated_data_{timestamp}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
         except Exception as e:
