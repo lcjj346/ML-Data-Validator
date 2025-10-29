@@ -20,7 +20,7 @@ import joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
-from ml.feature_extractor import PhoneFeatureExtractor
+from ml.core.phone_features import PhoneFeatureExtractor
 
 
 class PhoneModelTrainer:

@@ -15,7 +15,7 @@ Example usage:
 from typing import Any, List, Optional
 import numpy as np
 from ml.base_corrector import BaseCorrector, CorrectionResult
-from ml.validators.numeric_range_validator import NumericRangeValidator
+from ml.validators.base_validators.numeric_range_validator import NumericRangeValidator
 
 
 class NumericRangeCorrector(BaseCorrector):

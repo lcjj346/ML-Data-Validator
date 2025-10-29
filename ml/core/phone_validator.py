@@ -17,7 +17,7 @@ import os
 from typing import List, Tuple, Optional
 import joblib
 from sklearn.linear_model import LogisticRegression
-from ml.feature_extractor import PhoneFeatureExtractor
+from ml.core.phone_features import PhoneFeatureExtractor
 
 
 class PhoneValidator:

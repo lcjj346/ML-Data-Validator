@@ -61,6 +61,14 @@ tqdm>=4.65.0                # Progress bars for training
 phonenumbers>=8.13.0        # Phone number parsing and validation (optional)
 
 # ============================================================================
+# NLP Libraries (for Universal Text Validation)
+# ============================================================================
+spacy>=3.7.0                # Industrial-strength NLP (entity recognition, tokenization)
+sentence-transformers>=2.2.0 # Semantic similarity using transformers
+pycountry>=22.3.5           # ISO country, language, currency data
+# Run after install: python -m spacy download en_core_web_sm
+
+# ============================================================================
 # Development & Testing (Optional - uncomment if needed)
 # ============================================================================
 # pytest>=7.4.0             # Testing framework

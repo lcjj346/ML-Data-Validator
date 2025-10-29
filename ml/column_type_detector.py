@@ -283,8 +283,8 @@ class ColumnTypeDetector:
         if unique_ratio < 0.1:  # Less than 10% unique values
             return 'categorical'
 
-        # Default to text
-        return 'text'
+        # Default to 'nlp_text' to trigger NLP-based validation
+        return 'nlp_text'
 
     def detect_all_columns(self, dataframe: pd.DataFrame) -> Dict[str, str]:
         """

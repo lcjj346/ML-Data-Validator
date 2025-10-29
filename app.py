@@ -12,8 +12,8 @@ import os
 import io
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
-from ml.init_validators import initialize_validators, get_validator_status
-from ml.validator_registry import get_global_registry
+from ml.validators.registry.init_validators import initialize_validators, get_validator_status
+from ml.validators.registry.validator_registry import get_global_registry
 from ml.column_type_detector import ColumnTypeDetector
 
 st.set_page_config(page_title="ML-Data-Validator", layout="wide")
@@ -136,10 +136,22 @@ with tab_validation:
                 for col in dataframe.columns:
                     data_type = column_types.get(col, 'text')
 
-                    # Get validation results from registry
-                    validation_results = registry.validate_batch(data_type, dataframe[col].tolist())
+                    # Get validator from registry
+                    validator = registry.get_validator(data_type)
 
-                    if validation_results:
+                    if validator and validator.is_model_loaded():
+                        # Check if it's the NLP validator (needs extra context)
+                        if data_type in ['nlp_text', 'text', 'categorical']:
+                            # Pass column name and samples for context
+                            column_samples = dataframe[col].dropna().head(20).tolist()
+                            validation_results = []
+                            for value in dataframe[col].tolist():
+                                result = validator.validate(value, col, column_samples)
+                                validation_results.append(result)
+                        else:
+                            # Standard validators (phone, email, numeric, etc.)
+                            validation_results = validator.validate_batch(dataframe[col].tolist())
+
                         # Extract is_valid and confidence from ValidationResult objects
                         result_df[f"{col}_Valid"] = [r.is_valid for r in validation_results]
                         result_df[f"{col}_Confidence"] = [r.confidence for r in validation_results]
@@ -410,7 +422,18 @@ with tab_validation:
 
                                     correction_result = None
                                     if registry.has_corrector(data_type):
-                                        correction_result = registry.correct_value(data_type, original_value)
+                                        corrector = registry.get_corrector(data_type)
+
+                                        # Check if it's the NLP corrector (needs extra context)
+                                        if data_type in ['nlp_text', 'text', 'categorical']:
+                                            # Pass column name and valid samples for context
+                                            valid_samples = st.session_state.current_df[
+                                                st.session_state.current_df[f"{col}_Valid"] == True
+                                            ][col].dropna().head(20).tolist()
+                                            correction_result = corrector.correct(original_value, col, valid_samples)
+                                        else:
+                                            # Standard correctors
+                                            correction_result = corrector.correct(original_value)
 
                                     if correction_result and correction_result.was_corrected():
                                         col_suggestions.append({
@@ -498,7 +521,18 @@ with tab_validation:
                                         # Try to get correction from registry
                                         correction_result = None
                                         if registry.has_corrector(data_type):
-                                            correction_result = registry.correct_value(data_type, original_value)
+                                            corrector = registry.get_corrector(data_type)
+
+                                            # Check if it's the NLP corrector (needs extra context)
+                                            if data_type in ['nlp_text', 'text', 'categorical']:
+                                                # Pass column name and valid samples for context
+                                                valid_samples = st.session_state.current_df[
+                                                    st.session_state.current_df[f"{col}_Valid"] == True
+                                                ][col].dropna().head(20).tolist()
+                                                correction_result = corrector.correct(original_value, col, valid_samples)
+                                            else:
+                                                # Standard correctors
+                                                correction_result = corrector.correct(original_value)
 
                                         if correction_result and correction_result.was_corrected():
                                             suggestions.append({
@@ -702,7 +736,7 @@ with tab_validation:
 # ==================== TRAINING TAB ====================
 
 with tab_training:
-    from ml.model_trainer import PhoneModelTrainer
+    from ml.core.model_trainer import PhoneModelTrainer
     import xgboost as xgb
 
     st.header("Model Training Center")

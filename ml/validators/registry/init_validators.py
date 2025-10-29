@@ -12,15 +12,18 @@ Example usage:
 """
 
 from typing import Dict, Any
-from ml.validator_registry import ValidatorRegistry, get_global_registry
+from ml.validators.registry.validator_registry import ValidatorRegistry, get_global_registry
 from ml.validators import (
     PhoneValidatorPlugin,
     PhoneCorrectorPlugin,
     NumericRangeValidator,
     NumericRangeCorrector,
     EmailValidator,
+    EmailCorrectorPlugin,
     DateValidator
 )
+from ml.validators.base_validators.nlp_universal_validator import UniversalNLPValidator
+from ml.validators.base_validators.nlp_universal_corrector import UniversalNLPCorrector
 
 
 def initialize_validators(registry: ValidatorRegistry = None) -> ValidatorRegistry:
@@ -41,14 +44,14 @@ def initialize_validators(registry: ValidatorRegistry = None) -> ValidatorRegist
 
     # Register Phone Validator and Corrector
     try:
-        phone_validator = PhoneValidatorPlugin('saved_models/phone_validator_model.pkl')
+        phone_validator = PhoneValidatorPlugin('ml/models/phone_validator.pkl')
         registry.register_validator('phone', phone_validator)
         print(f"[OK] Phone Validator: {('Loaded' if phone_validator.is_model_loaded() else 'Not loaded (train model first)')}")
     except Exception as e:
         print(f"[FAIL] Phone Validator: Failed to initialize - {e}")
 
     try:
-        phone_corrector = PhoneCorrectorPlugin('saved_models/edit_distance_corrector.pkl')
+        phone_corrector = PhoneCorrectorPlugin('ml/models/phone_corrector.pkl')
         registry.register_corrector('phone', phone_corrector)
         print(f"[OK] Phone Corrector: {('Loaded' if phone_corrector.is_model_loaded() else 'Not loaded (train model first)')}")
     except Exception as e:
@@ -80,13 +83,15 @@ def initialize_validators(registry: ValidatorRegistry = None) -> ValidatorRegist
         except Exception as e:
             print(f"[FAIL] Numeric Validator/Corrector ({description}): Failed - {e}")
 
-    # Register Email Validator
+    # Register Email Validator and Corrector
     try:
         email_validator = EmailValidator()
+        email_corrector = EmailCorrectorPlugin()
         registry.register_validator('email', email_validator)
-        print(f"[OK] Email Validator: Ready")
+        registry.register_corrector('email', email_corrector)
+        print(f"[OK] Email Validator/Corrector: Ready (with fuzzy domain matching)")
     except Exception as e:
-        print(f"[FAIL] Email Validator: Failed to initialize - {e}")
+        print(f"[FAIL] Email Validator/Corrector: Failed to initialize - {e}")
 
     # Register Date Validator
     try:
@@ -95,6 +100,22 @@ def initialize_validators(registry: ValidatorRegistry = None) -> ValidatorRegist
         print(f"[OK] Date Validator: Ready")
     except Exception as e:
         print(f"[FAIL] Date Validator: Failed to initialize - {e}")
+
+    # Register Universal NLP Validator and Corrector (for unknown text types)
+    try:
+        nlp_validator = UniversalNLPValidator()
+        nlp_corrector = UniversalNLPCorrector()
+
+        # Register for multiple data types
+        for data_type in ['nlp_text', 'text', 'categorical']:
+            registry.register_validator(data_type, nlp_validator)
+            registry.register_corrector(data_type, nlp_corrector)
+
+        print(f"[OK] NLP Universal Validator/Corrector: Ready")
+        print(f"     - spaCy: {('Available' if nlp_validator.spacy_nlp else 'Not available')}")
+        print(f"     - Sentence Transformers: {('Available' if nlp_validator.sentence_model else 'Not available')}")
+    except Exception as e:
+        print(f"[FAIL] NLP Universal Validator/Corrector: Failed to initialize - {e}")
 
     print("=" * 60)
     print(f"Initialization complete! {len(registry._validators)} validators and {len(registry._correctors)} correctors registered.")

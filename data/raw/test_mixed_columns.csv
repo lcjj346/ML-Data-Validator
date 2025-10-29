@@ -1,5 +1,0 @@
-CustomerID,Daily_Calories,Contact_Phone,Patient_Height_cm,User_Email,Blood_Glucose_Level,Body_Weight_kg
-12345,2100,+1234567890,175,customer@example.com,110,70
-67890,50000,invalid,180,user@gmail.com,95,85
-11111,1800,+6591234567,30,admin@company.com,300,150
-22222,2500,+447700900123,168,test@domain.co.uk,120,62

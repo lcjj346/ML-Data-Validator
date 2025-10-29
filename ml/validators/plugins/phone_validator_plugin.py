@@ -7,7 +7,7 @@ BaseValidator interface, making it compatible with the plugin architecture.
 
 from typing import Any, List, Optional
 from ml.base_validator import BaseValidator, ValidationResult
-from ml.validator import PhoneValidator
+from ml.core.phone_validator import PhoneValidator
 
 
 class PhoneValidatorPlugin(BaseValidator):
@@ -18,7 +18,7 @@ class PhoneValidatorPlugin(BaseValidator):
     new plugin-based architecture.
     """
 
-    def __init__(self, model_path: Optional[str] = 'saved_models/phone_validator_model.pkl'):
+    def __init__(self, model_path: Optional[str] = 'ml/models/phone_validator.pkl'):
         """
         Initialize the phone validator plugin.
 

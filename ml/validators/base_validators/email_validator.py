@@ -154,6 +154,8 @@ class EmailValidator(BaseValidator):
             'yaho.com': 'yahoo.com',
             'outlok.com': 'outlook.com',
             'hotmial.com': 'hotmail.com',
+            'homail.com': 'hotmail.com',  # Added
+            'hotmil.com': 'hotmail.com',  # Added
         }
 
         domain_lower = domain.lower()

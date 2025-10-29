@@ -7,7 +7,7 @@ BaseCorrector interface, making it compatible with the plugin architecture.
 
 from typing import Any, List, Optional
 from ml.base_corrector import BaseCorrector, CorrectionResult
-from ml.edit_distance_corrector import EditDistanceCorrector
+from ml.core.phone_corrector import EditDistanceCorrector
 
 
 class PhoneCorrectorPlugin(BaseCorrector):
@@ -18,7 +18,7 @@ class PhoneCorrectorPlugin(BaseCorrector):
     new plugin-based architecture.
     """
 
-    def __init__(self, model_path: Optional[str] = 'saved_models/edit_distance_corrector.pkl'):
+    def __init__(self, model_path: Optional[str] = 'ml/models/phone_corrector.pkl'):
         """
         Initialize the phone corrector plugin.
 

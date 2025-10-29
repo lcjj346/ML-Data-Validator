@@ -6,12 +6,13 @@ Each validator implements the BaseValidator interface.
 Each corrector implements the BaseCorrector interface.
 """
 
-from ml.validators.phone_validator_plugin import PhoneValidatorPlugin
-from ml.validators.phone_corrector_plugin import PhoneCorrectorPlugin
-from ml.validators.numeric_range_validator import NumericRangeValidator
-from ml.validators.numeric_range_corrector import NumericRangeCorrector
-from ml.validators.email_validator import EmailValidator
-from ml.validators.date_validator import DateValidator
+from ml.validators.plugins.phone_validator_plugin import PhoneValidatorPlugin
+from ml.validators.plugins.phone_corrector_plugin import PhoneCorrectorPlugin
+from ml.validators.base_validators.numeric_range_validator import NumericRangeValidator
+from ml.validators.base_validators.numeric_range_corrector import NumericRangeCorrector
+from ml.validators.base_validators.email_validator import EmailValidator
+from ml.validators.plugins.email_corrector_plugin import EmailCorrectorPlugin
+from ml.validators.base_validators.date_validator import DateValidator
 
 __all__ = [
     'PhoneValidatorPlugin',
@@ -19,5 +20,6 @@ __all__ = [
     'NumericRangeValidator',
     'NumericRangeCorrector',
     'EmailValidator',
+    'EmailCorrectorPlugin',
     'DateValidator',
 ]

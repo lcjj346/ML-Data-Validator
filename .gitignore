@@ -1,20 +1,47 @@
-# Streamlit Cloud config
-.streamlit/
-
-# Model files
-models/
-*.pkl
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
 
-# Data files
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Model files (keep models in git for now)
+# *.pkl
+
+# Data files (keep test data in git)
 # *.csv
 # *.xlsx
 
 # Environment files
 .env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Claude Code workspace
 .claude/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+_old_files_to_delete/
