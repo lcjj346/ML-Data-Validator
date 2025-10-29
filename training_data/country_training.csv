@@ -1,0 +1,31 @@
+text,label
+Singapore,valid
+Malaysia,valid
+USA,valid
+United States,valid
+UK,valid
+United Kingdom,valid
+China,valid
+Japan,valid
+Thailand,valid
+Indonesia,valid
+Philippines,valid
+Vietnam,valid
+India,valid
+Australia,valid
+Canada,valid
+Singaporeee,invalid
+Mallsia,invalid
+UUUUSSA,invalid
+Singapre,invalid
+Malasia,invalid
+Thaland,invalid
+Philipines,invalid
+Austrlia,invalid
+Canda,invalid
+,invalid
+123,invalid
+test,invalid
+abc,invalid
+xxx,invalid
+country,invalid

@@ -1,0 +1,26 @@
+text,label
+user@example.com,valid
+john.doe@company.com,valid
+test123@gmail.com,valid
+admin@website.org,valid
+support@service.net,valid
+info@business.co.uk,valid
+contact@domain.edu,valid
+hello@world.io,valid
+email_test@test.com,valid
+my.email@example.com,valid
+invalid,invalid
+test@,invalid
+@example.com,invalid
+test@@example.com,invalid
+test@example,invalid
+test.example.com,invalid
+test @example.com,invalid
+test@exam ple.com,invalid
+@,invalid
+email,invalid
+test@.com,invalid
+test@example.,invalid
+123,invalid
+abc,invalid
+test@gmial.com,invalid

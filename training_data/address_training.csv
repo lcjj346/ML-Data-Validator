@@ -1,0 +1,25 @@
+text,label
+Blk 123 Ang Mo Kio Ave 3 #01-234,valid
+Blk 456 Jurong West St 42 #12-345,valid
+123 Main Street Singapore 123456,valid
+456 Orchard Road #10-20 Singapore 238877,valid
+Blk 789 Bedok North Ave 4 #05-678,valid
+12 Marina Boulevard #01-01,valid
+50 Raffles Place #25-01,valid
+100 Beach Road #12-34 Singapore 189702,valid
+Blk 234 Clementi Ave 5 #03-456,valid
+999 West Coast Highway #08-90,valid
+123,invalid
+invalid,invalid
+abc,invalid
+test,invalid
+random text,invalid
+12345,invalid
+Singapore,invalid
+Blk,invalid
+#01-234,invalid
+Avenue,invalid
+Street 123,invalid
+Blk abc,invalid
+invalid address,invalid
+test 123,invalid

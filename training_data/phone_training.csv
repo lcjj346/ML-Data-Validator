@@ -1,0 +1,26 @@
+text,label
++6591234567,valid
++65 9123 4567,valid
++65-9123-4567,valid
++1234567890,valid
++12345678901,valid
++44 20 1234 5678,valid
++61 2 1234 5678,valid
++81-3-1234-5678,valid
+(65) 9123 4567,valid
+65 9123 4567,valid
+123,invalid
+abc,invalid
++,invalid
+invalid_phone,invalid
+12345,invalid
+++65,invalid
+phone123,invalid
+test,invalid
++65 abc,invalid
+@#$%,invalid
+123456,invalid
++6,invalid
+call me,invalid
+phone number,invalid
+65-123,invalid
