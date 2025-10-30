@@ -1,5 +1,5 @@
 """
-Simple ML Data Validator - Streamlit App
+ML Data Validator - Streamlit App
 
 A clean, focused ML validator:
 - Train on YOUR data
@@ -18,7 +18,7 @@ from ml.validator import GenericMLValidator
 from ml.corrector import GenericMLCorrector
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
-st.set_page_config(page_title="Simple ML Validator", layout="wide")
+st.set_page_config(page_title="ML Validator", layout="wide")
 
 # Hide Streamlit's automatic header anchor links
 st.markdown("""
@@ -200,9 +200,9 @@ with tab_validate:
             # Show editable table with cell-level coloring using AgGrid
             st.subheader("Validation Results")
 
-            # Create display dataframe with index column
+            # Create display dataframe with index column (starting from 1)
             df_for_display = df_display.copy()
-            df_for_display.insert(0, 'Index', df_for_display.index)
+            df_for_display.insert(0, 'Index', df_for_display.index + 1)
 
             # Configure AgGrid
             gb = GridOptionsBuilder.from_dataframe(df_for_display)
@@ -369,6 +369,9 @@ with tab_validate:
                 if pending_corrections:
                     st.subheader("Suggested Corrections")
 
+                    # Sort corrections by row number
+                    pending_corrections = sorted(pending_corrections, key=lambda x: x['Row'])
+
                     # Count corrections that can be applied
                     applicable_corrections = [c for c in pending_corrections if c['Has Correction']]
 
@@ -503,7 +506,6 @@ with tab_train:
 
                     st.success(f"Validator trained and saved to {validator_path}!")
                     st.success(f"Corrector saved to {corrector_path}!")
-                    st.balloons()
 
         else:
             st.error("CSV must have columns: 'text' and 'label'")
