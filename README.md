@@ -1,26 +1,5 @@
 # ML Data Validator
 
-**Train on YOUR data → Validate ANY column type → Get corrections**
-
-A pure ML approach for data validation. No pre-trained models, no complex registry, just clean ML trained on YOUR examples.
-
-## What Changed?
-
-### Before (Complex)
-
-- 22+ Python files across multiple layers
-- Plugin architecture with registry system
-- NLP validators using pre-trained models
-- Auto column detection
-- Over-engineered abstractions
-
-### After (Simple)
-
-- **4 core files** in `ml/` directory
-- Generic ML pipeline for ANY data type
-- Train on YOUR data, YOUR examples
-- Clean, focused, easy to understand (~1,250 lines total)
-
 ## Quick Start
 
 ### 1. Setup Environment
@@ -44,8 +23,6 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-
-The app will open at http://localhost:8501
 
 ### 3. Train Your First Model
 
@@ -114,9 +91,9 @@ ml-data-validator/
 │   └── country_corrector.pkl
 │
 ├── training_data/              # Training datasets (4 CSV files)
-│   ├── phone_training.csv      # 906 examples (426 valid, 480 invalid)
-│   ├── email_training.csv      # 214 examples (41 valid, 173 invalid)
-│   ├── name_training.csv       # 210 examples (158 valid, 52 invalid)
+│   ├── phone_training.csv      # 906 examples
+│   ├── email_training.csv      # 214 examples
+│   ├── name_training.csv       # 210 examples
 │   └── country_training.csv    # Country names
 │
 ├── test_data/                  # Sample test data
@@ -140,7 +117,7 @@ Extracts **47+ generic features** from ANY text:
 - **Domain Keywords (13)**: blk, ave, road, com, net, org, @, +, #, etc.
 - **Character N-grams (6)**: repeated chars, bigram frequency, char variety, vowel ratio, etc.
 
-**Key Insight**: The SAME feature extractor works for phone numbers, emails, addresses, names, or ANY custom format!
+**Key Insight**: The SAME feature extractor works for phone numbers, emails, names, or ANY custom format
 
 #### 2. Validation (`validator.py`)
 
@@ -271,8 +248,7 @@ Train validators for:
 - Person names
 - Company/product names
 - Dates, codes, IDs
-- Custom business formats
-- **Whatever you teach it!**
+- Custom business formatss
 
 ## Usage Examples
 
@@ -450,32 +426,6 @@ ml-data-validator/
 └── test_data/             # Your test files
 ```
 
-### Extending the System
-
-**Add custom features** (ml/feature_extractor.py:212):
-
-```python
-def extract_features(self, text: str) -> List[float]:
-    # Add your custom features here
-    features.append(your_custom_feature(text))
-```
-
-**Change ML algorithm** (ml/validator.py:256):
-
-```python
-# Replace LogisticRegression with your preferred classifier
-from sklearn.ensemble import RandomForestClassifier
-self.model = RandomForestClassifier()
-```
-
-**Enhance corrections** (ml/corrector.py:225):
-
-```python
-# Add custom correction logic
-def correct(self, text: str) -> Optional[str]:
-    # Your correction algorithm here
-```
-
 ## FAQ
 
 **Q: Do I need to provide training data?**
@@ -486,11 +436,6 @@ A: Minimum 50-100 examples (mix of valid and invalid). More is better. Our phone
 
 **Q: Can I validate multiple data types in one CSV?**
 A: Yes! Map different columns to different validators. For example: phone column → phone validator, email column → email validator.
-
-**Q: How do I improve accuracy?**
-A: Add more training examples, especially edge cases. The model learns from your examples, so quality and quantity matter.
-
-The code is intentionally simple and well-documented. To understand how it works:
 
 1. **Start with** `app.py` - See the UI flow and user interactions
 2. **Then read** `ml/validator.py` - Understand the validation logic
