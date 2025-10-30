@@ -7,6 +7,7 @@ A pure ML approach for data validation. No pre-trained models, no complex regist
 ## What Changed?
 
 ### Before (Complex)
+
 - 22+ Python files across multiple layers
 - Plugin architecture with registry system
 - NLP validators using pre-trained models
@@ -14,6 +15,7 @@ A pure ML approach for data validation. No pre-trained models, no complex regist
 - Over-engineered abstractions
 
 ### After (Simple)
+
 - **4 core files** in `ml/` directory
 - Generic ML pipeline for ANY data type
 - Train on YOUR data, YOUR examples
@@ -50,10 +52,11 @@ The app will open at http://localhost:8501
 **Tab: Train Models**
 
 1. Prepare a CSV file with 2 columns:
-   - `text`: Your data (phone numbers, emails, addresses, etc.)
+   - `text`: Your data (phone numbers, emails, names, etc.)
    - `label`: Either "valid" or "invalid"
 
 Example CSV (`training_data/phone_training.csv`):
+
 ```csv
 text,label
 +6591234567,valid
@@ -63,7 +66,7 @@ abc,invalid
 ```
 
 2. Upload the CSV in the "Train Models" tab
-3. Give your model a name (e.g., "phone", "email", "address")
+3. Give your model a name (e.g., "phone", "email", "name")
 4. Click "Train Validator"
 5. Done! Your model is saved to `models/`
 
@@ -105,33 +108,32 @@ ml-data-validator/
 │   ├── phone_corrector.pkl
 │   ├── email_validator.pkl
 │   ├── email_corrector.pkl
-│   ├── address_validator.pkl
-│   ├── address_corrector.pkl
+│   ├── name_validator.pkl
+│   ├── name_corrector.pkl
 │   ├── country_validator.pkl
 │   └── country_corrector.pkl
 │
 ├── training_data/              # Training datasets (4 CSV files)
 │   ├── phone_training.csv      # 906 examples (426 valid, 480 invalid)
 │   ├── email_training.csv      # 214 examples (41 valid, 173 invalid)
-│   ├── address_training.csv    # Singapore address formats
+│   ├── name_training.csv       # 210 examples (158 valid, 52 invalid)
 │   └── country_training.csv    # Country names
 │
 ├── test_data/                  # Sample test data
-│   └── sample_phonecountry.csv # Multi-column test file (phone, country, email)
+│   └── sample.csv              # Multi-column test file (phone, country, email, name)
 │
 └── venv/                       # Virtual environment (git ignored)
 ```
 
-**Total: ~1,250 lines of clean, focused code**
-**No complex architecture, no unnecessary abstractions**
-
 ### How It Works
 
 #### 1. Feature Extraction (`feature_extractor.py`)
+
 Extracts **47+ generic features** from ANY text:
+
 - **Length Features (3)**: total length, word count, comma-separated parts
 - **Character Type Ratios (5)**: digit%, letter%, space%, uppercase%, lowercase%
-- **Special Character Counts (9)**: +, @, ., #, -, _, (, ), /
+- **Special Character Counts (9)**: +, @, ., #, -, \_, (, ), /
 - **Position Features (5)**: starts with uppercase/digit/+, ends with digit/letter
 - **Pattern Features (6)**: email-like, phone-like, mixed alphanumeric, etc.
 - **Regex Patterns (3)**: digit sequences, capitalized words, long digits
@@ -141,6 +143,7 @@ Extracts **47+ generic features** from ANY text:
 **Key Insight**: The SAME feature extractor works for phone numbers, emails, addresses, names, or ANY custom format!
 
 #### 2. Validation (`validator.py`)
+
 - **Algorithm**: Logistic Regression (scikit-learn)
 - **Training**: Learns from YOUR examples (text, label pairs)
 - **Output**: `(is_valid: bool, confidence: float)`
@@ -148,6 +151,7 @@ Extracts **47+ generic features** from ANY text:
 - **Storage**: Saves/loads models as .pkl files using joblib
 
 #### 3. Correction (`corrector.py`)
+
 - **Algorithm**: Similarity-based matching using difflib's SequenceMatcher
 - **Method**: Finds most similar valid example from training data
 - **Threshold**: 0.6 (configurable)
@@ -155,6 +159,7 @@ Extracts **47+ generic features** from ANY text:
 - **Learning**: Uses valid examples from your training data
 
 #### 4. UI (`app.py`)
+
 - **Framework**: Streamlit with streamlit-aggrid for editable grids
 - **Two Tabs**:
   - **Validate Data**: Upload CSV, map columns, validate, apply corrections, export
@@ -172,12 +177,14 @@ Extracts **47+ generic features** from ANY text:
 ### Included Training Data (`training_data/`)
 
 #### Phone Numbers (`phone_training.csv`)
+
 - **Total**: 906 examples
 - **Valid**: 426 (Singapore +65, USA +1, UK +44 formats)
 - **Invalid**: 480 (short numbers, text, special chars)
 - **Formats**: International (+65 9123 4567), US (+1 (123) 456-7890), UK (+44 1234 567890), Local (9123 4567)
 
 #### Email Addresses (`email_training.csv`)
+
 - **Total**: 214 examples (41 valid, 173 invalid)
 - **Valid**: Standard emails across common domains (gmail, yahoo, outlook, hotmail, etc.)
 - **Invalid - Domain Typos**: Each valid username has typo variants (e.g., `alice@yahooo.com` → `alice@yahoo.com`)
@@ -187,32 +194,38 @@ Extracts **47+ generic features** from ANY text:
   - ✅ `admin@gmial.com` → `admin@gmail.com` (only domain fixed)
   - ❌ NOT `user123@mail.com` → `user@gmail.com` (different username)
 
-#### Singapore Addresses (`address_training.csv`)
-- **Examples**: 50+ Singapore addresses
-- **Format**: "Blk 123 Ang Mo Kio Ave 3 #01-234"
-- **Patterns**: HDB blocks, street addresses, unit numbers
+#### Person Names (`name_training.csv`)
+
+- **Total**: 210 examples (158 valid, 52 invalid)
+- **Valid**: Full names with first and last name (e.g., John Smith, Mary Johnson, David Lee)
+- **Invalid - Format Issues**: Single names only, all caps (JOHN SMITH), mixed case (john SMITH), extra spaces
+- **Invalid - Content Issues**: Numbers in name, special characters, prefixes (Dr, Mr), suffixes (Jr, III)
+- **Key Feature**: Validates proper name formatting (Title Case, two parts minimum)
 
 #### Country Names (`country_training.csv`)
+
 - **Examples**: 50+ country names
 - **Coverage**: Singapore, Malaysia, USA, UK, major countries worldwide
 
 ### Pre-trained Models (`models/`)
 
 We've included **8 pre-trained models** (4 validators + 4 correctors):
+
 1. **phone** - Phone number validation & correction
 2. **email** - Email address validation & correction
-3. **address** - Singapore address validation & correction
+3. **name** - Person name validation & correction
 4. **country** - Country name validation & correction
 
 You can use these immediately or train your own for custom data types!
 
 ### Sample Test Data (`test_data/`)
 
-- `sample_phonecountry.csv` - Multi-column test file with phones, countries, and emails (14 rows with intentional errors for testing)
+- `sample.csv` - Multi-column test file with phones, countries, emails, and names (14 rows with intentional errors for testing)
 
 ## Key Features
 
 ### 1. Generic ML Pipeline
+
 - **No hardcoded rules** - Pure feature-based learning
 - **No domain-specific logic** - Works for ANY data type
 - **Train on YOUR data** - Learns YOUR specific patterns
@@ -220,12 +233,14 @@ You can use these immediately or train your own for custom data types!
 - **High accuracy** - Achieves excellent results on training data
 
 ### 2. Smart Correction System
+
 - **Similarity-based** - Finds most similar valid examples
 - **Learns from your data** - Uses valid examples as reference
 - **Configurable threshold** - Adjust sensitivity (default: 0.6)
 - **Fast suggestions** - Real-time correction recommendations
 
 ### 3. Multi-Column Validation
+
 - **Validate multiple columns** - Different validators per column
 - **Cell-level tracking** - Not just row-level validation
 - **Interactive editing** - Click any cell to modify
@@ -233,6 +248,7 @@ You can use these immediately or train your own for custom data types!
 - **Quality metrics** - Valid/invalid percentages
 
 ### 4. Simple & Clean Architecture
+
 - **4 core files** instead of 22
 - **~1,250 lines** of clean code
 - **Easy to understand** - No complex abstractions
@@ -240,17 +256,20 @@ You can use these immediately or train your own for custom data types!
 - **Well-documented** - Comprehensive docstrings
 
 ### 5. Private & Secure
+
 - **100% local** - No API calls, no cloud services
 - **Your data stays yours** - Never leaves your machine
 - **No telemetry** - No usage tracking
 - **Open source** - Full transparency
 
 ### 6. Works for ANY Data Type
+
 Train validators for:
+
 - Phone numbers (any country format)
 - Email addresses
-- Postal addresses
-- Names (person, company, product)
+- Person names
+- Company/product names
 - Dates, codes, IDs
 - Custom business formats
 - **Whatever you teach it!**
@@ -337,6 +356,7 @@ print(f"Corrected: {corrected}")  # "1234567390"
 ## Tech Stack
 
 ### Core Technologies
+
 - **Python 3.8+** (tested on 3.10.7)
 - **Streamlit 1.28.0+** - Web UI framework
 - **scikit-learn 1.3.0+** - ML algorithms (Logistic Regression)
@@ -344,37 +364,22 @@ print(f"Corrected: {corrected}")  # "1234567390"
 - **numpy 1.24.0+** (pinned < 2.0 for compatibility)
 
 ### Machine Learning
+
 - **Logistic Regression** (scikit-learn) - Binary classification for validation
 - **difflib** (built-in Python) - Similarity matching for corrections
 
 ### UI Components
+
 - **streamlit-aggrid 0.3.4** - Interactive editable data grid
 - **streamlit-javascript** - JS integration for enhanced UX
 
 ### Utilities
+
 - **joblib 1.3.0** - Model serialization (pickle alternative)
 - **openpyxl 3.1.0+** - Excel file support (.xlsx)
 - **xlrd 2.0.0+** - Legacy Excel support (.xls)
 
 **Total**: ~10-12 core packages, lightweight installation
-
-## Testing Components
-
-Test each component independently:
-
-```bash
-# Test feature extractor (extracts 47+ features)
-python -m ml.feature_extractor
-
-# Test validator (trains and validates)
-python -m ml.validator
-
-# Test corrector (similarity-based corrections)
-python -m ml.corrector
-
-# Run the full app
-streamlit run app.py
-```
 
 ## Next Steps
 
@@ -386,24 +391,25 @@ streamlit run app.py
 
 ## Comparison: Before vs After Revamp
 
-| Aspect | Before (Complex) | After (Simple) |
-|--------|------------------|----------------|
-| **Files** | 22+ files across multiple layers | 4 core files + 1 app |
-| **Lines of Code** | ~3,000+ lines | ~1,250 lines |
-| **Architecture** | 3 layers (core → plugins → base_validators) | Single layer (ml/) |
-| **Dependencies** | Many heavy libraries (spaCy, transformers, torch) | Lightweight (scikit-learn, pandas, streamlit) |
-| **Approach** | Pre-trained NLP models | Train on YOUR data |
-| **Registry** | Complex plugin registry system | No registry needed |
-| **Column Detection** | Automatic (adds complexity) | Manual mapping (explicit control) |
-| **Understanding** | Hard to navigate and modify | Easy to read and customize |
-| **Validation** | Row-level only | Cell-level validation |
-| **UI** | Basic display | Interactive editable grid |
+| Aspect               | Before (Complex)                                  | After (Simple)                                |
+| -------------------- | ------------------------------------------------- | --------------------------------------------- |
+| **Files**            | 22+ files across multiple layers                  | 4 core files + 1 app                          |
+| **Lines of Code**    | ~3,000+ lines                                     | ~1,250 lines                                  |
+| **Architecture**     | 3 layers (core → plugins → base_validators)       | Single layer (ml/)                            |
+| **Dependencies**     | Many heavy libraries (spaCy, transformers, torch) | Lightweight (scikit-learn, pandas, streamlit) |
+| **Approach**         | Pre-trained NLP models                            | Train on YOUR data                            |
+| **Registry**         | Complex plugin registry system                    | No registry needed                            |
+| **Column Detection** | Automatic (adds complexity)                       | Manual mapping (explicit control)             |
+| **Understanding**    | Hard to navigate and modify                       | Easy to read and customize                    |
+| **Validation**       | Row-level only                                    | Cell-level validation                         |
+| **UI**               | Basic display                                     | Interactive editable grid                     |
 
 ## Design Philosophy
 
 ### "Train on YOUR data, validate forever"
 
 **What we removed:**
+
 - Plugin architecture (unnecessary abstraction)
 - Pre-trained NLP models (not flexible for your patterns)
 - Registry system (over-engineered)
@@ -411,6 +417,7 @@ streamlit run app.py
 - Multiple layers of indirection
 
 **What we kept and improved:**
+
 - Pure ML approach (Logistic Regression)
 - Generic feature extraction (works for ANY data type)
 - Training on user's data (your examples, your patterns)
@@ -419,6 +426,7 @@ streamlit run app.py
 - Clean, interactive UI
 
 **Core principles:**
+
 1. **Simplicity over complexity** - Fewer files, cleaner code
 2. **Transparency over magic** - Explicit is better than implicit
 3. **Flexibility over assumptions** - Train on your data, your way
@@ -428,6 +436,7 @@ streamlit run app.py
 ## Development & Contributing
 
 ### Project Structure
+
 ```
 ml-data-validator/
 ├── ml/                     # Core ML package - modify these for custom features
@@ -444,6 +453,7 @@ ml-data-validator/
 ### Extending the System
 
 **Add custom features** (ml/feature_extractor.py:212):
+
 ```python
 def extract_features(self, text: str) -> List[float]:
     # Add your custom features here
@@ -451,6 +461,7 @@ def extract_features(self, text: str) -> List[float]:
 ```
 
 **Change ML algorithm** (ml/validator.py:256):
+
 ```python
 # Replace LogisticRegression with your preferred classifier
 from sklearn.ensemble import RandomForestClassifier
@@ -458,20 +469,17 @@ self.model = RandomForestClassifier()
 ```
 
 **Enhance corrections** (ml/corrector.py:225):
+
 ```python
 # Add custom correction logic
 def correct(self, text: str) -> Optional[str]:
     # Your correction algorithm here
 ```
 
-### Git Branches
-- `main` - Stable release branch
-- `Revamp` - Current development branch (revamped architecture)
-
 ## FAQ
 
 **Q: Do I need to provide training data?**
-A: Yes, but we include 4 pre-trained models (phone, email, address, country) with 2,000+ training examples. You can use these immediately or train your own.
+A: Yes, but we include 4 pre-trained models (phone, email, name, country) with 1,500+ training examples. You can use these immediately or train your own.
 
 **Q: How much training data do I need?**
 A: Minimum 50-100 examples (mix of valid and invalid). More is better. Our phone validator uses 906 examples and achieves high accuracy.
@@ -479,23 +487,8 @@ A: Minimum 50-100 examples (mix of valid and invalid). More is better. Our phone
 **Q: Can I validate multiple data types in one CSV?**
 A: Yes! Map different columns to different validators. For example: phone column → phone validator, email column → email validator.
 
-**Q: What if my data format is unique?**
-A: Just create training data with your examples and train a custom validator. The generic feature extractor works for ANY text format.
-
-**Q: Is this production-ready?**
-A: Yes! The code is clean, tested, and includes error handling. It's currently used for validating real-world datasets.
-
 **Q: How do I improve accuracy?**
 A: Add more training examples, especially edge cases. The model learns from your examples, so quality and quantity matter.
-
-**Q: Can I use this offline?**
-A: Yes! 100% local, no internet required (except initial pip install).
-
-## License
-
-This project is open source. Use it, modify it, learn from it!
-
-## Support
 
 The code is intentionally simple and well-documented. To understand how it works:
 
@@ -503,5 +496,3 @@ The code is intentionally simple and well-documented. To understand how it works
 2. **Then read** `ml/validator.py` - Understand the validation logic
 3. **Check** `ml/feature_extractor.py` - See what features are extracted
 4. **Finally** `ml/corrector.py` - Understand correction suggestions
-
-Everything is straightforward with comprehensive docstrings and comments!

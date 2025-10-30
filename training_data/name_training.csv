@@ -1,0 +1,211 @@
+text,label
+John Smith,valid
+Mary Johnson,valid
+David Lee,valid
+Sarah Chen,valid
+Michael Brown,valid
+Jennifer Garcia,valid
+Robert Wilson,valid
+Lisa Martinez,valid
+William Anderson,valid
+Patricia Taylor,valid
+James Thomas,valid
+Elizabeth Moore,valid
+Christopher Jackson,valid
+Maria Rodriguez,valid
+Daniel White,valid
+Jessica Harris,valid
+Matthew Clark,valid
+Nancy Lewis,valid
+Anthony Robinson,valid
+Karen Walker,valid
+Mark Young,valid
+Betty King,valid
+Donald Wright,valid
+Helen Lopez,valid
+Steven Hill,valid
+Susan Green,valid
+Paul Adams,valid
+Dorothy Baker,valid
+Andrew Nelson,valid
+Margaret Mitchell,valid
+Joshua Roberts,valid
+Linda Turner,valid
+Kenneth Phillips,valid
+Barbara Campbell,valid
+Kevin Parker,valid
+Sandra Evans,valid
+Brian Edwards,valid
+Ashley Collins,valid
+George Stewart,valid
+Kimberly Morris,valid
+Edward Rogers,valid
+Donna Reed,valid
+Ronald Cook,valid
+Carol Morgan,valid
+Timothy Bell,valid
+Michelle Murphy,valid
+Jason Bailey,valid
+Emily Rivera,valid
+Jeffrey Cooper,valid
+Melissa Richardson,valid
+Ryan Cox,valid
+Deborah Howard,valid
+Gary Ward,valid
+Stephanie Torres,valid
+Jacob Peterson,valid
+Rebecca Gray,valid
+Nicholas Ramirez,valid
+Sharon James,valid
+Eric Watson,valid
+Cynthia Brooks,valid
+Jonathan Kelly,valid
+Kathleen Sanders,valid
+Stephen Price,valid
+Amy Bennett,valid
+Larry Wood,valid
+Angela Barnes,valid
+Justin Ross,valid
+Shirley Henderson,valid
+Scott Coleman,valid
+Anna Jenkins,valid
+Brandon Perry,valid
+Brenda Powell,valid
+Benjamin Long,valid
+Pamela Patterson,valid
+Samuel Hughes,valid
+Martha Flores,valid
+Frank Washington,valid
+Debra Butler,valid
+Raymond Simmons,valid
+Catherine Foster,valid
+Patrick Gonzales,valid
+Janet Bryant,valid
+Alexander Russell,valid
+Carolyn Griffin,valid
+Jack Hayes,valid
+Frances Diaz,valid
+Dennis Myers,valid
+Heather Ford,valid
+Jerry Hamilton,valid
+Diane Graham,valid
+Tyler Sullivan,valid
+Joyce Wallace,valid
+Aaron Woods,valid
+Alice Cole,valid
+Jose West,valid
+Julie Jordan,valid
+Adam Owens,valid
+Evelyn Reynolds,valid
+Nathan Fisher,valid
+Christine Ellis,valid
+Zachary Gibson,valid
+Victoria Snyder,valid
+Kyle Porter,valid
+Megan Webb,valid
+Douglas Payne,valid
+Lauren Grant,valid
+Henry Dunn,valid
+Amber Hart,valid
+Peter Lawson,valid
+Theresa Hunt,valid
+Carl Stone,valid
+Sara Chapman,valid
+Arthur Fox,valid
+Cheryl Lane,valid
+Sean Fuller,valid
+Marie Armstrong,valid
+Russell Chapman,valid
+Denise Curry,valid
+Austin Pierce,valid
+Ruth Harvey,valid
+Jesse Reid,valid
+Christina Hanson,valid
+Joe Walsh,valid
+Jacqueline Mason,valid
+Billy Duncan,valid
+Gloria Sims,valid
+Albert Meyer,valid
+Doris Crawford,valid
+Willie Pearson,valid
+Jean Kelley,valid
+Jeremy Fuller,valid
+Kathryn Garrett,valid
+Keith Holmes,valid
+Kelly Greene,valid
+Terry Hicks,valid
+Rachel Shaw,valid
+Gerald Lynch,valid
+Judy Carr,valid
+Harold Knight,valid
+Ann Elliott,valid
+Roger Francis,valid
+Madison Hunter,valid
+Dylan Spencer,valid
+Olivia Harper,valid
+Ethan Morrison,valid
+Sophia Hayes,valid
+Noah Kennedy,valid
+Isabella Wells,valid
+Logan Murphy,valid
+Mia Brooks,valid
+Lucas Rivera,valid
+Charlotte Cooper,valid
+Aiden Bailey,valid
+Amelia Coleman,valid
+Liam Foster,valid
+Harper Russell,valid
+Mason Griffin,valid
+Ella Simmons,valid
+123,invalid
+abc,invalid
+test,invalid
+invalid,invalid
+12345,invalid
+random,invalid
+text123,invalid
+john,invalid
+SMITH,invalid
+john smith 123,invalid
+@#$%,invalid
+.,invalid
+123456789,invalid
+test123,invalid
+xyz,invalid
+name,invalid
+user,invalid
+admin,invalid
+John,invalid
+Smith,invalid
+JOHN SMITH,invalid
+john SMITH,invalid
+JoHn SmItH,invalid
+  John Smith  ,invalid
+John  Smith,invalid
+John Smith Jr,invalid
+Dr John Smith,invalid
+Mr John Smith,invalid
+John Smith III,invalid
+John-Smith,invalid
+John_Smith,invalid
+john.smith,invalid
+john@smith,invalid
+John Smith1,invalid
+John Smith2,invalid
+1John Smith,invalid
+John Smith!,invalid
+John#Smith,invalid
+John$Smith,invalid
+John%Smith,invalid
+J Smith,invalid
+John S,invalid
+J S,invalid
+JohnSmith,invalid
+johnsmith,invalid
+JOHNSMITH,invalid
+John   Smith,invalid
+ John Smith,invalid
+John Smith ,invalid
+		John Smith,invalid
+John		Smith,invalid
+John Smith		,invalid
