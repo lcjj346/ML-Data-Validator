@@ -35,7 +35,7 @@ class GenericMLValidator:
         Args:
             model_path: Path to load trained model (optional)
         """
-        self.model = LogisticRegression(max_iter=1000, random_state=42)
+        self.model = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced')
         self.feature_extractor = GenericFeatureExtractor()
         self.is_trained = False
         self.model_path = model_path

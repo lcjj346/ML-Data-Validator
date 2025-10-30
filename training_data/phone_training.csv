@@ -24,3 +24,883 @@ test,invalid
 call me,invalid
 phone number,invalid
 65-123,invalid
++65 8685 9094,valid
++6586859094,valid
+8685 9094,valid
++65 6108 5295,valid
++6561085295,valid
+6108 5295,valid
++65 8781 5774,valid
++6587815774,valid
+8781 5774,valid
++65 6146 8728,valid
++6561468728,valid
+6146 8728,valid
++65 6650 1477,valid
++6566501477,valid
+6650 1477,valid
++65 6189 2624,valid
++6561892624,valid
+6189 2624,valid
++65 8377 2903,valid
++6583772903,valid
+8377 2903,valid
++65 8771 1735,valid
++6587711735,valid
+8771 1735,valid
++65 8021 3709,valid
++6580213709,valid
+8021 3709,valid
++65 9774 4107,valid
++6597744107,valid
+9774 4107,valid
++65 9773 9906,valid
++6597739906,valid
+9773 9906,valid
++65 8320 8589,valid
++6583208589,valid
+8320 8589,valid
++65 6333 6936,valid
++6563336936,valid
+6333 6936,valid
++65 8814 8513,valid
++6588148513,valid
+8814 8513,valid
++65 8823 2557,valid
++6588232557,valid
+8823 2557,valid
++65 8887 6263,valid
++6588876263,valid
+8887 6263,valid
++65 6305 6748,valid
++6563056748,valid
+6305 6748,valid
++65 9787 2419,valid
++6597872419,valid
+9787 2419,valid
++65 8771 3751,valid
++6587713751,valid
+8771 3751,valid
++65 9162 7814,valid
++6591627814,valid
+9162 7814,valid
++65 8369 6886,valid
++6583696886,valid
+8369 6886,valid
++65 9243 7521,valid
++6592437521,valid
+9243 7521,valid
++65 9222 5055,valid
++6592225055,valid
+9222 5055,valid
++65 8787 9919,valid
++6587879919,valid
+8787 9919,valid
++65 6495 6486,valid
++6564956486,valid
+6495 6486,valid
++65 8496 6509,valid
++6584966509,valid
+8496 6509,valid
++65 6110 9245,valid
++6561109245,valid
+6110 9245,valid
++65 6694 0279,valid
++6566940279,valid
+6694 0279,valid
++65 6676 3860,valid
++6566763860,valid
+6676 3860,valid
++65 6540 8236,valid
++6565408236,valid
+6540 8236,valid
++65 9264 8364,valid
++6592648364,valid
+9264 8364,valid
++65 9464 9247,valid
++6594649247,valid
+9464 9247,valid
++65 6730 9560,valid
++6567309560,valid
+6730 9560,valid
++65 6046 2672,valid
++6560462672,valid
+6046 2672,valid
++65 6383 9539,valid
++6563839539,valid
+6383 9539,valid
++65 9603 9910,valid
++6596039910,valid
+9603 9910,valid
++65 9990 8472,valid
++6599908472,valid
+9990 8472,valid
++65 9197 4369,valid
++6591974369,valid
+9197 4369,valid
++65 9200 0761,valid
++6592000761,valid
+9200 0761,valid
++65 6380 8600,valid
++6563808600,valid
+6380 8600,valid
++65 6404 9273,valid
++6564049273,valid
+6404 9273,valid
++65 9646 0751,valid
++6596460751,valid
+9646 0751,valid
++65 6300 1879,valid
++6563001879,valid
+6300 1879,valid
++65 8114 9034,valid
++6581149034,valid
+8114 9034,valid
++65 9839 7677,valid
++6598397677,valid
+9839 7677,valid
++65 9706 6672,valid
++6597066672,valid
+9706 6672,valid
++65 8277 1766,valid
++6582771766,valid
+8277 1766,valid
++65 9349 5597,valid
++6593495597,valid
+9349 5597,valid
++65 9699 9915,valid
++6596999915,valid
+9699 9915,valid
++65 8610 2740,valid
++6586102740,valid
+8610 2740,valid
++1 (611) 868-4094,valid
++1-611-868-4094,valid
+(611) 868-4094,valid
++1 (787) 253-5176,valid
++1-787-253-5176,valid
+(787) 253-5176,valid
++1 (123) 225-1717,valid
++1-123-225-1717,valid
+(123) 225-1717,valid
++1 (148) 238-2693,valid
++1-148-238-2693,valid
+(148) 238-2693,valid
++1 (997) 901-2148,valid
++1-997-901-2148,valid
+(997) 901-2148,valid
++1 (579) 075-4411,valid
++1-579-075-4411,valid
+(579) 075-4411,valid
++1 (938) 422-6891,valid
++1-938-422-6891,valid
+(938) 422-6891,valid
++1 (978) 194-8540,valid
++1-978-194-8540,valid
+(978) 194-8540,valid
++1 (853) 306-0583,valid
++1-853-306-0583,valid
+(853) 306-0583,valid
++1 (422) 650-5945,valid
++1-422-650-5945,valid
+(422) 650-5945,valid
++1 (913) 603-1320,valid
++1-913-603-1320,valid
+(913) 603-1320,valid
++1 (230) 653-8411,valid
++1-230-653-8411,valid
+(230) 653-8411,valid
++1 (589) 175-8559,valid
++1-589-175-8559,valid
+(589) 175-8559,valid
++1 (220) 478-7599,valid
++1-220-478-7599,valid
+(220) 478-7599,valid
++1 (645) 627-2301,valid
++1-645-627-2301,valid
+(645) 627-2301,valid
++1 (008) 678-5436,valid
++1-008-678-5436,valid
+(008) 678-5436,valid
++1 (602) 546-1407,valid
++1-602-546-1407,valid
+(602) 546-1407,valid
++1 (534) 504-9834,valid
++1-534-504-9834,valid
+(534) 504-9834,valid
++1 (142) 642-6519,valid
++1-142-642-6519,valid
+(142) 642-6519,valid
++1 (343) 939-5410,valid
++1-343-939-5410,valid
+(343) 939-5410,valid
++1 (846) 557-8170,valid
++1-846-557-8170,valid
+(846) 557-8170,valid
++1 (300) 554-9842,valid
++1-300-554-9842,valid
+(300) 554-9842,valid
++1 (401) 563-2938,valid
++1-401-563-2938,valid
+(401) 563-2938,valid
++1 (286) 158-1510,valid
++1-286-158-1510,valid
+(286) 158-1510,valid
++1 (599) 658-6755,valid
++1-599-658-6755,valid
+(599) 658-6755,valid
++1 (944) 010-8426,valid
++1-944-010-8426,valid
+(944) 010-8426,valid
++1 (488) 713-0565,valid
++1-488-713-0565,valid
+(488) 713-0565,valid
++1 (440) 906-5043,valid
++1-440-906-5043,valid
+(440) 906-5043,valid
++1 (581) 383-5110,valid
++1-581-383-5110,valid
+(581) 383-5110,valid
++1 (760) 962-1221,valid
++1-760-962-1221,valid
+(760) 962-1221,valid
++1 (348) 706-8048,valid
++1-348-706-8048,valid
+(348) 706-8048,valid
++1 (290) 020-3030,valid
++1-290-020-3030,valid
+(290) 020-3030,valid
++1 (977) 806-0583,valid
++1-977-806-0583,valid
+(977) 806-0583,valid
++1 (021) 272-7766,valid
++1-021-272-7766,valid
+(021) 272-7766,valid
++1 (135) 027-0098,valid
++1-135-027-0098,valid
+(135) 027-0098,valid
++1 (364) 856-8344,valid
++1-364-856-8344,valid
+(364) 856-8344,valid
++1 (062) 657-6265,valid
++1-062-657-6265,valid
+(062) 657-6265,valid
++1 (158) 655-3688,valid
++1-158-655-3688,valid
+(158) 655-3688,valid
++1 (165) 738-4266,valid
++1-165-738-4266,valid
+(165) 738-4266,valid
++1 (839) 775-8221,valid
++1-839-775-8221,valid
+(839) 775-8221,valid
++1 (822) 464-6034,valid
++1-822-464-6034,valid
+(822) 464-6034,valid
++1 (276) 282-0330,valid
++1-276-282-0330,valid
+(276) 282-0330,valid
++1 (947) 620-5933,valid
++1-947-620-5933,valid
+(947) 620-5933,valid
++1 (735) 980-4027,valid
++1-735-980-4027,valid
+(735) 980-4027,valid
++1 (618) 846-9938,valid
++1-618-846-9938,valid
+(618) 846-9938,valid
++1 (833) 615-2684,valid
++1-833-615-2684,valid
+(833) 615-2684,valid
++1 (131) 246-9471,valid
++1-131-246-9471,valid
+(131) 246-9471,valid
++1 (879) 165-8610,valid
++1-879-165-8610,valid
+(879) 165-8610,valid
++1 (312) 540-5980,valid
++1-312-540-5980,valid
+(312) 540-5980,valid
++1 (877) 255-5756,valid
++1-877-255-5756,valid
+(877) 255-5756,valid
++44 6735 617461,valid
++446735617461,valid
++44 6896 855997,valid
++446896855997,valid
++44 2867 415517,valid
++442867415517,valid
++44 9164 775110,valid
++449164775110,valid
++44 5331 631077,valid
++445331631077,valid
++44 7242 263765,valid
++447242263765,valid
++44 1197 341996,valid
++441197341996,valid
++44 4973 841874,valid
++444973841874,valid
++44 8917 391630,valid
++448917391630,valid
++44 7939 296314,valid
++447939296314,valid
++44 9915 776601,valid
++449915776601,valid
++44 5361 617094,valid
++445361617094,valid
++44 2022 298323,valid
++442022298323,valid
++44 0386 338401,valid
++440386338401,valid
++44 4316 113932,valid
++444316113932,valid
++44 6727 305802,valid
++446727305802,valid
++44 0528 491794,valid
++440528491794,valid
++44 0656 803955,valid
++440656803955,valid
++44 8368 616240,valid
++448368616240,valid
++44 1317 839344,valid
++441317839344,valid
++44 3610 049468,valid
++443610049468,valid
++44 7955 063470,valid
++447955063470,valid
++44 3947 782293,valid
++443947782293,valid
++44 9124 021038,valid
++449124021038,valid
++44 9028 035190,valid
++449028035190,valid
++44 9904 501733,valid
++449904501733,valid
++44 4967 160537,valid
++444967160537,valid
++44 6963 754397,valid
++446963754397,valid
++44 1857 453050,valid
++441857453050,valid
++44 6917 346229,valid
++446917346229,valid
++44 9715 725162,valid
++449715725162,valid
++44 6482 794452,valid
++446482794452,valid
++44 1742 882390,valid
++441742882390,valid
++44 5955 064113,valid
++445955064113,valid
++44 0712 112744,valid
++440712112744,valid
++44 2145 662795,valid
++442145662795,valid
++44 6161 761270,valid
++446161761270,valid
++44 2847 485333,valid
++442847485333,valid
++44 3608 922881,valid
++443608922881,valid
++44 7277 888863,valid
++447277888863,valid
++44 4914 915055,valid
++444914915055,valid
++44 0879 665694,valid
++440879665694,valid
++44 2925 038644,valid
++442925038644,valid
++44 9953 608290,valid
++449953608290,valid
++44 9902 233191,valid
++449902233191,valid
++44 7297 865179,valid
++447297865179,valid
++44 2271 739579,valid
++442271739579,valid
++44 0238 987950,valid
++440238987950,valid
++44 8742 661848,valid
++448742661848,valid
++44 0027 021374,valid
++440027021374,valid
+4,invalid
+76,invalid
+0451,invalid
+182,invalid
+52,invalid
+40321,invalid
+279,invalid
+7167,invalid
+0776,invalid
+838,invalid
+3,invalid
+94564,invalid
+96767,invalid
+58867,invalid
+09420,invalid
+92651,invalid
+6,invalid
+386,invalid
+50553,invalid
+0,invalid
+53662,invalid
+0053,invalid
+75727,invalid
+72,invalid
+0,invalid
+9,invalid
+1490,invalid
+16,invalid
+97,invalid
+4983,invalid
+991776745360221752975778,invalid
+7452165780287215715695525,invalid
+29022799474250087301800,invalid
+2649422708434196903925561,invalid
+6009790921828704239729,invalid
+183132211915860706700559879227,invalid
+1884047069472174081136688,invalid
+012504277624114124473417767727,invalid
+46738568074231267830,invalid
+725923336485706420486997420,invalid
+5511893789426477641430,invalid
+3771994697345796518490087,invalid
+980260741725998653279045410512,invalid
+2055017547919345645693146054,invalid
+50823687423467571378729436387,invalid
+2407929352743032585386379,invalid
+161312000454989037438925090,invalid
+638742674105663339527744,invalid
+741384140326852471446130,invalid
+5281088008816622575764294,invalid
+149921107637872339021324669186,invalid
+44079907542660438829796634581,invalid
+753727961504084389920,invalid
+945308452171568855706191,invalid
+48647781539715813821279740637,invalid
+4640051927662275968614251,invalid
+903070022755931452207261215,invalid
+7779449275991007730495008282,invalid
+812792439242573252112,invalid
+53721416630424389860362958,invalid
+cQc9TY9Nyx,invalid
+AADrpQpbQP,invalid
+ZkBOaw9TSp,invalid
+c92vrziq0c,invalid
+xlCD9wKIe2,invalid
+BDzbpIFAHe,invalid
+7wRrfShPti,invalid
+q83RRnxA24,invalid
+zxMfCbzV9v,invalid
+m0DEhQ15Xa,invalid
+8VHv7qH1aY,invalid
+cjS991LjO2,invalid
+UOUrxMNJKx,invalid
+onHnAMWvOY,invalid
+kBvl54Ajdk,invalid
+o3WkL9MmJn,invalid
+fb9Imacm0y,invalid
+4uatY8C8SN,invalid
+qkFVCwhZTV,invalid
+ugWh40PqqQ,invalid
+7ozAg2gSyJ,invalid
+baxdiPOSbM,invalid
+5CtzUnMTQD,invalid
+Vkn3wPGTDJ,invalid
+tLCAcSMUsW,invalid
+3cgGRa35Ng,invalid
+jjTNdtEp2q,invalid
+6LShjoVpao,invalid
+NhSly6ayeM,invalid
+vJXCREb6RX,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
++65 ,invalid
++1 (,invalid
+(123) ,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+phone123,invalid
+call-me,invalid
+1234567890123456,invalid
+...,invalid
+###,invalid
+---,invalid
+((())),invalid
+---,invalid
+...,invalid
+((())),invalid
+...,invalid
+((())),invalid
+###,invalid
++++,invalid
++++,invalid
+((())),invalid
+...,invalid
+((())),invalid
+...,invalid
+((())),invalid
+---,invalid
+---,invalid
+((())),invalid
+###,invalid
+---,invalid
+((())),invalid
+...,invalid
+((())),invalid
+###,invalid
+...,invalid
++++,invalid
++++,invalid
+((())),invalid
+WMEwfOMXjOHxf,invalid
+gVTxTMBJDLhlo,invalid
+BjzkYdbuwicD,invalid
+EstQSgnaG,invalid
+nwuzLJocd,invalid
+zMbae,invalid
+aJPxNRFkdVmB,invalid
+mAMTuRALjai,invalid
+hCojyJ,invalid
+lTyTaxQadRsZmMD,invalid
+CQKFDUjqL,invalid
+CVvMPKmL,invalid
+lKBRKqKoEsi,invalid
+AtvFHx,invalid
+WwrFNa,invalid
+lfsOOQJszBKEt,invalid
+WdKwI,invalid
+syLOiidOuv,invalid
+HzGMP,invalid
+FUyYPCXlJokbxU,invalid
+vqSRAzcXj,invalid
+sKCWDHXic,invalid
+QouHDYzDUDUwZ,invalid
+tWkbuLnfFBoOoP,invalid
+ecgrDVaOXEjLDWB,invalid
+nQbfrRACAgfC,invalid
+CHrnOpADKoCBRTO,invalid
+mgqUJHARIlY,invalid
+UkulnYervMt,invalid
+lAZbNRYHHXC,invalid
++,invalid
+(123,invalid
++,invalid
+(123,invalid
+123-456,invalid
+123-456,invalid
+123-456,invalid
+(123,invalid
++1-234,invalid
++,invalid
+9123-,invalid
++65 9,invalid
+9123-,invalid
++65 9,invalid
+123-456,invalid
+123-456,invalid
++1-234,invalid
++1-234,invalid
+9123-,invalid
+(123,invalid
+(123,invalid
++65 9,invalid
++1-234,invalid
+(123,invalid
+(123,invalid
++65 9,invalid
+9123-,invalid
+123-456,invalid
+9123-,invalid
++65 9,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
+,invalid
+   ,invalid
+  	  ,invalid
++65 O123 4567,invalid
++1 (abc) def-ghij,invalid
+65-9123-456,invalid
++65 O123 4567,invalid
++1 (abc) def-ghij,invalid
++65 O123 4567,invalid
+65-9123-456,invalid
+phone-number,invalid
++65 O123 4567,invalid
++1 (abc) def-ghij,invalid
++1 (abc) def-ghij,invalid
++1 (abc) def-ghij,invalid
+phone-number,invalid
++1 (abc) def-ghij,invalid
+65-9123-456,invalid
+phone-number,invalid
++1 (abc) def-ghij,invalid
+65-9123-456,invalid
++1 (abc) def-ghij,invalid
+65-9123-456,invalid
++65 O123 4567,invalid
+65-9123-456,invalid
++1 (abc) def-ghij,invalid
++1 (abc) def-ghij,invalid
+phone-number,invalid
++65 O123 4567,invalid
+65-9123-456,invalid
+phone-number,invalid
+65-9123-456,invalid
++1 (abc) def-ghij,invalid

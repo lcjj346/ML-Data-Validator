@@ -4,14 +4,13 @@ Generic ML Corrector - Works for ANY data type
 Learns correction patterns from YOUR training data.
 Works for: phone, email, address, name, or ANY custom column type.
 
-Uses character-level edit operations (similar to XGBoost phone corrector).
+Uses similarity-based matching to suggest corrections.
 """
 
 import os
 import pickle
 from typing import List, Optional, Tuple
-import numpy as np
-import xgboost as xgb
+import difflib
 
 
 class GenericMLCorrector:
@@ -31,28 +30,11 @@ class GenericMLCorrector:
         Args:
             model_path: Path to load trained model (optional)
         """
-        self.model: Optional[xgb.XGBClassifier] = None
         self.is_trained = False
         self.model_path = model_path
         self.data_type = "unknown"
-
-        # Edit operations
-        self.operations = {
-            'keep': 0,
-            'delete': 1,
-            'replace': 2,  # Will learn what to replace with
-        }
-
-        # Common typo mappings (learned from data)
-        self.typo_map = {
-            'o': '0', 'O': '0',
-            'l': '1', 'i': '1', 'I': '1',
-            'z': '2', 'Z': '2',
-            'e': '3', 'E': '3',
-            's': '5', 'S': '5',
-            'b': '8', 'B': '8',
-            'g': '9', 'G': '9',
-        }
+        self.valid_examples = []  # Store valid examples for similarity matching
+        self.similarity_threshold = 0.6  # Minimum similarity to suggest (0.0-1.0)
 
         # Try to load if path provided
         if model_path and os.path.exists(model_path):
@@ -103,34 +85,55 @@ class GenericMLCorrector:
 
     def correct(self, text: str) -> Optional[str]:
         """
-        Correct invalid text.
+        Correct invalid text using similarity matching.
 
         Args:
             text: Invalid text to correct
 
         Returns:
-            Corrected text, or None if cannot correct
+            Corrected text (closest valid example), or None if no good match
         """
-        if not self.is_trained:
-            # Fallback: simple typo correction
-            return self._simple_typo_correct(text)
-
-        # Use ML model to correct
-        # For now, use simple correction until model is trained
-        return self._simple_typo_correct(text)
-
-    def _simple_typo_correct(self, text: str) -> Optional[str]:
-        """Simple rule-based typo correction (fallback)"""
-        if not text:
+        if not self.is_trained or not self.valid_examples:
             return None
 
-        # Apply common typo corrections
-        corrected = text
-        for typo, correct in self.typo_map.items():
-            corrected = corrected.replace(typo, correct)
+        # Don't suggest corrections for empty, NaN, or whitespace-only strings
+        if not text or str(text).strip() == '' or str(text).lower() in ['nan', 'none', 'null']:
+            return None
 
-        # Only return if we made changes
-        return corrected if corrected != text else None
+        # Find the most similar valid example
+        best_match = None
+        best_similarity = 0.0
+
+        for valid_example in self.valid_examples:
+            # Calculate similarity using difflib's SequenceMatcher
+            similarity = difflib.SequenceMatcher(None, text.lower(), valid_example.lower()).ratio()
+
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_match = valid_example
+
+        # Only return if similarity is above threshold and not identical
+        if best_similarity >= self.similarity_threshold and text != best_match:
+            return best_match
+
+        return None
+
+    def train(self, valid_examples: List[str], data_type: str = "custom"):
+        """
+        Train corrector with valid examples.
+
+        Args:
+            valid_examples: List of valid text examples
+            data_type: Name of data type
+        """
+        print(f"Training corrector for '{data_type}' with {len(valid_examples)} valid examples...")
+
+        # Store unique valid examples
+        self.valid_examples = list(set(valid_examples))
+        self.data_type = data_type
+        self.is_trained = True
+
+        print(f"Corrector trained with {len(self.valid_examples)} unique examples")
 
     def train_from_examples(self, examples: List[Tuple[str, str]], data_type: str = "custom"):
         """
@@ -163,7 +166,8 @@ class GenericMLCorrector:
         model_data = {
             'data_type': self.data_type,
             'is_trained': self.is_trained,
-            'typo_map': self.typo_map,
+            'valid_examples': self.valid_examples,
+            'similarity_threshold': self.similarity_threshold,
         }
 
         with open(filepath, 'wb') as f:
@@ -184,10 +188,11 @@ class GenericMLCorrector:
 
             self.data_type = model_data['data_type']
             self.is_trained = model_data['is_trained']
-            self.typo_map = model_data.get('typo_map', self.typo_map)
+            self.valid_examples = model_data.get('valid_examples', [])
+            self.similarity_threshold = model_data.get('similarity_threshold', 0.6)
             self.model_path = filepath
 
-            print(f"Corrector loaded: {self.data_type}")
+            print(f"Corrector loaded: {self.data_type} with {len(self.valid_examples)} examples")
             return True
         except Exception as e:
             print(f"Error loading corrector: {e}")

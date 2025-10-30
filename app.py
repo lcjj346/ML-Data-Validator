@@ -490,10 +490,14 @@ with tab_train:
                     validator_path = f"models/{model_name}_validator.pkl"
                     validator.save(validator_path)
 
-                    # Create and save corrector (always available for typo corrections)
+                    # Create and train corrector with valid examples
                     corrector = GenericMLCorrector()
-                    corrector.data_type = model_name
-                    corrector.is_trained = True
+
+                    # Extract valid examples from training data
+                    valid_examples = train_df[train_df['label'].str.lower() == 'valid']['text'].tolist()
+                    corrector.train(valid_examples, model_name)
+
+                    # Save corrector
                     corrector_path = f"models/{model_name}_corrector.pkl"
                     corrector.save(corrector_path)
 
