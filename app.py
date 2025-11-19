@@ -65,6 +65,23 @@ with tab_validate:
     uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
 
     if uploaded_file:
+        # Check if this is a new file upload - clear previous validation results
+        current_filename = uploaded_file.name
+        if 'current_uploaded_file' not in st.session_state:
+            st.session_state.current_uploaded_file = None
+
+        # If a different file is uploaded, clear all validation results
+        if st.session_state.current_uploaded_file != current_filename:
+            st.session_state.validated_df = None
+            st.session_state.corrections_data = None
+            st.session_state.modified_cells = set()
+            st.session_state.cell_validity = {}
+            st.session_state.column_mappings = {}
+            st.session_state.current_uploaded_file = current_filename
+            # Also clear original_df if it exists
+            if 'original_df' in st.session_state:
+                st.session_state.original_df = None
+
         df = pd.read_csv(uploaded_file)
         st.success(f"File uploaded! Shape: {df.shape}")
 
