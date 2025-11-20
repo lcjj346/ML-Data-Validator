@@ -156,6 +156,122 @@ class GenericMLValidator:
 
         return results
 
+    def explain_invalidity(self, text: str) -> str:
+        """
+        Explain why a text is considered invalid.
+
+        Args:
+            text: Text to analyze
+
+        Returns:
+            Human-readable explanation of what's wrong
+        """
+        if not self.is_trained:
+            return "Model not trained"
+
+        # Extract features
+        features = self.feature_extractor.extract_features(text)
+
+        # Get feature names for reference
+        feature_names = [
+            'length', 'word_count', 'comma_parts',
+            'digit_ratio', 'letter_ratio', 'space_ratio', 'uppercase_ratio', 'lowercase_ratio',
+            'count_plus', 'count_at', 'count_dot', 'count_hash', 'count_dash',
+            'count_underscore', 'count_lparen', 'count_rparen', 'count_slash',
+            'starts_uppercase', 'starts_digit', 'starts_plus', 'ends_digit', 'ends_letter',
+            'email_like', 'has_single_at', 'has_username', 'domain_has_dot', 'domain_has_extension', 'common_domain',
+            'phone_like', 'mixed_alphanum',
+            'digit_sequences', 'capitalized_words', 'long_digits',
+            'has_blk', 'has_ave', 'has_road', 'has_street', 'has_singapore',
+            'has_com', 'has_net', 'has_org', 'has_edu',
+            'has_at', 'has_plus', 'has_hash',
+            'repeated_chars', 'triple_chars', 'max_bigram_freq', 'char_variety',
+            'vowel_ratio', 'max_consecutive_consonants'
+        ]
+
+        # Analyze features to determine issues
+        issues = []
+
+        # Length checks
+        if features[0] < 3:  # length
+            issues.append("too short")
+        elif features[0] > 100:
+            issues.append("too long")
+
+        # Data type specific checks based on training data type
+        data_type_lower = self.data_type.lower()
+
+        if 'email' in data_type_lower:
+            if features[9] == 0:  # count_at
+                issues.append("missing '@' symbol")
+            elif features[9] > 1:
+                issues.append("multiple '@' symbols")
+            if features[10] == 0:  # count_dot
+                issues.append("missing domain extension")
+            if features[23] == 0:  # email_like pattern
+                issues.append("invalid email format")
+
+        elif 'phone' in data_type_lower:
+            digit_ratio = features[3]
+            if digit_ratio < 0.5:
+                issues.append(f"insufficient digits ({digit_ratio*100:.0f}% digits)")
+            if features[8] == 0 and features[0] > 8:  # No + sign for longer numbers
+                issues.append("missing country code")
+            if features[0] < 8:
+                issues.append("too short for phone number")
+
+        elif 'name' in data_type_lower:
+            if features[1] < 2:  # word_count
+                issues.append("missing first or last name")
+            if features[3] > 0.1:  # digit_ratio > 10%
+                issues.append("contains numbers")
+            if features[6] > 0.8:  # uppercase_ratio
+                issues.append("too many uppercase letters")
+            if features[17] == 0:  # starts_uppercase
+                issues.append("should start with capital letter")
+
+        elif 'country' in data_type_lower or 'location' in data_type_lower:
+            if features[1] > 5:  # word_count
+                issues.append("too many words for country name")
+            if features[3] > 0.2:  # digit_ratio
+                issues.append("contains numbers")
+
+        # General pattern issues
+        if features[46] > 0:  # triple_chars (aaa, bbb)
+            issues.append("repeated characters")
+
+        # Only flag very unusual vowel/consonant patterns (more lenient)
+        if features[4] > 0.5:  # Only check if text has significant letters
+            if features[49] > 0.95:  # vowel_ratio extremely high
+                issues.append("unusual vowel pattern")
+            elif features[49] < 0.05:  # vowel_ratio extremely low
+                issues.append("unusual consonant pattern")
+
+        if features[50] > 6:  # max_consecutive_consonants (increased threshold)
+            issues.append("too many consecutive consonants")
+
+        # Special character issues
+        special_chars = sum([features[i] for i in [11, 12, 13, 14, 15, 16]])  # hash, dash, underscore, parens, slash
+        if special_chars > 10:
+            issues.append("too many special characters")
+
+        # If no specific issues found, provide generic message
+        if not issues:
+            # Check confidence level
+            _, confidence = self.validate(text)
+            if confidence < 0.6:
+                issues.append("pattern doesn't match training data")
+            else:
+                issues.append("unusual pattern detected")
+
+        # Format the explanation
+        if len(issues) == 1:
+            return issues[0].capitalize()
+        elif len(issues) == 2:
+            return f"{issues[0].capitalize()} and {issues[1]}"
+        else:
+            return f"{issues[0].capitalize()}, {', '.join(issues[1:-1])}, and {issues[-1]}"
+
     def save(self, filepath: str):
         """
         Save trained model.

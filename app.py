@@ -161,6 +161,9 @@ with tab_validate:
                                     if corrector:
                                         corrected = corrector.correct(original)
 
+                                    # Get explanation for why it's invalid
+                                    reason = validator.explain_invalidity(original)
+
                                     # Always add entry for invalid cells
                                     if idx not in all_corrections:
                                         all_corrections[idx] = {}
@@ -172,7 +175,8 @@ with tab_validate:
                                     all_corrections[idx][column] = {
                                         'original': original,
                                         'suggested': suggested,
-                                        'has_correction': has_correction
+                                        'has_correction': has_correction,
+                                        'reason': reason
                                     }
 
                     # Store in session state
@@ -192,7 +196,8 @@ with tab_validate:
                                 'Column': column,
                                 'Original': correction_data['original'],
                                 'Suggested': correction_data['suggested'],
-                                'Has Correction': correction_data['has_correction']
+                                'Has Correction': correction_data['has_correction'],
+                                'Reason': correction_data.get('reason', 'Unknown')
                             })
 
                     st.session_state.corrections_data = corrections if corrections else None
@@ -406,9 +411,26 @@ with tab_validate:
                         st.write(f"**{len(applicable_corrections)} correction(s) available**")
                         st.divider()
 
+                    # Add header row
+                    col1, col2, col3, col4, col5, col6 = st.columns([0.8, 1.2, 1.5, 1.5, 2, 0.8])
+                    with col1:
+                        st.markdown("**Row**")
+                    with col2:
+                        st.markdown("**Column**")
+                    with col3:
+                        st.markdown("**Original**")
+                    with col4:
+                        st.markdown("**Suggested**")
+                    with col5:
+                        st.markdown("**Reason**")
+                    with col6:
+                        st.markdown("**Action**")
+
+                    st.divider()
+
                     # Add Apply button for each correction
                     for idx, correction in enumerate(pending_corrections):
-                        col1, col2, col3, col4, col5 = st.columns([1, 1.5, 2, 2, 1])
+                        col1, col2, col3, col4, col5, col6 = st.columns([0.8, 1.2, 1.5, 1.5, 2, 0.8])
                         with col1:
                             st.write(f"**Row {correction['Row']}**")
                         with col2:
@@ -421,6 +443,10 @@ with tab_validate:
                             else:
                                 st.write(f"_No suggestion_")
                         with col5:
+                            # Display the reason for invalidity
+                            reason = correction.get('Reason', 'Unknown')
+                            st.write(f"_{reason}_")
+                        with col6:
                             if correction['Has Correction']:
                                 if st.button("Apply", key=f"apply_{idx}"):
                                     # Apply correction to session state dataframe
