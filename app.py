@@ -86,8 +86,6 @@ with tab_validate:
         st.success(f"File uploaded! Shape: {df.shape}")
 
         # Step 2: Configure column validation
-        st.subheader("Configure Validation")
-
         # List available models
         models_dir = "models"
         available_models = []
@@ -103,26 +101,59 @@ with tab_validate:
             if 'column_mappings' not in st.session_state:
                 st.session_state.column_mappings = {}
 
-            st.write("**Map columns to validators:**")
+            # Define base validation types
+            base_validators = ['name', 'email', 'phone', 'country']
 
-            # Allow user to select which columns to validate and which validator to use
+            # Auto-map columns that match base validator names
             column_mappings = {}
+            unmapped_columns = []
+
             for column in df.columns:
-                col1, col2, col3 = st.columns([2, 2, 1])
-                with col1:
-                    st.write(f"**{column}**")
-                with col2:
-                    validator_choice = st.selectbox(
-                        f"Validator for {column}",
-                        ["(Skip)"] + available_models,
-                        key=f"validator_{column}",
-                        label_visibility="collapsed"
-                    )
-                    if validator_choice != "(Skip)":
-                        column_mappings[column] = validator_choice
-                with col3:
-                    if validator_choice != "(Skip)":
-                        st.write("")
+                column_lower = column.lower()
+                # Check if column name matches any base validator
+                matched = False
+                for base_val in base_validators:
+                    if base_val in column_lower and base_val in available_models:
+                        column_mappings[column] = base_val
+                        matched = True
+                        break
+
+                if not matched:
+                    unmapped_columns.append(column)
+
+            # Only show "Configure Validation" section if there are unmapped columns
+            if unmapped_columns:
+                st.subheader("Configure Validation")
+
+                # Show auto-mapped base validations
+                if column_mappings:
+                    st.write("**Auto-mapped base validations:**")
+                    for column, validator in column_mappings.items():
+                        col1, col2 = st.columns([2, 2])
+                        with col1:
+                            st.write(f"**{column}**")
+                        with col2:
+                            st.write(f"✓ {validator}")
+
+                # Show manual configuration for unmapped columns
+                st.write("**Map additional columns to validators:**")
+
+                for column in unmapped_columns:
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    with col1:
+                        st.write(f"**{column}**")
+                    with col2:
+                        validator_choice = st.selectbox(
+                            f"Validator for {column}",
+                            ["(Skip)"] + available_models,
+                            key=f"validator_{column}",
+                            label_visibility="collapsed"
+                        )
+                        if validator_choice != "(Skip)":
+                            column_mappings[column] = validator_choice
+                    with col3:
+                        if validator_choice != "(Skip)":
+                            st.write("")
 
             st.session_state.column_mappings = column_mappings
 
