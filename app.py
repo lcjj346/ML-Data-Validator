@@ -347,6 +347,9 @@ with tab_validate:
                 if 'Index' in edited_data.columns:
                     edited_data = edited_data.drop(columns=['Index'])
 
+                # Reset the index to match df_display.index
+                edited_data.index = df_display.index
+
                 # Check for manual edits and track them as modified (cell-level)
                 # Compare against original_df to detect first-time edits
                 edit_detected = False
