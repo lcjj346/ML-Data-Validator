@@ -104,16 +104,21 @@ class GenericMLCorrector:
         best_match = None
         best_similarity = 0.0
 
+        # Convert text to string for comparison
+        text_str = str(text)
+
         for valid_example in self.valid_examples:
+            # Convert both to strings and lowercase for comparison
+            valid_example_str = str(valid_example)
             # Calculate similarity using difflib's SequenceMatcher
-            similarity = difflib.SequenceMatcher(None, text.lower(), valid_example.lower()).ratio()
+            similarity = difflib.SequenceMatcher(None, text_str.lower(), valid_example_str.lower()).ratio()
 
             if similarity > best_similarity:
                 best_similarity = similarity
                 best_match = valid_example
 
         # Only return if similarity is above threshold and not identical
-        if best_similarity >= self.similarity_threshold and text != best_match:
+        if best_similarity >= self.similarity_threshold and text_str != str(best_match):
             return best_match
 
         return None

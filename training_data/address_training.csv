@@ -1,0 +1,101 @@
+text,label
+123 Main Street New York NY 10001,valid
+456 Oak Avenue Los Angeles CA 90001,valid
+789 Elm Road Chicago IL 60601,valid
+321 Maple Drive Houston TX 77001,valid
+654 Pine Lane Phoenix AZ 85001,valid
+987 Cedar Boulevard Philadelphia PA 19101,valid
+147 Birch Court San Antonio TX 78201,valid
+258 Willow Way San Diego CA 92101,valid
+369 Spruce Street Dallas TX 75201,valid
+741 Ash Avenue San Jose CA 95101,valid
+852 Cherry Road Austin TX 78701,valid
+963 Walnut Drive Jacksonville FL 32099,valid
+159 Hickory Lane Fort Worth TX 76101,valid
+357 Poplar Boulevard Columbus OH 43201,valid
+486 Cypress Court Charlotte NC 28201,valid
+753 Magnolia Way San Francisco CA 94101,valid
+951 Sycamore Street Indianapolis IN 46201,valid
+842 Redwood Avenue Seattle WA 98101,valid
+624 Sequoia Road Denver CO 80201,valid
+135 Cottonwood Drive Washington DC 20001,valid
+246 Dogwood Lane Boston MA 02101,valid
+579 Beech Boulevard Nashville TN 37201,valid
+468 Juniper Court El Paso TX 79901,valid
+913 Fir Way Detroit MI 48201,valid
+802 Palm Street Memphis TN 38101,valid
+1001 Broadway New York NY 10019,valid
+2500 Sunset Boulevard Los Angeles CA 90026,valid
+450 N Michigan Avenue Chicago IL 60611,valid
+1600 Pennsylvania Avenue NW Washington DC 20500,valid
+1 Apple Park Way Cupertino CA 95014,valid
+350 Fifth Avenue New York NY 10118,valid
+221B Baker Street London NW1 6XE,valid
+1 Infinite Loop Cupertino CA 95014,valid
+410 Terry Avenue North Seattle WA 98109,valid
+1 Hacker Way Menlo Park CA 94025,valid
+1000 4th Avenue Seattle WA 98104,valid
+500 Oracle Parkway Redwood City CA 94065,valid
+1 Tesla Road Austin TX 78725,valid
+2000 Main Street Irvine CA 92614,valid
+100 Universal City Plaza Universal City CA 91608,valid
+1 Disney Drive Anaheim CA 92802,valid
+3400 Civic Center Boulevard Philadelphia PA 19104,valid
+1 MetLife Stadium Drive East Rutherford NJ 07073,valid
+1000 Chopper Circle Denver CO 80204,valid
+333 W 35th Street Chicago IL 60616,valid
+1 AT&T Way Arlington TX 76011,valid
+555 W 12th Street Los Angeles CA 90015,valid
+100 Legends Way Boston MA 02114,valid
+1 Busch Stadium St Louis MO 63102,valid
+200 E Robinson Street Orlando FL 32801,valid
+123,invalid
+Main Street,invalid
+New York,invalid
+CA,invalid
+90001,invalid
+nowhere,invalid
+somewhere over the rainbow,invalid
+123 Main,invalid
+Oak Avenue,invalid
+456 Oak Ave,invalid
+789 Elm,invalid
+Chicago IL,invalid
+Houston TX,invalid
+Phoenix,invalid
+Philadelphia,invalid
+San Antonio,invalid
+San Diego,invalid
+Dallas,invalid
+San Jose,invalid
+Austin,invalid
+Jacksonville,invalid
+Fort Worth,invalid
+Columbus,invalid
+Charlotte,invalid
+San Francisco,invalid
+Indianapolis,invalid
+Seattle,invalid
+Denver,invalid
+Washington,invalid
+Boston,invalid
+Nashville,invalid
+El Paso,invalid
+Detroit,invalid
+Memphis,invalid
+Los Angeles,invalid
+123 Main St,invalid
+456 Oak,invalid
+789 Elm Rd,invalid
+Street,invalid
+Avenue,invalid
+Road,invalid
+Drive,invalid
+Lane,invalid
+Boulevard,invalid
+Court,invalid
+Way,invalid
+NY,invalid
+California,invalid
+Texas,invalid
+Florida,invalid

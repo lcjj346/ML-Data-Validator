@@ -102,21 +102,30 @@ with tab_validate:
                 st.session_state.column_mappings = {}
 
             # Define base validation types
-            base_validators = ['name', 'email', 'phone', 'country']
+            base_validators = ['name', 'email', 'phone', 'country', 'blood_sugar', 'age', 'address']
 
             # Auto-map columns that match base validator names
             column_mappings = {}
             unmapped_columns = []
 
             for column in df.columns:
-                column_lower = column.lower()
+                column_lower = column.lower().replace('_', '').replace('-', '').replace(' ', '')
                 # Check if column name matches any base validator
                 matched = False
                 for base_val in base_validators:
-                    if base_val in column_lower and base_val in available_models:
-                        column_mappings[column] = base_val
-                        matched = True
-                        break
+                    base_val_normalized = base_val.replace('_', '').replace('-', '').replace(' ', '')
+                    # Check if the normalized base validator name matches the column
+                    if base_val_normalized in column_lower:
+                        # Find the actual model name (could be with or without underscores)
+                        # Check both the original base_val and the normalized version
+                        if base_val in available_models:
+                            column_mappings[column] = base_val
+                            matched = True
+                            break
+                        elif base_val_normalized in available_models:
+                            column_mappings[column] = base_val_normalized
+                            matched = True
+                            break
 
                 if not matched:
                     unmapped_columns.append(column)
@@ -425,6 +434,22 @@ with tab_validate:
                 if pending_corrections:
                     st.subheader("Suggested Corrections")
 
+                    # Get unique columns for filter
+                    unique_columns = sorted(list(set([c['Column'] for c in pending_corrections])))
+
+                    # Add filter dropdown
+                    col_filter, col_spacer = st.columns([2, 4])
+                    with col_filter:
+                        selected_column = st.selectbox(
+                            "Filter by column:",
+                            ["All Columns"] + unique_columns,
+                            key="correction_filter"
+                        )
+
+                    # Filter corrections based on selection
+                    if selected_column != "All Columns":
+                        pending_corrections = [c for c in pending_corrections if c['Column'] == selected_column]
+
                     # Sort corrections by row number
                     pending_corrections = sorted(pending_corrections, key=lambda x: x['Row'])
 
@@ -519,6 +544,11 @@ with tab_train:
     2. Upload the CSV
     3. Give your model a name (e.g., "phone", "email", "address")
     4. Click "Train Validator"
+
+    ### ⚠️ Important Note:
+    - **Avoid using commas in the `text` column** as they will break the CSV structure
+    - If your data must contain commas (like addresses), replace them with spaces or use alternative separators
+    - Example: Use "123 Main Street New York NY 10001" instead of "123 Main Street, New York, NY 10001"
 
     ### Example CSV:
     ```csv
