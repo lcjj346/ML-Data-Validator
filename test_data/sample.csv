@@ -1,15 +1,15 @@
 phone_number,country,email,name,age,blood_sugar,address
-+6591234567,Singapore,john.doe@example.com,John Smith,25,95,123 Orchard Road Singapore 238858
-+65 9876 5432,Singapore,alice@gmail.com,Mary Johnson,32,110,456 Marina Bay Singapore 018956
-+1234567890,Singapore,bob.smith@company.com,David Lee,150,88,789 Sentosa Gateway Singapore 098269
-123,Singapore,invalid@email,Sarah Chen,28,300,45 Raffles Place
-invalid_phone,Singapore,test@@example.com,Michael Brown,-5,72,Singapore
-+65-8888-9999,Singaporeee,user123@mail.com,Jennifer Garcia,45,500,1 Fullerton Road Singapore 049213
-abc123,Singapore,no-at-sign.com,Robert Wilson,67,15,Beach Road
-+44 20 1234 5678,USA,mary.jones@outlook.com,Lisa Martinez,38,125,123 Main Street New York NY 10001
-test,USA,admin@test,William Anderson,2,98,456 Broadway
-+6512345678,UUUSA,contact@website.org,Patricia Taylor,55,0,789 Fifth Avenue New York NY 10065
-65 9999 8888,Malaysia,info@business.com.my,James Thomas,42,135,10 Jalan Sultan Ismail Kuala Lumpur 50250
-phone,Malaysia,support,john,200,104,Kuala Lumpur
-+,Mallsia,customer@shop.com,MARY JOHNSON,19,600,321 Petronas Twin Towers Kuala Lumpur 50088
-+65 91234567,,missing@,John Smith123,90,118,
++6591234567,Singapore,john.doe@example.com,John Smith,25,5.2,123 Orchard Road Singapore 238858
++65 9876 5432,Singapore,alice@gmail.com,Mary Johnson,32,6.8,456 Marina Bay Singapore 018956
++1234567890,Singapore,bob.smith@company.com,David Lee,150,4.5,789 Sentosa Gateway Singapore 098269
+123,Singapore,invalid@email,Sarah Chen,28,15.5,45 Raffles Place
+invalid_phone,Singapore,test@@example.com,Michael Brown,-5,7.2,Singapore
++65-8888-9999,Singaporeee,user123@mail.com,Jennifer Garcia,45,22.0,1 Fullerton Road Singapore 049213
+abc123,Singapore,no-at-sign.com,Robert Wilson,67,3.2,Beach Road
++44 20 1234 5678,USA,mary.jones@outlook.com,Lisa Martinez,38,8.9,123 Main Street New York NY 10001
+test,USA,admin@test,William Anderson,2,5.5,456 Broadway
++6512345678,UUUSA,contact@website.org,Patricia Taylor,55,0.5,789 Fifth Avenue New York NY 10065
+65 9999 8888,Malaysia,info@business.com.my,James Thomas,42,9.1,10 Jalan Sultan Ismail Kuala Lumpur 50250
+phone,Malaysia,support,john,200,6.4,Kuala Lumpur
++,Mallsia,customer@shop.com,MARY JOHNSON,19,25.0,321 Petronas Twin Towers Kuala Lumpur 50088
++65 91234567,,missing@,John Smith123,90,7.8,

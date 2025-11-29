@@ -166,7 +166,63 @@ class GenericFeatureExtractor:
             features.append(0)
             features.append(0)
 
-        # ========== TOTAL: ~47 FEATURES ==========
+        # ========== NUMERIC VALUE FEATURES ==========
+        # Enhanced numeric features for better range validation (blood sugar, age, weight, etc.)
+        # These features are GENERIC and work for any numeric column
+        import math
+        try:
+            numeric_value = float(text)
+            # Check if it's NaN (special float value)
+            if math.isnan(numeric_value) or math.isinf(numeric_value):
+                # Not a valid number - add dummy features
+                features.extend([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            else:
+                # Feature 1: The actual numeric value (most important!)
+                features.append(numeric_value)
+                # Feature 2: Is numeric flag
+                features.append(1)
+                # Feature 3: Squared value (helps with non-linear boundaries)
+                features.append(numeric_value ** 2)
+                # Feature 4: Cubed value (captures higher order patterns)
+                features.append(numeric_value ** 3)
+                # Feature 5: Square root (if positive)
+                features.append(math.sqrt(abs(numeric_value)) if numeric_value >= 0 else 0)
+                # Feature 6: Log value (helps with exponential patterns)
+                features.append(math.log(abs(numeric_value) + 1))
+                # Feature 7: Inverse (1/x) - helps with reciprocal patterns
+                features.append(1 / numeric_value if numeric_value != 0 else 0)
+
+                # Feature 8: Sign (positive/negative/zero)
+                features.append(1 if numeric_value > 0 else (-1 if numeric_value < 0 else 0))
+                # Feature 9: Absolute value
+                features.append(abs(numeric_value))
+
+                # Features 10-19: Generic decimal bucket features (works for any range)
+                # These create decision boundaries at different magnitudes
+                features.append(1 if numeric_value < 0 else 0)  # Negative
+                features.append(1 if 0 <= numeric_value < 1 else 0)  # [0, 1)
+                features.append(1 if 1 <= numeric_value < 2 else 0)  # [1, 2)
+                features.append(1 if 2 <= numeric_value < 5 else 0)  # [2, 5)
+                features.append(1 if 5 <= numeric_value < 10 else 0)  # [5, 10)
+                features.append(1 if 10 <= numeric_value < 20 else 0)  # [10, 20)
+                features.append(1 if 20 <= numeric_value < 50 else 0)  # [20, 50)
+                features.append(1 if 50 <= numeric_value < 100 else 0)  # [50, 100)
+                features.append(1 if 100 <= numeric_value < 200 else 0)  # [100, 200)
+                features.append(1 if numeric_value >= 200 else 0)  # [200, +inf)
+
+                # Feature 20: Number of decimal places (precision indicator)
+                text_str = str(text).strip()
+                if '.' in text_str:
+                    decimal_places = len(text_str.split('.')[1])
+                    features.append(min(decimal_places, 5))  # Cap at 5
+                else:
+                    features.append(0)
+
+        except (ValueError, TypeError):
+            # Not a number - add dummy features (20 features)
+            features.extend([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+        # ========== TOTAL: ~67 FEATURES ==========
 
         return features
 
