@@ -78,7 +78,7 @@ ml-data-validator/
 │   ├── validator.py            # Generic ML validator (Logistic Regression) (~256 lines)
 │   └── corrector.py            # Similarity-based corrector (~225 lines)
 │
-├── models/                     # Trained models (8 pre-trained models)
+├── models/                     # Trained models (20 pre-trained models)
 │   ├── phone_validator.pkl
 │   ├── phone_corrector.pkl
 │   ├── email_validator.pkl
@@ -86,16 +86,31 @@ ml-data-validator/
 │   ├── name_validator.pkl
 │   ├── name_corrector.pkl
 │   ├── country_validator.pkl
-│   └── country_corrector.pkl
+│   ├── country_corrector.pkl
+│   ├── address_validator.pkl
+│   ├── address_corrector.pkl
+│   ├── age_validator.pkl
+│   ├── age_corrector.pkl
+│   ├── blood_sugar_validator.pkl
+│   ├── blood_sugar_corrector.pkl
+│   ├── custom_company_validator.pkl
+│   ├── custom_company_corrector.pkl
+│   ├── custom_validator.pkl
+│   └── custom_corrector.pkl
 │
-├── training_data/              # Training datasets (4 CSV files)
-│   ├── phone_training.csv      # 906 examples
-│   ├── email_training.csv      # 214 examples
-│   ├── name_training.csv       # 210 examples
-│   └── country_training.csv    # Country names
+├── training_data/              # Training datasets (8 CSV files)
+│   ├── phone_training.csv      # 565 examples
+│   ├── email_training.csv      # 229 examples
+│   ├── name_training.csv       # 280 examples
+│   ├── country_training.csv    # 543 examples
+│   ├── address_training.csv    # 100 examples
+│   ├── age_training.csv        # 98 examples
+│   ├── blood_sugar_training.csv # 132 examples
+│   └── custom_company_training.csv # 100 examples
 │
 ├── test_data/                  # Sample test data
-│   └── sample.csv              # Multi-column test file (phone, country, email, name)
+│   ├── sample.csv              # Multi-column test file (phone, country, email, name)
+│   └── custom_company.csv      # Company-specific test data
 │
 └── venv/                       # Virtual environment (git ignored)
 ```
@@ -153,14 +168,13 @@ Extracts **47+ generic features** from ANY text:
 
 #### Phone Numbers (`phone_training.csv`)
 
-- **Total**: 906 examples
-- **Valid**: 426 (Singapore +65, USA +1, UK +44 formats)
-- **Invalid**: 480 (short numbers, text, special chars)
+- **Total**: 565 examples
+- **Valid/Invalid Mix**: Singapore +65, USA +1, UK +44 formats with various invalid patterns
 - **Formats**: International (+65 9123 4567), US (+1 (123) 456-7890), UK (+44 1234 567890), Local (9123 4567)
 
 #### Email Addresses (`email_training.csv`)
 
-- **Total**: 214 examples (41 valid, 173 invalid)
+- **Total**: 229 examples
 - **Valid**: Standard emails across common domains (gmail, yahoo, outlook, hotmail, etc.)
 - **Invalid - Domain Typos**: Each valid username has typo variants (e.g., `alice@yahooo.com` → `alice@yahoo.com`)
 - **Invalid - Structural**: Missing @, double @@, missing parts, spaces
@@ -171,7 +185,7 @@ Extracts **47+ generic features** from ANY text:
 
 #### Person Names (`name_training.csv`)
 
-- **Total**: 210 examples (158 valid, 52 invalid)
+- **Total**: 280 examples
 - **Valid**: Full names with first and last name (e.g., John Smith, Mary Johnson, David Lee)
 - **Invalid - Format Issues**: Single names only, all caps (JOHN SMITH), mixed case (john SMITH), extra spaces
 - **Invalid - Content Issues**: Numbers in name, special characters, prefixes (Dr, Mr), suffixes (Jr, III)
@@ -179,23 +193,55 @@ Extracts **47+ generic features** from ANY text:
 
 #### Country Names (`country_training.csv`)
 
-- **Examples**: 50+ country names
+- **Total**: 543 examples
 - **Coverage**: Singapore, Malaysia, USA, UK, major countries worldwide
+
+#### Addresses (`address_training.csv`)
+
+- **Total**: 100 examples
+- **Valid**: Street addresses with number, street name, city, state, ZIP (e.g., "123 Main Street New York NY 10001")
+- **Invalid**: Incomplete addresses, missing components, format issues
+
+#### Age (`age_training.csv`)
+
+- **Total**: 98 examples
+- **Valid**: Numeric ages typically 0-120 (e.g., 18, 25, 65)
+- **Invalid**: Negative numbers, non-numeric values, unrealistic ages
+
+#### Blood Sugar (`blood_sugar_training.csv`)
+
+- **Total**: 132 examples
+- **Valid**: Blood glucose readings in mmol/L (e.g., 4.0-20.0 range)
+- **Invalid**: Out-of-range values, negative numbers, non-numeric data
+
+#### Custom Company Data (`custom_company_training.csv`)
+
+- **Total**: 100 examples
+- **Purpose**: Company-specific custom validation patterns
+- **Use Case**: Demonstrates ability to train validators for domain-specific business data
 
 ### Pre-trained Models (`models/`)
 
-We've included **8 pre-trained models** (4 validators + 4 correctors):
+We've included **10 pre-trained validators** (each with its corresponding corrector):
 
 1. **phone** - Phone number validation & correction
 2. **email** - Email address validation & correction
 3. **name** - Person name validation & correction
 4. **country** - Country name validation & correction
+5. **address** - Street address validation & correction
+6. **age** - Age validation & correction
+7. **blood_sugar** - Blood glucose reading validation & correction
+8. **custom_company** - Company-specific custom data validation & correction
+9. **custom** - General custom data validation & correction
+
+**Total Models**: 20 files (10 validators + 10 correctors)
 
 You can use these immediately or train your own for custom data types!
 
 ### Sample Test Data (`test_data/`)
 
-- `sample.csv` - Multi-column test file with phones, countries, emails, and names (14 rows with intentional errors for testing)
+- `sample.csv` - Multi-column test file with phones, countries, emails, and names (with intentional errors for testing)
+- `custom_company.csv` - Sample company-specific data for testing custom validators
 
 ## Key Features
 
@@ -244,9 +290,12 @@ Train validators for:
 - Phone numbers (any country format)
 - Email addresses
 - Person names
+- Addresses (street, city, state, ZIP)
+- Ages and numeric ranges
+- Medical data (blood sugar, vitals)
 - Company/product names
 - Dates, codes, IDs
-- Custom business formatss
+- Custom business formats
 
 ## Usage Examples
 
@@ -427,10 +476,10 @@ ml-data-validator/
 ## FAQ
 
 **Q: Do I need to provide training data?**
-A: Yes, but we include 4 pre-trained models (phone, email, name, country) with 1,500+ training examples. You can use these immediately or train your own.
+A: Yes, but we include 10 pre-trained models (phone, email, name, country, address, age, blood_sugar, custom_company, and more) with 2,000+ training examples. You can use these immediately or train your own.
 
 **Q: How much training data do I need?**
-A: Minimum 50-100 examples (mix of valid and invalid). More is better. Our phone validator uses 906 examples and achieves high accuracy.
+A: Minimum 50-100 examples (mix of valid and invalid). More is better. Our validators range from 98-565 examples and achieve high accuracy.
 
 **Q: Can I validate multiple data types in one CSV?**
 A: Yes! Map different columns to different validators. For example: phone column → phone validator, email column → email validator.
