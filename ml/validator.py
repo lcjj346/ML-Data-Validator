@@ -12,7 +12,6 @@ import joblib
 import pandas as pd
 from typing import List, Tuple, Optional
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from ml.feature_extractor import GenericFeatureExtractor
 
 
