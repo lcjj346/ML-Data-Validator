@@ -12,6 +12,7 @@ import joblib
 import pandas as pd
 from typing import List, Tuple, Optional
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from ml.feature_extractor import GenericFeatureExtractor
 
 
@@ -34,7 +35,8 @@ class GenericMLValidator:
         Args:
             model_path: Path to load trained model (optional)
         """
-        self.model = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced')
+        self.model = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
+        self.scaler = StandardScaler()
         self.feature_extractor = GenericFeatureExtractor()
         self.is_trained = False
         self.model_path = model_path
@@ -68,13 +70,16 @@ class GenericMLValidator:
         X = [self.feature_extractor.extract_features(text) for text, label in training_data]
         y = [1 if label.lower() == "valid" else 0 for text, label in training_data]
 
+        # Scale features for better convergence
+        X_scaled = self.scaler.fit_transform(X)
+
         # Train model
-        self.model.fit(X, y)
+        self.model.fit(X_scaled, y)
         self.is_trained = True
         self.data_type = data_type
 
         # Calculate accuracy
-        accuracy = self.model.score(X, y)
+        accuracy = self.model.score(X_scaled, y)
         print(f"Training accuracy: {accuracy:.2%}")
         print("Training complete!")
 
@@ -121,8 +126,9 @@ class GenericMLValidator:
             raise ValueError("Model not trained. Call train() or load() first.")
 
         features = self.feature_extractor.extract_features(text)
-        prediction = self.model.predict([features])[0]
-        probabilities = self.model.predict_proba([features])[0]
+        features_scaled = self.scaler.transform([features])
+        prediction = self.model.predict(features_scaled)[0]
+        probabilities = self.model.predict_proba(features_scaled)[0]
         confidence = float(max(probabilities))
 
         return bool(prediction), confidence
@@ -143,9 +149,12 @@ class GenericMLValidator:
         # Extract features for all texts
         X = [self.feature_extractor.extract_features(text) for text in texts]
 
+        # Scale features
+        X_scaled = self.scaler.transform(X)
+
         # Batch predict
-        predictions = self.model.predict(X)
-        probabilities = self.model.predict_proba(X)
+        predictions = self.model.predict(X_scaled)
+        probabilities = self.model.predict_proba(X_scaled)
 
         results = []
         for pred, prob in zip(predictions, probabilities):
@@ -285,6 +294,7 @@ class GenericMLValidator:
 
         model_data = {
             'model': self.model,
+            'scaler': self.scaler,
             'data_type': self.data_type,
             'is_trained': self.is_trained,
         }
@@ -310,6 +320,7 @@ class GenericMLValidator:
         try:
             model_data = joblib.load(filepath)
             self.model = model_data['model']
+            self.scaler = model_data.get('scaler', StandardScaler())  # Backward compatibility
             self.data_type = model_data['data_type']
             self.is_trained = model_data['is_trained']
             self.model_path = filepath

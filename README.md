@@ -67,16 +67,16 @@ abc,invalid
 
 ```
 ml-data-validator/
-├── app.py                      # Main Streamlit application (~535 lines)
+├── app.py                      # Main Streamlit application (~643 lines)
 ├── requirements.txt            # Python dependencies (~10-12 packages)
 ├── README.md                   # This file
 ├── .gitignore                  # Git ignore rules
 │
 ├── ml/                         # Core ML package (4 files)
 │   ├── __init__.py             # Package exports
-│   ├── feature_extractor.py   # Extract 47+ features from any text (~212 lines)
-│   ├── validator.py            # Generic ML validator (Logistic Regression) (~256 lines)
-│   └── corrector.py            # Similarity-based corrector (~225 lines)
+│   ├── feature_extractor.py   # Extract 67 features from any text (~267 lines)
+│   ├── validator.py            # Generic ML validator (Logistic Regression) (~370 lines)
+│   └── corrector.py            # Similarity-based corrector (~229 lines)
 │
 ├── models/                     # Trained models (20 pre-trained models)
 │   ├── phone_validator.pkl
@@ -119,7 +119,7 @@ ml-data-validator/
 
 #### 1. Feature Extraction (`feature_extractor.py`)
 
-Extracts **47+ generic features** from ANY text:
+Extracts **67 generic features** from ANY text:
 
 - **Length Features (3)**: total length, word count, comma-separated parts
 - **Character Type Ratios (5)**: digit%, letter%, space%, uppercase%, lowercase%
@@ -250,7 +250,7 @@ You can use these immediately or train your own for custom data types!
 - **No hardcoded rules** - Pure feature-based learning
 - **No domain-specific logic** - Works for ANY data type
 - **Train on YOUR data** - Learns YOUR specific patterns
-- **47+ generic features** - Extracted from any text
+- **67 generic features** - Extracted from any text
 - **High accuracy** - Achieves excellent results on training data
 
 ### 2. Smart Correction System
@@ -271,7 +271,7 @@ You can use these immediately or train your own for custom data types!
 ### 4. Simple & Clean Architecture
 
 - **4 core files** instead of 22
-- **~1,250 lines** of clean code
+- **~1,530 lines** of clean code
 - **Easy to understand** - No complex abstractions
 - **Easy to modify** - Single layer architecture
 - **Well-documented** - Comprehensive docstrings
