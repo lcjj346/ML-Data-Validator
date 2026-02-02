@@ -230,16 +230,35 @@ class GenericFeatureExtractor:
     def get_feature_names() -> List[str]:
         """Get feature names for debugging/analysis"""
         return [
+            # LENGTH FEATURES (3)
             'length', 'word_count', 'comma_parts',
+            # CHARACTER TYPE RATIOS (5)
             'digit_ratio', 'letter_ratio', 'space_ratio', 'uppercase_ratio', 'lowercase_ratio',
+            # SPECIAL CHARACTER COUNTS (9)
             'count_plus', 'count_at', 'count_dot', 'count_hash', 'count_dash',
             'count_underscore', 'count_lparen', 'count_rparen', 'count_slash',
+            # POSITION FEATURES (5)
             'starts_uppercase', 'starts_digit', 'starts_plus', 'ends_digit', 'ends_letter',
-            'email_like', 'phone_like', 'mixed_alphanum',
+            # PATTERN FEATURES - Email (6)
+            'email_like', 'exactly_one_at', 'has_username', 'domain_has_dot',
+            'domain_has_extension', 'common_domain',
+            # PATTERN FEATURES - Phone & Mixed (2)
+            'phone_like', 'mixed_alphanum',
+            # REGEX PATTERNS (3)
             'digit_sequences', 'capitalized_words', 'long_digits',
+            # COMMON KEYWORDS (12)
             'has_blk', 'has_ave', 'has_road', 'has_street', 'has_singapore',
             'has_com', 'has_net', 'has_org', 'has_edu',
-            'has_at', 'has_plus', 'has_hash',
+            'has_at_keyword', 'has_plus_keyword', 'has_hash_keyword',
+            # CHARACTER N-GRAMS (6)
+            'repeated_chars', 'triple_chars', 'max_bigram_freq',
+            'char_variety', 'vowel_ratio', 'max_consecutive_consonants',
+            # NUMERIC VALUE FEATURES (20)
+            'numeric_value', 'is_numeric', 'value_squared', 'value_cubed',
+            'value_sqrt', 'value_log', 'value_inverse', 'sign', 'abs_value',
+            'is_negative', 'bucket_0_1', 'bucket_1_2', 'bucket_2_5', 'bucket_5_10',
+            'bucket_10_20', 'bucket_20_50', 'bucket_50_100', 'bucket_100_200',
+            'bucket_200_plus', 'decimal_places',
         ]
 
 

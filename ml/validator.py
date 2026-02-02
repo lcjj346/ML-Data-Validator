@@ -13,6 +13,7 @@ import pandas as pd
 from typing import List, Tuple, Optional
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score
 from ml.feature_extractor import GenericFeatureExtractor
 
 
@@ -41,6 +42,7 @@ class GenericMLValidator:
         self.is_trained = False
         self.model_path = model_path
         self.data_type = "unknown"
+        self.valid_whitelist = set()  # Store valid examples for exact matching
 
         # Try to load if path provided
         if model_path and os.path.exists(model_path):
@@ -66,19 +68,50 @@ class GenericMLValidator:
         print(f"Training Generic ML Validator for '{data_type}'...")
         print(f"Training examples: {len(training_data)}")
 
+        # Build whitelist of valid examples (case-insensitive)
+        self.valid_whitelist = set(
+            str(text).lower().strip()
+            for text, label in training_data
+            if label.lower() == "valid"
+        )
+
         # Extract features
         X = [self.feature_extractor.extract_features(text) for text, label in training_data]
         y = [1 if label.lower() == "valid" else 0 for text, label in training_data]
 
+        # Check for class imbalance and warn
+        valid_count = sum(y)
+        invalid_count = len(y) - valid_count
+        total = len(y)
+        valid_pct = valid_count / total * 100
+        invalid_pct = invalid_count / total * 100
+
+        print(f"Class distribution: {valid_count} valid ({valid_pct:.1f}%), {invalid_count} invalid ({invalid_pct:.1f}%)")
+
+        if valid_pct < 20 or valid_pct > 80:
+            print(f"WARNING: Imbalanced training data detected! Consider adding more {'valid' if valid_pct < 20 else 'invalid'} examples.")
+
+        if total < 50:
+            print(f"WARNING: Small training set ({total} examples). Consider adding more examples for better accuracy.")
+
         # Scale features for better convergence
         X_scaled = self.scaler.fit_transform(X)
 
-        # Train model
+        # Perform cross-validation for realistic accuracy estimate (if enough samples)
+        min_class_count = min(valid_count, invalid_count)
+        if len(training_data) >= 10 and min_class_count >= 3:
+            n_folds = min(5, min_class_count)  # Folds can't exceed smallest class
+            cv_scores = cross_val_score(self.model, X_scaled, y, cv=n_folds)
+            print(f"Cross-validation accuracy: {cv_scores.mean():.2%} (+/- {cv_scores.std() * 2:.2%})")
+        elif len(training_data) >= 10:
+            print("Skipping cross-validation: need at least 3 samples per class")
+
+        # Train model on full data
         self.model.fit(X_scaled, y)
         self.is_trained = True
         self.data_type = data_type
 
-        # Calculate accuracy
+        # Calculate training accuracy (for reference)
         accuracy = self.model.score(X_scaled, y)
         print(f"Training accuracy: {accuracy:.2%}")
         print("Training complete!")
@@ -125,6 +158,12 @@ class GenericMLValidator:
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() or load() first.")
 
+        # First check whitelist (exact match, case-insensitive)
+        text_lower = str(text).lower().strip()
+        if self.valid_whitelist and text_lower in self.valid_whitelist:
+            return True, 1.0  # Exact match = definitely valid
+
+        # Otherwise use ML model
         features = self.feature_extractor.extract_features(text)
         features_scaled = self.scaler.transform([features])
         prediction = self.model.predict(features_scaled)[0]
@@ -146,21 +185,31 @@ class GenericMLValidator:
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() or load() first.")
 
-        # Extract features for all texts
-        X = [self.feature_extractor.extract_features(text) for text in texts]
-
-        # Scale features
-        X_scaled = self.scaler.transform(X)
-
-        # Batch predict
-        predictions = self.model.predict(X_scaled)
-        probabilities = self.model.predict_proba(X_scaled)
-
         results = []
-        for pred, prob in zip(predictions, probabilities):
-            is_valid = bool(pred)
-            confidence = float(max(prob))
-            results.append((is_valid, confidence))
+        texts_for_ml = []
+        ml_indices = []
+
+        # First pass: check whitelist
+        for i, text in enumerate(texts):
+            text_lower = str(text).lower().strip()
+            if self.valid_whitelist and text_lower in self.valid_whitelist:
+                results.append((True, 1.0))  # Exact match
+            else:
+                results.append(None)  # Placeholder for ML
+                texts_for_ml.append(text)
+                ml_indices.append(i)
+
+        # Second pass: ML for non-whitelist entries
+        if texts_for_ml:
+            X = [self.feature_extractor.extract_features(text) for text in texts_for_ml]
+            X_scaled = self.scaler.transform(X)
+            predictions = self.model.predict(X_scaled)
+            probabilities = self.model.predict_proba(X_scaled)
+
+            for idx, pred, prob in zip(ml_indices, predictions, probabilities):
+                is_valid = bool(pred)
+                confidence = float(max(prob))
+                results[idx] = (is_valid, confidence)
 
         return results
 
@@ -209,7 +258,11 @@ class GenericMLValidator:
         # Data type specific checks based on training data type
         data_type_lower = self.data_type.lower()
 
-        if 'email' in data_type_lower:
+        # Helper to detect data type category with multiple keywords
+        def is_type(keywords):
+            return any(kw in data_type_lower for kw in keywords)
+
+        if is_type(['email', 'mail', 'e-mail', 'e_mail']):
             if features[9] == 0:  # count_at
                 issues.append("missing '@' symbol")
             elif features[9] > 1:
@@ -219,7 +272,7 @@ class GenericMLValidator:
             if features[23] == 0:  # email_like pattern
                 issues.append("invalid email format")
 
-        elif 'phone' in data_type_lower:
+        elif is_type(['phone', 'mobile', 'cell', 'tel', 'contact_number', 'phone_number']):
             digit_ratio = features[3]
             if digit_ratio < 0.5:
                 issues.append(f"insufficient digits ({digit_ratio*100:.0f}% digits)")
@@ -228,7 +281,7 @@ class GenericMLValidator:
             if features[0] < 8:
                 issues.append("too short for phone number")
 
-        elif 'name' in data_type_lower:
+        elif is_type(['name', 'person', 'full_name', 'fullname', 'customer_name']):
             if features[1] < 2:  # word_count
                 issues.append("missing first or last name")
             if features[3] > 0.1:  # digit_ratio > 10%
@@ -238,7 +291,7 @@ class GenericMLValidator:
             if features[17] == 0:  # starts_uppercase
                 issues.append("should start with capital letter")
 
-        elif 'country' in data_type_lower or 'location' in data_type_lower:
+        elif is_type(['country', 'location', 'nation', 'region', 'territory']):
             if features[1] > 5:  # word_count
                 issues.append("too many words for country name")
             if features[3] > 0.2:  # digit_ratio
@@ -297,6 +350,7 @@ class GenericMLValidator:
             'scaler': self.scaler,
             'data_type': self.data_type,
             'is_trained': self.is_trained,
+            'valid_whitelist': self.valid_whitelist,
         }
 
         joblib.dump(model_data, filepath)
@@ -323,6 +377,7 @@ class GenericMLValidator:
             self.scaler = model_data.get('scaler', StandardScaler())  # Backward compatibility
             self.data_type = model_data['data_type']
             self.is_trained = model_data['is_trained']
+            self.valid_whitelist = model_data.get('valid_whitelist', set())  # Load whitelist
             self.model_path = filepath
             print(f"Model loaded: {self.data_type} validator")
             return True

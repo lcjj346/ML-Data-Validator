@@ -8,7 +8,7 @@ Uses similarity-based matching to suggest corrections.
 """
 
 import os
-import pickle
+import joblib
 from typing import List, Optional, Tuple
 import difflib
 
@@ -100,25 +100,42 @@ class GenericMLCorrector:
         if not text or str(text).strip() == '' or str(text).lower() in ['nan', 'none', 'null']:
             return None
 
-        # Find the most similar valid example
-        best_match = None
-        best_similarity = 0.0
-
         # Convert text to string for comparison
         text_str = str(text)
+        text_lower = text_str.lower()
 
+        # Find all matches above threshold
+        candidates = []
         for valid_example in self.valid_examples:
-            # Convert both to strings and lowercase for comparison
             valid_example_str = str(valid_example)
             # Calculate similarity using difflib's SequenceMatcher
-            similarity = difflib.SequenceMatcher(None, text_str.lower(), valid_example_str.lower()).ratio()
+            similarity = difflib.SequenceMatcher(None, text_lower, valid_example_str.lower()).ratio()
 
-            if similarity > best_similarity:
-                best_similarity = similarity
-                best_match = valid_example
+            if similarity >= self.similarity_threshold:
+                candidates.append((valid_example_str, similarity))
 
-        # Only return if similarity is above threshold and not identical
-        if best_similarity >= self.similarity_threshold and text_str != str(best_match):
+        if not candidates:
+            return None
+
+        # Sort candidates by: 1) similarity (desc), 2) canonical form preference
+        def canonical_score(s):
+            """Prefer canonical forms based on length and casing"""
+            if len(s) <= 3 and s.isupper():
+                return 0  # Best for short: "USA", "UK", "UAE"
+            elif s.istitle():
+                return 1  # Best for long: "Singapore", "Malaysia"
+            elif s[0].isupper() if s else False:
+                return 2  # OK: "United States"
+            elif s.isupper():
+                return 3  # Less preferred for long: "SINGAPORE"
+            else:
+                return 4  # Least preferred: "usa", "UsA"
+
+        candidates.sort(key=lambda x: (-x[1], canonical_score(x[0]), len(x[0])))
+        best_match = candidates[0][0]
+
+        # Only return if not identical to input
+        if text_str != best_match:
             return best_match
 
         return None
@@ -175,9 +192,7 @@ class GenericMLCorrector:
             'similarity_threshold': self.similarity_threshold,
         }
 
-        with open(filepath, 'wb') as f:
-            pickle.dump(model_data, f)
-
+        joblib.dump(model_data, filepath)
         self.model_path = filepath
         print(f"Corrector saved to {filepath}")
 
@@ -188,8 +203,7 @@ class GenericMLCorrector:
             return False
 
         try:
-            with open(filepath, 'rb') as f:
-                model_data = pickle.load(f)
+            model_data = joblib.load(filepath)
 
             self.data_type = model_data['data_type']
             self.is_trained = model_data['is_trained']

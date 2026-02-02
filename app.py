@@ -13,32 +13,111 @@ Usage:
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 import os
 from ml.validator import GenericMLValidator
 from ml.corrector import GenericMLCorrector
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
-st.set_page_config(page_title="ML Validator", layout="wide")
+st.set_page_config(page_title="ML Data Validator", layout="wide", page_icon="🔍")
 
-# Hide Streamlit's automatic header anchor links
+
+def safe_cast_value(value, target_dtype):
+    """Cast a value to the target dtype, handling type mismatches gracefully."""
+    try:
+        if pd.api.types.is_float_dtype(target_dtype):
+            return float(value)
+        elif pd.api.types.is_integer_dtype(target_dtype):
+            return int(float(value))
+        elif pd.api.types.is_bool_dtype(target_dtype):
+            return bool(value)
+        else:
+            return value
+    except (ValueError, TypeError):
+        return value
+
+
+# Custom CSS for better UI/UX
 st.markdown("""
     <style>
-        .css-15zrgzn {display: none}
-        .css-eczf16 {display: none}
-        .css-jn99sy {display: none}
-        header .css-18ni7ap {display: none}
+        /* Hide Streamlit's automatic header anchor links */
         h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
             display: none !important;
         }
         .stMarkdown h1 a, .stMarkdown h2 a, .stMarkdown h3 a {
             display: none !important;
         }
+
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+
+        /* Button transitions */
+        .stButton > button {
+            transition: all 0.2s ease;
+        }
+        .stButton > button:hover {
+            transform: scale(1.03);
+        }
+
+        /* Metrics */
+        [data-testid="stMetricValue"] {
+            font-size: 2.2rem !important;
+        }
+
+        /* Step badges */
+        .step-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        /* Correction card */
+        .correction-card {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            border-left: 4px solid;
+            transition: all 0.2s ease;
+        }
+        .correction-card:hover {
+            transform: translateX(4px);
+        }
+        .correction-has-fix {
+            border-left-color: #51cf66;
+            background-color: rgba(81, 207, 102, 0.05);
+        }
+        .correction-no-fix {
+            border-left-color: #ff6b6b;
+            background-color: rgba(255, 107, 107, 0.05);
+        }
+
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+        }
+
+        /* File uploader compact */
+        [data-testid="stFileUploader"] {
+            padding-bottom: 0;
+        }
+
+        /* Quality badge */
+        .quality-high { color: #51cf66; }
+        .quality-medium { color: #fcc419; }
+        .quality-low { color: #ff6b6b; }
     </style>
 """, unsafe_allow_html=True)
 
 # ==================== HEADER ====================
 
-st.title("Simple ML Data Validator")
+st.title("ML Data Validator")
+st.caption("Train on your data, validate any column type, suggest corrections.")
 
 # ==================== TABS ====================
 
@@ -47,7 +126,6 @@ tab_validate, tab_train = st.tabs(["Validate Data", "Train Models"])
 # ==================== VALIDATION TAB ====================
 
 with tab_validate:
-    st.header("Validate Your Data")
 
     # Initialize session state
     if 'validated_df' not in st.session_state:
@@ -55,14 +133,25 @@ with tab_validate:
     if 'corrections_data' not in st.session_state:
         st.session_state.corrections_data = None
     if 'modified_cells' not in st.session_state:
-        st.session_state.modified_cells = set()  # Track which cells were modified (row, col)
+        st.session_state.modified_cells = set()
     if 'cell_validity' not in st.session_state:
-        st.session_state.cell_validity = {}  # Track validity per cell
+        st.session_state.cell_validity = {}
     if 'column_mappings' not in st.session_state:
-        st.session_state.column_mappings = {}  # Track which columns are being validated
+        st.session_state.column_mappings = {}
+    if 'last_correction' not in st.session_state:
+        st.session_state.last_correction = None
 
-    # Step 1: Upload CSV
-    uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
+    # Show success toast if correction was just applied
+    if st.session_state.last_correction:
+        correction_info = st.session_state.last_correction
+        st.toast(f"Applied: {correction_info['original']} → {correction_info['suggested']}", icon="✅")
+        st.markdown('<script>window.scrollTo({top: 0, behavior: "smooth"});</script>', unsafe_allow_html=True)
+        st.session_state.last_correction = None
+
+    # ========== STEP 1: Upload ==========
+    st.markdown('<span class="step-badge">Step 1</span> **Upload your CSV file**', unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("Upload CSV file", type=['csv'], label_visibility="collapsed")
 
     if uploaded_file:
         # Check if this is a new file upload - clear previous validation results
@@ -70,7 +159,6 @@ with tab_validate:
         if 'current_uploaded_file' not in st.session_state:
             st.session_state.current_uploaded_file = None
 
-        # If a different file is uploaded, clear all validation results
         if st.session_state.current_uploaded_file != current_filename:
             st.session_state.validated_df = None
             st.session_state.corrections_data = None
@@ -78,15 +166,24 @@ with tab_validate:
             st.session_state.cell_validity = {}
             st.session_state.column_mappings = {}
             st.session_state.current_uploaded_file = current_filename
-            # Also clear original_df if it exists
             if 'original_df' in st.session_state:
                 st.session_state.original_df = None
 
         df = pd.read_csv(uploaded_file)
-        st.success(f"File uploaded! Shape: {df.shape}")
 
-        # Step 2: Configure column validation
-        # List available models
+        # File info in columns
+        info_col1, info_col2, info_col3 = st.columns(3)
+        info_col1.metric("Rows", df.shape[0])
+        info_col2.metric("Columns", df.shape[1])
+        info_col3.metric("File", uploaded_file.name)
+
+        # Preview data
+        with st.expander("Preview uploaded data", expanded=False):
+            st.dataframe(df.head(10), width='stretch')
+
+        st.divider()
+
+        # ========== STEP 2: Configure ==========
         models_dir = "models"
         available_models = []
         if os.path.exists(models_dir):
@@ -97,6 +194,8 @@ with tab_validate:
         if not available_models:
             st.warning("No trained models found. Go to 'Train Models' tab first.")
         else:
+            st.markdown('<span class="step-badge">Step 2</span> **Map columns to validators**', unsafe_allow_html=True)
+
             # Initialize session state for column mappings
             if 'column_mappings' not in st.session_state:
                 st.session_state.column_mappings = {}
@@ -104,20 +203,16 @@ with tab_validate:
             # Define base validation types
             base_validators = ['name', 'email', 'phone', 'country', 'blood_sugar', 'age', 'address']
 
-            # Auto-map columns that match base validator names
+            # Auto-map columns
             column_mappings = {}
             unmapped_columns = []
 
             for column in df.columns:
                 column_lower = column.lower().replace('_', '').replace('-', '').replace(' ', '')
-                # Check if column name matches any base validator
                 matched = False
                 for base_val in base_validators:
                     base_val_normalized = base_val.replace('_', '').replace('-', '').replace(' ', '')
-                    # Check if the normalized base validator name matches the column
                     if base_val_normalized in column_lower:
-                        # Find the actual model name (could be with or without underscores)
-                        # Check both the original base_val and the normalized version
                         if base_val in available_models:
                             column_mappings[column] = base_val
                             matched = True
@@ -126,17 +221,13 @@ with tab_validate:
                             column_mappings[column] = base_val_normalized
                             matched = True
                             break
-
                 if not matched:
                     unmapped_columns.append(column)
 
-            # Only show "Configure Validation" section if there are unmapped columns
-            if unmapped_columns:
-                st.subheader("Configure Validation")
-
-                # Show auto-mapped base validations
+            with st.expander("Column Mapping Configuration", expanded=bool(unmapped_columns)):
+                # Show auto-mapped
                 if column_mappings:
-                    st.write("**Auto-mapped base validations:**")
+                    st.markdown("**Auto-detected mappings:**")
                     for column, validator in column_mappings.items():
                         col1, col2 = st.columns([2, 2])
                         with col1:
@@ -144,285 +235,287 @@ with tab_validate:
                         with col2:
                             st.write(f"✓ {validator}")
 
-                # Show manual configuration for unmapped columns
-                st.write("**Map additional columns to validators:**")
-
-                for column in unmapped_columns:
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    with col1:
-                        st.write(f"**{column}**")
-                    with col2:
-                        validator_choice = st.selectbox(
-                            f"Validator for {column}",
-                            ["(Skip)"] + available_models,
-                            key=f"validator_{column}",
-                            label_visibility="collapsed"
-                        )
-                        if validator_choice != "(Skip)":
-                            column_mappings[column] = validator_choice
-                    with col3:
-                        if validator_choice != "(Skip)":
-                            st.write("")
+                # Show unmapped
+                if unmapped_columns:
+                    st.markdown("---")
+                    st.markdown("**Map additional columns:**")
+                    for column in unmapped_columns:
+                        col1, col2 = st.columns([2, 2])
+                        with col1:
+                            st.write(f"**{column}**")
+                        with col2:
+                            validator_choice = st.selectbox(
+                                f"Validator for {column}",
+                                ["(Skip)"] + available_models,
+                                key=f"validator_{column}",
+                                label_visibility="collapsed"
+                            )
+                            if validator_choice != "(Skip)":
+                                column_mappings[column] = validator_choice
+                else:
+                    st.success("All columns auto-mapped!")
 
             st.session_state.column_mappings = column_mappings
 
-            # Step 3: Validate
-            if column_mappings and st.button("Validate", type="primary"):
-                with st.spinner("Validating..."):
-                    # Track validity per cell (row, column) -> is_valid
-                    cell_validity = {}
-                    all_corrections = {}  # Store corrections per column
+            st.divider()
 
-                    # Validate each column
-                    for column, validator_name in column_mappings.items():
-                        validator_path = f"{models_dir}/{validator_name}_validator.pkl"
+            # ========== STEP 3: Validate ==========
+            st.markdown('<span class="step-badge">Step 3</span> **Run validation**', unsafe_allow_html=True)
+
+            if column_mappings and st.button("Validate", type="primary", use_container_width=True):
+                # Progress bar
+                progress_bar = st.progress(0, text="Starting validation...")
+
+                cell_validity = {}
+                all_corrections = {}
+                total_columns = len(column_mappings)
+
+                for col_idx, (column, validator_name) in enumerate(column_mappings.items()):
+                    progress_bar.progress(
+                        (col_idx) / total_columns,
+                        text=f"Validating column: {column}..."
+                    )
+
+                    validator_path = f"{models_dir}/{validator_name}_validator.pkl"
+                    try:
                         validator = GenericMLValidator(validator_path)
+                    except Exception as e:
+                        st.warning(f"Failed to load validator for '{column}': {e}")
+                        continue
 
-                        if validator.is_trained:
-                            # Validate this column
-                            results = validator.validate_batch(df[column].astype(str).tolist())
+                    if validator.is_trained:
+                        results = validator.validate_batch(df[column].astype(str).tolist())
 
-                            # Store validity for each cell
-                            for idx, (is_valid, confidence) in enumerate(results):
-                                cell_validity[(idx, column)] = is_valid
+                        for idx, (is_valid, confidence) in enumerate(results):
+                            cell_validity[(idx, column)] = is_valid
 
-                            # Get corrections for invalid cells in this column
-                            corrector_path = f"{models_dir}/{validator_name}_corrector.pkl"
-                            corrector = None
-                            if os.path.exists(corrector_path):
+                        corrector_path = f"{models_dir}/{validator_name}_corrector.pkl"
+                        corrector = None
+                        if os.path.exists(corrector_path):
+                            try:
                                 corrector = GenericMLCorrector(corrector_path)
+                            except Exception as e:
+                                st.warning(f"Failed to load corrector for '{column}': {e}")
 
-                            for idx, row in df.iterrows():
-                                if not results[idx][0]:  # If this cell is invalid
-                                    original = str(row[column])
-                                    corrected = None
+                        for idx, row in df.iterrows():
+                            if not results[idx][0]:
+                                original = str(row[column])
+                                corrected = None
 
-                                    # Try to get correction if corrector exists
-                                    if corrector:
-                                        corrected = corrector.correct(original)
+                                if corrector:
+                                    corrected = corrector.correct(original)
 
-                                    # Get explanation for why it's invalid
-                                    reason = validator.explain_invalidity(original)
+                                reason = validator.explain_invalidity(original)
 
-                                    # Always add entry for invalid cells
-                                    if idx not in all_corrections:
-                                        all_corrections[idx] = {}
+                                if idx not in all_corrections:
+                                    all_corrections[idx] = {}
 
-                                    # Store correction (or original if no correction available)
-                                    suggested = corrected if (corrected and corrected != original) else original
-                                    has_correction = corrected is not None and corrected != original
+                                suggested = corrected if (corrected and corrected != original) else original
+                                has_correction = corrected is not None and corrected != original
 
-                                    all_corrections[idx][column] = {
-                                        'original': original,
-                                        'suggested': suggested,
-                                        'has_correction': has_correction,
-                                        'reason': reason
-                                    }
+                                all_corrections[idx][column] = {
+                                    'original': original,
+                                    'suggested': suggested,
+                                    'has_correction': has_correction,
+                                    'reason': reason
+                                }
 
-                    # Store in session state
-                    st.session_state.validated_df = df
-                    st.session_state.original_df = df.copy()
-                    st.session_state.cell_validity = cell_validity  # Track which cells are valid/invalid
-                    st.session_state.modified_cells = set()  # Track modified cells as (row, col) tuples
-                    st.session_state.column_mappings = column_mappings
+                progress_bar.progress(1.0, text="Validation complete!")
 
-                    # Format corrections for display
-                    corrections = []
-                    for idx, col_corrections in all_corrections.items():
-                        for column, correction_data in col_corrections.items():
-                            corrections.append({
-                                'Row Index': idx,
-                                'Row': idx + 1,
-                                'Column': column,
-                                'Original': correction_data['original'],
-                                'Suggested': correction_data['suggested'],
-                                'Has Correction': correction_data['has_correction'],
-                                'Reason': correction_data.get('reason', 'Unknown')
-                            })
+                # Store in session state
+                st.session_state.validated_df = df
+                st.session_state.original_df = df.copy()
+                st.session_state.cell_validity = cell_validity
+                st.session_state.modified_cells = set()
+                st.session_state.column_mappings = column_mappings
 
-                    st.session_state.corrections_data = corrections if corrections else None
+                corrections = []
+                for idx, col_corrections in all_corrections.items():
+                    for column, correction_data in col_corrections.items():
+                        corrections.append({
+                            'Row Index': idx,
+                            'Row': idx + 1,
+                            'Column': column,
+                            'Original': correction_data['original'],
+                            'Suggested': correction_data['suggested'],
+                            'Has Correction': correction_data['has_correction'],
+                            'Reason': correction_data.get('reason', 'Unknown')
+                        })
 
-        # Show results if validated
+                st.session_state.corrections_data = corrections if corrections else None
+                st.rerun()
+
+        # ==================== RESULTS ====================
         if st.session_state.validated_df is not None:
             df_display = st.session_state.validated_df
 
-            # Calculate stats based on cell-level validity
+            st.divider()
+
+            # ===== Quality Metrics =====
             if 'cell_validity' in st.session_state and 'column_mappings' in st.session_state:
                 total_cells = len(df_display) * len(st.session_state.column_mappings)
                 valid_cells = sum(1 for v in st.session_state.cell_validity.values() if v)
                 invalid_cells = total_cells - valid_cells
                 quality = (valid_cells / total_cells * 100) if total_cells > 0 else 0
 
-                # Show metrics
+                # Quality color
+                if quality >= 80:
+                    quality_class = "quality-high"
+                elif quality >= 50:
+                    quality_class = "quality-medium"
+                else:
+                    quality_class = "quality-low"
+
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Valid Cells", valid_cells)
-                col2.metric("Invalid Cells", invalid_cells)
+                col1.metric("Valid Cells", valid_cells, delta=f"{valid_cells} ok")
+                col2.metric("Invalid Cells", invalid_cells, delta=f"-{invalid_cells}" if invalid_cells else "0")
                 col3.metric("Quality", f"{quality:.1f}%")
 
-            # Show editable table with cell-level coloring using AgGrid
-            st.subheader("Validation Results")
+            # ===== Validation Results Table (Collapsible) =====
+            with st.expander("Validation Results Table", expanded=True):
 
-            # Create display dataframe with index column (starting from 1)
-            df_for_display = df_display.copy()
-            df_for_display.insert(0, 'Index', df_for_display.index + 1)
+                # Create display dataframe with index column
+                df_for_display = df_display.copy()
+                df_for_display.insert(0, 'Index', df_for_display.index + 1)
 
-            # Configure AgGrid
-            gb = GridOptionsBuilder.from_dataframe(df_for_display)
+                # Configure AgGrid
+                gb = GridOptionsBuilder.from_dataframe(df_for_display)
 
-            # Make Index column non-editable, narrower, and no menu
-            # Add custom cell style to reduce padding
-            index_cell_style = JsCode("""
-                function(params) {
-                    return {
-                        'padding': '2px 4px',
-                        'textAlign': 'center'
-                    };
-                }
-            """)
-            gb.configure_column(
-                'Index',
-                editable=False,
-                width=35,
-                minWidth=35,
-                maxWidth=50,
-                suppressMenu=True,
-                filter=False,
-                sortable=False,
-                cellStyle=index_cell_style
-            )
-
-            # Make all data columns editable and add cell-level styling
-            for col in df_for_display.columns:
-                # Skip Index column (already configured as non-editable)
-                if col == 'Index':
-                    continue
-
-                gb.configure_column(col, editable=True, suppressMenu=True)
-
-                # Add cell styling for validated columns
-                if 'column_mappings' in st.session_state and col in st.session_state.column_mappings:
-                    # Prepare data for JavaScript - convert Python tuples to JS arrays and booleans
-                    import json
-
-                    # Convert modified_cells set of tuples to list of arrays for JS
-                    modified_cells_list = [[int(idx), str(c)] for idx, c in st.session_state.get('modified_cells', set())]
-
-                    # Convert cell_validity dict with proper boolean conversion
-                    cell_validity_for_col = {
-                        f"{idx}_{col}": ('true' if v else 'false')
-                        for (idx, c), v in st.session_state.get('cell_validity', {}).items()
-                        if c == col
+                index_cell_style = JsCode("""
+                    function(params) {
+                        return {
+                            'padding': '2px 4px',
+                            'textAlign': 'center'
+                        };
                     }
+                """)
+                gb.configure_column(
+                    'Index',
+                    editable=False,
+                    width=35,
+                    minWidth=35,
+                    maxWidth=50,
+                    suppressMenu=True,
+                    filter=False,
+                    sortable=False,
+                    cellStyle=index_cell_style
+                )
 
-                    # Cell-level styling based on validity
-                    cell_style = JsCode(f"""
-                        function(params) {{
-                            const rowIndex = params.node.rowIndex;
-                            const colName = "{col}";
+                for col in df_for_display.columns:
+                    if col == 'Index':
+                        continue
 
-                            // Check if cell was modified
-                            const modifiedCells = {json.dumps(modified_cells_list)};
-                            const isModified = modifiedCells.some(c => c[0] === rowIndex && c[1] === colName);
+                    gb.configure_column(col, editable=True, suppressMenu=True)
 
-                            if (isModified) {{
-                                return {{
-                                    'backgroundColor': '#ff8c00',
-                                    'color': '#ffffff'
-                                }};
+                    if 'column_mappings' in st.session_state and col in st.session_state.column_mappings:
+                        import json
+
+                        modified_cells_list = [[int(idx), str(c)] for idx, c in st.session_state.get('modified_cells', set())]
+                        cell_validity_for_col = {
+                            f"{idx}_{col}": ('true' if v else 'false')
+                            for (idx, c), v in st.session_state.get('cell_validity', {}).items()
+                            if c == col
+                        }
+
+                        cell_style = JsCode(f"""
+                            function(params) {{
+                                const rowIndex = params.node.rowIndex;
+                                const colName = "{col}";
+                                const modifiedCells = {json.dumps(modified_cells_list)};
+                                const isModified = modifiedCells.some(c => c[0] === rowIndex && c[1] === colName);
+
+                                if (isModified) {{
+                                    return {{
+                                        'backgroundColor': '#ff8c00',
+                                        'color': '#ffffff'
+                                    }};
+                                }}
+
+                                const cellValidity = {json.dumps(cell_validity_for_col)};
+                                const validityKey = rowIndex + '_{col}';
+                                const isValid = cellValidity[validityKey];
+
+                                if (isValid === 'true') {{
+                                    return {{
+                                        'backgroundColor': '#28a745',
+                                        'color': '#ffffff'
+                                    }};
+                                }} else if (isValid === 'false') {{
+                                    return {{
+                                        'backgroundColor': '#dc3545',
+                                        'color': '#ffffff'
+                                    }};
+                                }}
+                                return {{}};
                             }}
+                        """)
+                        gb.configure_column(col, cellStyle=cell_style)
 
-                            // Otherwise use validity
-                            const cellValidity = {json.dumps(cell_validity_for_col)};
-                            const validityKey = rowIndex + '_{col}';
-                            const isValid = cellValidity[validityKey];
+                gb.configure_default_column(
+                    filter=False,
+                    floatingFilter=False,
+                    suppressMenu=True,
+                    sortable=False
+                )
+                gb.configure_grid_options(
+                    domLayout='normal',
+                    suppressMenuHide=True,
+                    enableFilter=False
+                )
+                grid_options = gb.build()
 
-                            if (isValid === 'true') {{
-                                return {{
-                                    'backgroundColor': '#28a745',
-                                    'color': '#ffffff'
-                                }};
-                            }} else if (isValid === 'false') {{
-                                return {{
-                                    'backgroundColor': '#dc3545',
-                                    'color': '#ffffff'
-                                }};
-                            }}
+                grid_response = AgGrid(
+                    df_for_display,
+                    gridOptions=grid_options,
+                    update_on=['cellValueChanged'],
+                    allow_unsafe_jscode=True,
+                    height=400,
+                    fit_columns_on_grid_load=True,
+                    theme='streamlit',
+                    enable_enterprise_modules=False
+                )
 
-                            return {{}};
-                        }}
-                    """)
-                    gb.configure_column(col, cellStyle=cell_style)
+                # Get edited data
+                if grid_response['data'] is not None:
+                    edited_data = pd.DataFrame(grid_response['data'])
 
-            # Disable filtering and column menu
-            gb.configure_default_column(
-                filter=False,
-                floatingFilter=False,
-                suppressMenu=True,
-                sortable=False
-            )
-            gb.configure_grid_options(
-                domLayout='normal',
-                suppressMenuHide=True,
-                enableFilter=False
-            )
-            grid_options = gb.build()
+                    if 'Index' in edited_data.columns:
+                        edited_data = edited_data.drop(columns=['Index'])
 
-            # Display AgGrid
-            grid_response = AgGrid(
-                df_for_display,
-                gridOptions=grid_options,
-                update_on=['cellValueChanged'],
-                allow_unsafe_jscode=True,
-                height=400,
-                fit_columns_on_grid_load=True,
-                theme='streamlit',
-                enable_enterprise_modules=False
-            )
+                    edited_data.index = df_display.index
 
-            # Get edited data
-            if grid_response['data'] is not None:
-                edited_data = pd.DataFrame(grid_response['data'])
+                    edit_detected = False
+                    if 'original_df' in st.session_state and 'modified_cells' in st.session_state:
+                        for col in df_display.columns:
+                            for idx in df_display.index:
+                                original_val = st.session_state.original_df.at[idx, col]
+                                new_val = edited_data.at[idx, col]
+                                cell_key = (idx, col)
 
-                # Remove Index column from edited data (it's just for display)
-                if 'Index' in edited_data.columns:
-                    edited_data = edited_data.drop(columns=['Index'])
+                                both_nan = pd.isna(original_val) and pd.isna(new_val)
 
-                # Reset the index to match df_display.index
-                edited_data.index = df_display.index
+                                if not both_nan:
+                                    values_changed = str(original_val) != str(new_val)
+                                    if values_changed and cell_key not in st.session_state.modified_cells:
+                                        st.session_state.modified_cells.add(cell_key)
+                                        edit_detected = True
 
-                # Check for manual edits and track them as modified (cell-level)
-                # Compare against original_df to detect first-time edits
-                edit_detected = False
-                if 'original_df' in st.session_state and 'modified_cells' in st.session_state:
                     for col in df_display.columns:
-                        for idx in df_display.index:
-                            original_val = st.session_state.original_df.at[idx, col]
-                            new_val = edited_data.at[idx, col]
-                            cell_key = (idx, col)
+                        df_display[col] = edited_data[col]
 
-                            # Check if both are NaN (NaN should be considered equal)
-                            both_nan = pd.isna(original_val) and pd.isna(new_val)
+                    st.session_state.validated_df = df_display
 
-                            # Check if values actually changed
-                            if not both_nan:
-                                values_changed = str(original_val) != str(new_val)
-                                if values_changed and cell_key not in st.session_state.modified_cells:
-                                    st.session_state.modified_cells.add(cell_key)
-                                    edit_detected = True
+                    if edit_detected:
+                        st.rerun()
 
-                # Update the dataframe with edits
-                for col in df_display.columns:
-                    df_display[col] = edited_data[col]
+                # Color legend
+                st.markdown(
+                    '&nbsp;&nbsp; 🟩 Valid &nbsp;&nbsp; 🟥 Invalid &nbsp;&nbsp; 🟧 Manually edited',
+                    unsafe_allow_html=True
+                )
 
-                st.session_state.validated_df = df_display
-
-                # Trigger rerun if new edit detected to update styling
-                if edit_detected:
-                    st.rerun()
-
-            # Show corrections after the table
+            # ===== Corrections Section (Collapsible) =====
             if st.session_state.corrections_data:
-                # Filter out already applied corrections (cells that are already modified)
                 if 'modified_cells' in st.session_state:
                     pending_corrections = [
                         c for c in st.session_state.corrections_data
@@ -432,212 +525,250 @@ with tab_validate:
                     pending_corrections = st.session_state.corrections_data
 
                 if pending_corrections:
-                    st.subheader("Suggested Corrections")
-
-                    # Get unique columns for filter
-                    unique_columns = sorted(list(set([c['Column'] for c in pending_corrections])))
-
-                    # Add filter dropdown
-                    col_filter, col_spacer = st.columns([2, 4])
-                    with col_filter:
-                        selected_column = st.selectbox(
-                            "Filter by column:",
-                            ["All Columns"] + unique_columns,
-                            key="correction_filter"
-                        )
-
-                    # Filter corrections based on selection
-                    if selected_column != "All Columns":
-                        pending_corrections = [c for c in pending_corrections if c['Column'] == selected_column]
-
-                    # Sort corrections by row number
-                    pending_corrections = sorted(pending_corrections, key=lambda x: x['Row'])
-
-                    # Count corrections that can be applied
                     applicable_corrections = [c for c in pending_corrections if c['Has Correction']]
+                    no_suggestion = [c for c in pending_corrections if not c['Has Correction']]
 
-                    # Add Apply All button if there are applicable corrections
-                    if applicable_corrections:
-                        if st.button("Apply All Corrections", type="primary"):
-                            # Apply all corrections
-                            for correction in applicable_corrections:
-                                row_idx = correction['Row Index']
-                                column = correction['Column']
-                                st.session_state.validated_df.at[row_idx, column] = correction['Suggested']
-                                st.session_state.modified_cells.add((row_idx, column))
-                            st.rerun()
+                    with st.expander(
+                        f"Suggested Corrections ({len(applicable_corrections)} fixable, {len(no_suggestion)} need review)",
+                        expanded=True
+                    ):
+                        # Filter and Apply All controls
+                        unique_columns = sorted(list(set([c['Column'] for c in pending_corrections])))
 
-                        st.write(f"**{len(applicable_corrections)} correction(s) available**")
+                        filter_col, btn_col = st.columns([2, 2])
+                        with filter_col:
+                            selected_column = st.selectbox(
+                                "Filter by column:",
+                                ["All Columns"] + unique_columns,
+                                key="correction_filter"
+                            )
+                        with btn_col:
+                            if applicable_corrections:
+                                st.write("")  # Spacer for alignment
+                                if st.button(
+                                    f"Apply All {len(applicable_corrections)} Corrections",
+                                    type="primary",
+                                    use_container_width=True
+                                ):
+                                    for correction in applicable_corrections:
+                                        row_idx = correction['Row Index']
+                                        column = correction['Column']
+                                        target_dtype = st.session_state.validated_df[column].dtype
+                                        casted_value = safe_cast_value(correction['Suggested'], target_dtype)
+                                        st.session_state.validated_df.at[row_idx, column] = casted_value
+                                        st.session_state.modified_cells.add((row_idx, column))
+                                    st.session_state.last_correction = {
+                                        'original': f'{len(applicable_corrections)} cells',
+                                        'suggested': 'corrected'
+                                    }
+                                    st.rerun()
+
+                        # Filter
+                        if selected_column != "All Columns":
+                            pending_corrections = [c for c in pending_corrections if c['Column'] == selected_column]
+
+                        pending_corrections = sorted(pending_corrections, key=lambda x: x['Row'])
+
                         st.divider()
 
-                    # Add header row
-                    col1, col2, col3, col4, col5, col6 = st.columns([0.8, 1.2, 1.5, 1.5, 2, 0.8])
-                    with col1:
-                        st.markdown("**Row**")
-                    with col2:
-                        st.markdown("**Column**")
-                    with col3:
-                        st.markdown("**Original**")
-                    with col4:
-                        st.markdown("**Suggested**")
-                    with col5:
-                        st.markdown("**Reason**")
-                    with col6:
-                        st.markdown("**Action**")
+                        # Column headers
+                        hdr1, hdr2, hdr3, hdr4, hdr5, hdr6 = st.columns([0.6, 1.0, 1.5, 1.5, 2, 0.8])
+                        with hdr1:
+                            st.markdown("**Row**")
+                        with hdr2:
+                            st.markdown("**Column**")
+                        with hdr3:
+                            st.markdown("**Original**")
+                        with hdr4:
+                            st.markdown("**Suggestion**")
+                        with hdr5:
+                            st.markdown("**Reason**")
+                        with hdr6:
+                            st.markdown("**Action**")
+                        st.markdown("<hr style='margin: 0 0 8px 0; border: none; border-top: 1px solid rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
 
-                    st.divider()
+                        # Correction rows
+                        for idx, correction in enumerate(pending_corrections):
+                            has_fix = correction['Has Correction']
 
-                    # Add Apply button for each correction
-                    for idx, correction in enumerate(pending_corrections):
-                        col1, col2, col3, col4, col5, col6 = st.columns([0.8, 1.2, 1.5, 1.5, 2, 0.8])
-                        with col1:
-                            st.write(f"**Row {correction['Row']}**")
-                        with col2:
-                            st.write(f"*{correction['Column']}*")
-                        with col3:
-                            st.write(f"{correction['Original']}")
-                        with col4:
-                            if correction['Has Correction']:
-                                st.write(f"→ **{correction['Suggested']}**")
-                            else:
-                                st.write(f"_No suggestion_")
-                        with col5:
-                            # Display the reason for invalidity
-                            reason = correction.get('Reason', 'Unknown')
-                            st.write(f"_{reason}_")
-                        with col6:
-                            if correction['Has Correction']:
-                                if st.button("Apply", key=f"apply_{idx}"):
-                                    # Apply correction to session state dataframe
-                                    row_idx = correction['Row Index']
-                                    column = correction['Column']
-                                    st.session_state.validated_df.at[row_idx, column] = correction['Suggested']
-                                    st.session_state.modified_cells.add((row_idx, column))  # Track as modified
-                                    st.rerun()
-                            else:
-                                st.write("")  # Empty placeholder
+                            col1, col2, col3, col4, col5, col6 = st.columns([0.6, 1.0, 1.5, 1.5, 2, 0.8])
+                            with col1:
+                                st.markdown(f"**{correction['Row']}**")
+                            with col2:
+                                st.markdown(f"`{correction['Column']}`")
+                            with col3:
+                                st.markdown(
+                                    f"<span style='color: #ff6b6b; font-weight: 500;'>{correction['Original']}</span>",
+                                    unsafe_allow_html=True
+                                )
+                            with col4:
+                                if has_fix:
+                                    st.markdown(
+                                        f"<span style='color: #51cf66;'>→ <b>{correction['Suggested']}</b></span>",
+                                        unsafe_allow_html=True
+                                    )
+                                else:
+                                    st.markdown("<span style='color: #868e96;'>No suggestion</span>", unsafe_allow_html=True)
+                            with col5:
+                                reason = correction.get('Reason', 'Unknown')
+                                st.markdown(
+                                    f"<span style='color: #adb5bd; font-size: 0.9em;'>{reason}</span>",
+                                    unsafe_allow_html=True
+                                )
+                            with col6:
+                                if has_fix:
+                                    if st.button("Fix", key=f"apply_{idx}", type="primary"):
+                                        row_idx = correction['Row Index']
+                                        column = correction['Column']
+                                        target_dtype = st.session_state.validated_df[column].dtype
+                                        casted_value = safe_cast_value(correction['Suggested'], target_dtype)
+                                        st.session_state.validated_df.at[row_idx, column] = casted_value
+                                        st.session_state.modified_cells.add((row_idx, column))
+                                        st.session_state.last_correction = {
+                                            'original': correction['Original'],
+                                            'suggested': correction['Suggested']
+                                        }
+                                        st.rerun()
+
+                            # Subtle separator between rows
+                            if idx < len(pending_corrections) - 1:
+                                st.markdown(
+                                    "<hr style='margin: 2px 0; border: none; border-top: 1px solid rgba(255,255,255,0.05);'>",
+                                    unsafe_allow_html=True
+                                )
+
                 else:
-                    st.success("All corrections have been applied!")
+                    st.success("All corrections have been applied! Your data is clean.")
+                    st.balloons()
 
-            # Export
-            st.subheader("Export Results")
-            # Export without is_valid and confidence columns (so it matches original format)
-            export_df = st.session_state.validated_df.drop(columns=['is_valid', 'confidence'], errors='ignore')
-            csv_data = export_df.to_csv(index=False)
-            st.download_button(
-                "Download Results as CSV",
-                csv_data,
-                file_name=f"validated_{uploaded_file.name if uploaded_file else 'data.csv'}",
-                mime="text/csv"
-            )
+            # ===== Export Section (Collapsible) =====
+            with st.expander("Export Results", expanded=True):
+                export_df = st.session_state.validated_df.drop(columns=['is_valid', 'confidence'], errors='ignore')
+                csv_data = export_df.to_csv(index=False)
+
+                export_col1, export_col2 = st.columns([2, 2])
+                with export_col1:
+                    st.download_button(
+                        "Download Validated CSV",
+                        csv_data,
+                        file_name=f"validated_{uploaded_file.name if uploaded_file else 'data.csv'}",
+                        mime="text/csv",
+                        type="primary",
+                        use_container_width=True
+                    )
+                with export_col2:
+                    st.metric("Total Rows", len(export_df))
 
 # ==================== TRAINING TAB ====================
 
 with tab_train:
     st.header("Train Your ML Models")
 
-    st.markdown("""
-    ### How to Train:
-    1. Prepare a CSV file with 2 columns:
-       - `text`: Your data (phone numbers, emails, addresses, etc.)
-       - `label`: Either "valid" or "invalid"
-    2. Upload the CSV
-    3. Give your model a name (e.g., "phone", "email", "address")
-    4. Click "Train Validator"
+    # Instructions (collapsible)
+    with st.expander("How to Train", expanded=False):
+        st.markdown("""
+        1. Prepare a CSV file with 2 columns:
+           - `text`: Your data (phone numbers, emails, addresses, etc.)
+           - `label`: Either "valid" or "invalid"
+        2. Upload the CSV below
+        3. Give your model a name (e.g., "phone", "email", "address")
+        4. Click "Train Validator & Corrector"
 
-    ### ⚠️ Important Note:
-    - **Avoid using commas in the `text` column** as they will break the CSV structure
-    - If your data must contain commas (like addresses), replace them with spaces or use alternative separators
-    - Example: Use "123 Main Street New York NY 10001" instead of "123 Main Street, New York, NY 10001"
+        **Important:** Avoid commas in the `text` column as they break CSV structure.
+        Use spaces instead (e.g., "123 Main Street New York" not "123 Main Street, New York").
 
-    ### Example CSV:
-    ```csv
-    text,label
-    +1234567890,valid
-    123,invalid
-    +65 9123 4567,valid
-    abc123,invalid
-    ```
-    """)
+        **Example CSV:**
+        ```csv
+        text,label
+        +1234567890,valid
+        123,invalid
+        +65 9123 4567,valid
+        abc123,invalid
+        ```
+        """)
 
     # Upload training file
-    training_file = st.file_uploader("Upload Training Data CSV", type=['csv'], key="training")
+    st.markdown('<span class="step-badge">Step 1</span> **Upload training data**', unsafe_allow_html=True)
+    training_file = st.file_uploader("Upload Training Data CSV", type=['csv'], key="training", label_visibility="collapsed")
 
     if training_file:
         train_df = pd.read_csv(training_file)
 
-        # Check columns
         if 'text' in train_df.columns and 'label' in train_df.columns:
-            st.success(f"Training data loaded: {len(train_df)} examples")
 
-            # Show sample
-            st.subheader("Sample Data")
-            st.dataframe(train_df.head(10), use_container_width=True)
-
-            # Show stats
+            # Stats
             valid_count = (train_df['label'].str.lower() == 'valid').sum()
             invalid_count = len(train_df) - valid_count
 
-            col1, col2 = st.columns(2)
-            col1.metric("Valid Examples", valid_count)
-            col2.metric("Invalid Examples", invalid_count)
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Examples", len(train_df))
+            col2.metric("Valid", valid_count)
+            col3.metric("Invalid", invalid_count)
 
-            # Model name
-            model_name = st.text_input("Model Name (e.g., phone, email, address)", value="custom")
+            # Preview
+            with st.expander("Preview training data", expanded=False):
+                st.dataframe(train_df.head(10), width='stretch')
 
-            # Train button
-            if st.button("Train Validator & Corrector", type="primary"):
-                with st.spinner(f"Training {model_name} validator and corrector..."):
-                    # Create validator
-                    validator = GenericMLValidator()
+            st.divider()
 
-                    # Train validator
-                    training_data = list(zip(train_df['text'], train_df['label']))
-                    validator.train(training_data, model_name)
+            # Model name and train
+            st.markdown('<span class="step-badge">Step 2</span> **Name and train your model**', unsafe_allow_html=True)
+            model_name = st.text_input("Model name", value="custom", placeholder="e.g., phone, email, address")
 
-                    # Save validator
-                    os.makedirs("models", exist_ok=True)
-                    validator_path = f"models/{model_name}_validator.pkl"
-                    validator.save(validator_path)
+            if st.button("Train Validator & Corrector", type="primary", use_container_width=True):
+                progress = st.progress(0, text=f"Training {model_name}...")
 
-                    # Create and train corrector with valid examples
-                    corrector = GenericMLCorrector()
+                # Train validator
+                validator = GenericMLValidator()
+                training_data = list(zip(train_df['text'], train_df['label']))
+                progress.progress(20, text="Extracting features...")
+                validator.train(training_data, model_name)
 
-                    # Extract valid examples from training data
-                    valid_examples = train_df[train_df['label'].str.lower() == 'valid']['text'].tolist()
-                    corrector.train(valid_examples, model_name)
+                progress.progress(50, text="Saving validator...")
+                os.makedirs("models", exist_ok=True)
+                validator_path = f"models/{model_name}_validator.pkl"
+                validator.save(validator_path)
 
-                    # Save corrector
-                    corrector_path = f"models/{model_name}_corrector.pkl"
-                    corrector.save(corrector_path)
+                # Train corrector
+                progress.progress(60, text="Training corrector...")
+                corrector = GenericMLCorrector()
+                valid_examples = train_df[train_df['label'].str.lower() == 'valid']['text'].tolist()
+                corrector.train(valid_examples, model_name)
 
-                    st.success(f"Validator trained and saved to {validator_path}!")
-                    st.success(f"Corrector saved to {corrector_path}!")
+                progress.progress(80, text="Saving corrector...")
+                corrector_path = f"models/{model_name}_corrector.pkl"
+                corrector.save(corrector_path)
+
+                progress.progress(100, text="Done!")
+                st.success(f"Model **{model_name}** trained and saved!")
+                st.balloons()
 
         else:
-            st.error("CSV must have columns: 'text' and 'label'")
+            st.error("CSV must have columns: `text` and `label`")
 
-    # Show available models
-    st.subheader("Trained Models")
+    st.divider()
 
-    models_dir = "models"
-    if os.path.exists(models_dir):
-        models = [f for f in os.listdir(models_dir) if f.endswith('_validator.pkl')]
+    # Show available models (collapsible)
+    with st.expander("Trained Models", expanded=True):
+        models_dir = "models"
+        if os.path.exists(models_dir):
+            models = [f for f in os.listdir(models_dir) if f.endswith('_validator.pkl')]
 
-        if models:
-            model_list = []
-            for model_file in models:
-                model_name = model_file.replace('_validator.pkl', '')
-                model_path = os.path.join(models_dir, model_file)
-                model_list.append({
-                    'Name': model_name,
-                    'File': model_file,
-                    'Size': f"{os.path.getsize(model_path) / 1024:.1f} KB"
-                })
+            if models:
+                model_list = []
+                for model_file in models:
+                    model_name = model_file.replace('_validator.pkl', '')
+                    model_path = os.path.join(models_dir, model_file)
+                    corrector_path = os.path.join(models_dir, f"{model_name}_corrector.pkl")
+                    has_corrector = os.path.exists(corrector_path)
+                    model_list.append({
+                        'Name': model_name,
+                        'Validator': f"{os.path.getsize(model_path) / 1024:.1f} KB",
+                        'Corrector': f"{os.path.getsize(corrector_path) / 1024:.1f} KB" if has_corrector else "N/A",
+                    })
 
-            st.dataframe(pd.DataFrame(model_list), use_container_width=True)
+                st.dataframe(pd.DataFrame(model_list), width='stretch', hide_index=True)
+            else:
+                st.info("No trained models yet. Upload training data above to get started.")
         else:
-            st.info("No trained models yet. Upload training data above to get started.")
-    else:
-        st.info("No models directory yet. Train your first model above!")
-
+            st.info("No models directory yet. Train your first model above!")
