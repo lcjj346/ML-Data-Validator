@@ -9,7 +9,7 @@ Uses similarity-based matching to suggest corrections.
 
 import os
 import joblib
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import difflib
 
 
@@ -39,49 +39,6 @@ class GenericMLCorrector:
         # Try to load if path provided
         if model_path and os.path.exists(model_path):
             self.load(model_path)
-
-    def extract_char_features(self, text: str, position: int) -> List[int]:
-        """
-        Extract features for a character at position.
-
-        Args:
-            text: Full text
-            position: Character position
-
-        Returns:
-            List of features for that character
-        """
-        features = []
-
-        char = text[position] if position < len(text) else ''
-
-        # Character type (5 features)
-        features.append(1 if char.isdigit() else 0)
-        features.append(1 if char.isalpha() else 0)
-        features.append(1 if char in '+@#.-_' else 0)  # Special chars
-        features.append(1 if char.isspace() else 0)
-        features.append(1 if char.isupper() else 0)
-
-        # Position (3 features)
-        features.append(position)
-        features.append(len(text))
-        features.append(1 if position == 0 else 0)  # First char
-
-        # Context - left (2 features)
-        left_char = text[position - 1] if position > 0 else ''
-        features.append(1 if left_char.isdigit() else 0)
-        features.append(1 if left_char.isalpha() else 0)
-
-        # Context - right (2 features)
-        right_char = text[position + 1] if position < len(text) - 1 else ''
-        features.append(1 if right_char.isdigit() else 0)
-        features.append(1 if right_char.isalpha() else 0)
-
-        # Typo likelihood (1 feature)
-        features.append(1 if char in self.typo_map else 0)
-
-        # Total: 14 features
-        return features
 
     def correct(self, text: str) -> Optional[str]:
         """
@@ -156,30 +113,6 @@ class GenericMLCorrector:
         self.is_trained = True
 
         print(f"Corrector trained with {len(self.valid_examples)} unique examples")
-
-    def train_from_examples(self, examples: List[Tuple[str, str]], data_type: str = "custom"):
-        """
-        Train corrector from invalid→valid examples.
-
-        Args:
-            examples: List of (invalid, valid) tuples
-            data_type: Name of data type
-
-        Example:
-            examples = [
-                ("1234567890", "+11234567890"),
-                ("user@gmial.com", "user@gmail.com"),
-            ]
-        """
-        print(f"Training Generic ML Corrector for '{data_type}'...")
-        print(f"Training examples: {len(examples)}")
-
-        # For simplicity, we'll use the existing XGBoost phone corrector logic
-        # In a full implementation, this would learn character-level edits
-
-        self.data_type = data_type
-        self.is_trained = True
-        print("Training complete! (Using rule-based corrections for now)")
 
     def save(self, filepath: str):
         """Save corrector model"""

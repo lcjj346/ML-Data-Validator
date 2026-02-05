@@ -13,11 +13,10 @@ Usage:
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import os
 from ml.validator import GenericMLValidator
 from ml.corrector import GenericMLCorrector
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 st.set_page_config(page_title="ML Data Validator", layout="wide", page_icon="🔍")
 
@@ -35,6 +34,17 @@ def safe_cast_value(value, target_dtype):
             return value
     except (ValueError, TypeError):
         return value
+
+
+def display_confusion_matrix(cm, title="Confusion Matrix"):
+    """Display confusion matrix with labels."""
+    cm_df = pd.DataFrame(
+        [[cm[0][0], cm[0][1]], [cm[1][0], cm[1][1]]],
+        index=['Actual Invalid', 'Actual Valid'],
+        columns=['Predicted Invalid', 'Predicted Valid']
+    )
+    st.markdown(f"**{title}**")
+    st.dataframe(cm_df.style.background_gradient(cmap='Blues', axis=None))
 
 
 # Custom CSS for better UI/UX
@@ -195,10 +205,6 @@ with tab_validate:
             st.warning("No trained models found. Go to 'Train Models' tab first.")
         else:
             st.markdown('<span class="step-badge">Step 2</span> **Map columns to validators**', unsafe_allow_html=True)
-
-            # Initialize session state for column mappings
-            if 'column_mappings' not in st.session_state:
-                st.session_state.column_mappings = {}
 
             # Define base validation types
             base_validators = ['name', 'email', 'phone', 'country', 'blood_sugar', 'age', 'address']
@@ -722,7 +728,7 @@ with tab_train:
                 validator = GenericMLValidator()
                 training_data = list(zip(train_df['text'], train_df['label']))
                 progress.progress(20, text="Extracting features...")
-                validator.train(training_data, model_name)
+                metrics = validator.train(training_data, model_name)
 
                 progress.progress(50, text="Saving validator...")
                 os.makedirs("models", exist_ok=True)
@@ -741,7 +747,55 @@ with tab_train:
 
                 progress.progress(100, text="Done!")
                 st.success(f"Model **{model_name}** trained and saved!")
-                st.balloons()
+
+                # Display training metrics
+                st.divider()
+                st.subheader("Training Metrics")
+
+                if metrics.get('small_dataset_warning'):
+                    st.warning("Dataset too small for train/test split. Metrics shown are from training data (may be overfit).")
+                    st.markdown(f"**Total samples:** {metrics.get('total_samples', 'N/A')}")
+
+                    # Show training metrics only
+                    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+                    metric_col1.metric("Accuracy", f"{metrics.get('train_accuracy', 0):.1%}")
+                    metric_col2.metric("Precision", f"{metrics.get('train_precision', 0):.1%}")
+                    metric_col3.metric("Recall", f"{metrics.get('train_recall', 0):.1%}")
+                    metric_col4.metric("F1 Score", f"{metrics.get('train_f1', 0):.1%}")
+
+                    if 'train_confusion_matrix' in metrics:
+                        display_confusion_matrix(metrics['train_confusion_matrix'], "Training Confusion Matrix")
+
+                else:
+                    # Show train/test split info
+                    st.markdown(f"**Split:** {metrics.get('train_size', 0)} train / {metrics.get('test_size', 0)} test (80/20)")
+
+                    # Two columns for train vs test metrics
+                    train_col, test_col = st.columns(2)
+
+                    with train_col:
+                        st.markdown("#### Train Set")
+                        m1, m2 = st.columns(2)
+                        m1.metric("Accuracy", f"{metrics.get('train_accuracy', 0):.1%}")
+                        m2.metric("Precision", f"{metrics.get('train_precision', 0):.1%}")
+                        m3, m4 = st.columns(2)
+                        m3.metric("Recall", f"{metrics.get('train_recall', 0):.1%}")
+                        m4.metric("F1 Score", f"{metrics.get('train_f1', 0):.1%}")
+
+                        if 'train_confusion_matrix' in metrics:
+                            display_confusion_matrix(metrics['train_confusion_matrix'], "Train Confusion Matrix")
+
+                    with test_col:
+                        st.markdown("#### Test Set")
+                        m1, m2 = st.columns(2)
+                        m1.metric("Accuracy", f"{metrics.get('test_accuracy', 0):.1%}")
+                        m2.metric("Precision", f"{metrics.get('test_precision', 0):.1%}")
+                        m3, m4 = st.columns(2)
+                        m3.metric("Recall", f"{metrics.get('test_recall', 0):.1%}")
+                        m4.metric("F1 Score", f"{metrics.get('test_f1', 0):.1%}")
+
+                        if 'test_confusion_matrix' in metrics:
+                            display_confusion_matrix(metrics['test_confusion_matrix'], "Test Confusion Matrix")
 
         else:
             st.error("CSV must have columns: `text` and `label`")

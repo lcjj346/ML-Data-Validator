@@ -9,11 +9,11 @@ Key: Uses YOUR training data, not pre-trained models.
 
 import os
 import joblib
-import pandas as pd
 from typing import List, Tuple, Optional
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from ml.feature_extractor import GenericFeatureExtractor
 
 
@@ -43,19 +43,24 @@ class GenericMLValidator:
         self.model_path = model_path
         self.data_type = "unknown"
         self.valid_whitelist = set()  # Store valid examples for exact matching
+        self.training_metrics = {}  # Store train/test metrics
 
         # Try to load if path provided
         if model_path and os.path.exists(model_path):
             self.load(model_path)
 
-    def train(self, training_data: List[Tuple[str, str]], data_type: str = "custom"):
+    def train(self, training_data: List[Tuple[str, str]], data_type: str = "custom", test_size: float = 0.2):
         """
-        Train validator on YOUR data.
+        Train validator on YOUR data with train/test split for proper evaluation.
 
         Args:
             training_data: List of (text, label) tuples
                           label should be "valid" or "invalid"
             data_type: Name of data type (e.g., "phone", "email", "address")
+            test_size: Fraction of data to use for testing (default 0.2 = 20%)
+
+        Returns:
+            dict: Training metrics including accuracy, precision, recall, F1, confusion matrix
 
         Example:
             training_data = [
@@ -63,7 +68,7 @@ class GenericMLValidator:
                 ("123", "invalid"),
                 ("invalid_phone", "invalid"),
             ]
-            validator.train(training_data, "phone")
+            metrics = validator.train(training_data, "phone")
         """
         print(f"Training Generic ML Validator for '{data_type}'...")
         print(f"Training examples: {len(training_data)}")
@@ -94,54 +99,91 @@ class GenericMLValidator:
         if total < 50:
             print(f"WARNING: Small training set ({total} examples). Consider adding more examples for better accuracy.")
 
-        # Scale features for better convergence
-        X_scaled = self.scaler.fit_transform(X)
+        # Initialize metrics dict
+        self.training_metrics = {
+            'total_samples': total,
+            'valid_count': valid_count,
+            'invalid_count': invalid_count,
+            'used_split': False,
+            'small_dataset_warning': False
+        }
 
-        # Perform cross-validation for realistic accuracy estimate (if enough samples)
         min_class_count = min(valid_count, invalid_count)
-        if len(training_data) >= 10 and min_class_count >= 3:
-            n_folds = min(5, min_class_count)  # Folds can't exceed smallest class
-            cv_scores = cross_val_score(self.model, X_scaled, y, cv=n_folds)
-            print(f"Cross-validation accuracy: {cv_scores.mean():.2%} (+/- {cv_scores.std() * 2:.2%})")
-        elif len(training_data) >= 10:
-            print("Skipping cross-validation: need at least 3 samples per class")
 
-        # Train model on full data
-        self.model.fit(X_scaled, y)
+        # Decide whether to use train/test split
+        # Need at least 10 samples and 4 per class for stratified split
+        if total >= 10 and min_class_count >= 4:
+            # Perform train/test split
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=test_size, stratify=y, random_state=42
+            )
+
+            self.training_metrics['used_split'] = True
+            self.training_metrics['train_size'] = len(X_train)
+            self.training_metrics['test_size'] = len(X_test)
+
+            print(f"Train/test split: {len(X_train)} train, {len(X_test)} test")
+
+            # Fit scaler on train data only, transform both
+            X_train_scaled = self.scaler.fit_transform(X_train)
+            X_test_scaled = self.scaler.transform(X_test)
+
+            # Train model on train set only
+            self.model.fit(X_train_scaled, y_train)
+
+            # Evaluate on train set
+            y_train_pred = self.model.predict(X_train_scaled)
+            train_metrics = self._calculate_metrics(y_train, y_train_pred, prefix='train')
+
+            # Evaluate on test set
+            y_test_pred = self.model.predict(X_test_scaled)
+            test_metrics = self._calculate_metrics(y_test, y_test_pred, prefix='test')
+
+            # Store metrics
+            self.training_metrics.update(train_metrics)
+            self.training_metrics.update(test_metrics)
+
+            print(f"Train accuracy: {train_metrics['train_accuracy']:.2%}")
+            print(f"Test accuracy: {test_metrics['test_accuracy']:.2%}")
+            print(f"Test F1 score: {test_metrics['test_f1']:.2%}")
+
+        else:
+            # Dataset too small for split - train on all data
+            self.training_metrics['small_dataset_warning'] = True
+            print(f"WARNING: Dataset too small for train/test split (need >= 10 samples, >= 4 per class)")
+            print("Training on all data - metrics may be overfit")
+
+            # Scale all features
+            X_scaled = self.scaler.fit_transform(X)
+
+            # Train model on all data
+            self.model.fit(X_scaled, y)
+
+            # Calculate training metrics (on same data - will be overfit)
+            y_pred = self.model.predict(X_scaled)
+            train_metrics = self._calculate_metrics(y, y_pred, prefix='train')
+            self.training_metrics.update(train_metrics)
+
+            print(f"Training accuracy: {train_metrics['train_accuracy']:.2%}")
+
         self.is_trained = True
         self.data_type = data_type
-
-        # Calculate training accuracy (for reference)
-        accuracy = self.model.score(X_scaled, y)
-        print(f"Training accuracy: {accuracy:.2%}")
         print("Training complete!")
 
-    def train_from_csv(self, csv_path: str, text_col: str = "text", label_col: str = "label", data_type: str = "custom"):
-        """
-        Train from CSV file.
+        return self.training_metrics
 
-        Args:
-            csv_path: Path to CSV with columns: text, label
-            text_col: Name of text column
-            label_col: Name of label column (should contain "valid" or "invalid")
-            data_type: Name of data type
+    def _calculate_metrics(self, y_true, y_pred, prefix=''):
+        """Calculate accuracy, precision, recall, F1, and confusion matrix."""
+        metrics = {}
+        key_prefix = f"{prefix}_" if prefix else ""
 
-        CSV Format:
-            text,label
-            +1234567890,valid
-            123,invalid
-        """
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"Training file not found: {csv_path}")
+        metrics[f'{key_prefix}accuracy'] = accuracy_score(y_true, y_pred)
+        metrics[f'{key_prefix}precision'] = precision_score(y_true, y_pred, zero_division=0)
+        metrics[f'{key_prefix}recall'] = recall_score(y_true, y_pred, zero_division=0)
+        metrics[f'{key_prefix}f1'] = f1_score(y_true, y_pred, zero_division=0)
+        metrics[f'{key_prefix}confusion_matrix'] = confusion_matrix(y_true, y_pred).tolist()
 
-        print(f"Loading training data from {csv_path}...")
-        df = pd.read_csv(csv_path)
-
-        if text_col not in df.columns or label_col not in df.columns:
-            raise ValueError(f"CSV must have columns: {text_col}, {label_col}")
-
-        training_data = list(zip(df[text_col], df[label_col]))
-        self.train(training_data, data_type)
+        return metrics
 
     def validate(self, text: str) -> Tuple[bool, float]:
         """
@@ -351,6 +393,7 @@ class GenericMLValidator:
             'data_type': self.data_type,
             'is_trained': self.is_trained,
             'valid_whitelist': self.valid_whitelist,
+            'training_metrics': self.training_metrics,
         }
 
         joblib.dump(model_data, filepath)
@@ -378,21 +421,13 @@ class GenericMLValidator:
             self.data_type = model_data['data_type']
             self.is_trained = model_data['is_trained']
             self.valid_whitelist = model_data.get('valid_whitelist', set())  # Load whitelist
+            self.training_metrics = model_data.get('training_metrics', {})  # Load metrics
             self.model_path = filepath
             print(f"Model loaded: {self.data_type} validator")
             return True
         except Exception as e:
             print(f"Error loading model: {e}")
             return False
-
-    def get_info(self) -> dict:
-        """Get model information"""
-        return {
-            'data_type': self.data_type,
-            'is_trained': self.is_trained,
-            'model_path': self.model_path,
-            'model_type': 'Logistic Regression',
-        }
 
 
 if __name__ == "__main__":
