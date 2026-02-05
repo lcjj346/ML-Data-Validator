@@ -19,16 +19,18 @@ class GenericFeatureExtractor:
     """Extract features from any text for ML training"""
 
     @staticmethod
-    def extract_features(text: str) -> List[float]:
+    def extract_features(text: str, column_name: str = None) -> List[float]:
         """
         Extract generic features from text.
 
         Args:
             text: Any text string
+            column_name: Optional column name for future column-aware features
 
         Returns:
             List of numeric features for ML
         """
+        # column_name reserved for future column-aware enhancements
         if not text or not isinstance(text, str):
             text = str(text) if text is not None else ""
 

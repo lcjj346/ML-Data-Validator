@@ -1,178 +1,219 @@
 """
-Generic ML Validator - Works for ANY data type
+Unified ML Validator - Works for ANY data type
 
 Train once on YOUR data, validate forever.
 Works for: phone, email, address, name, or ANY custom column type.
 
 Key: Uses YOUR training data, not pre-trained models.
+All training data rows are treated as VALID examples.
 """
 
 import os
+import random
 import joblib
-from typing import List, Tuple, Optional
+import difflib
+import pandas as pd
+from typing import List, Tuple, Optional, Dict
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from ml.feature_extractor import GenericFeatureExtractor
 
 
-class GenericMLValidator:
+class UnifiedMLValidator:
     """
-    One validator for ALL data types.
+    One unified validator for ALL data types.
 
-    Train it on YOUR data:
-    - Phone numbers → Learns phone patterns
-    - Emails → Learns email patterns
-    - Addresses → Learns YOUR address format
-    - Names → Learns name patterns
-    - Custom data → Learns whatever you teach it!
+    Train it on YOUR data CSV (any column names):
+    - All rows are treated as valid examples
+    - Synthetic invalid examples are generated automatically
+    - One model file stores all column validators
     """
 
     def __init__(self, model_path: Optional[str] = None):
         """
-        Initialize generic validator.
+        Initialize unified validator.
 
         Args:
             model_path: Path to load trained model (optional)
         """
-        self.model = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
-        self.scaler = StandardScaler()
-        self.feature_extractor = GenericFeatureExtractor()
+        self.column_models = {}      # {col_name: LogisticRegression}
+        self.column_scalers = {}     # {col_name: StandardScaler}
+        self.column_whitelists = {}  # {col_name: set of valid values}
+        self.column_examples = {}    # {col_name: list of valid examples} (for corrector)
+        self.reference_lists = {}    # {col_name: set of valid values from reference files}
+        self.columns = []            # Ordered list of trained columns
+        self.training_metrics = {}   # Per-column metrics
         self.is_trained = False
-        self.model_path = model_path
-        self.data_type = "unknown"
-        self.valid_whitelist = set()  # Store valid examples for exact matching
-        self.training_metrics = {}  # Store train/test metrics
+        self.model_name = "unnamed"
+        self.feature_extractor = GenericFeatureExtractor()
 
         # Try to load if path provided
         if model_path and os.path.exists(model_path):
             self.load(model_path)
 
-    def train(self, training_data: List[Tuple[str, str]], data_type: str = "custom", test_size: float = 0.2):
+    def _generate_invalid_examples(self, valid_examples: List[str], count: int) -> List[str]:
         """
-        Train validator on YOUR data with train/test split for proper evaluation.
+        Generate synthetic invalid data for training.
 
         Args:
-            training_data: List of (text, label) tuples
-                          label should be "valid" or "invalid"
-            data_type: Name of data type (e.g., "phone", "email", "address")
-            test_size: Fraction of data to use for testing (default 0.2 = 20%)
+            valid_examples: List of valid example strings
+            count: Number of invalid examples to generate
 
         Returns:
-            dict: Training metrics including accuracy, precision, recall, F1, confusion matrix
-
-        Example:
-            training_data = [
-                ("+1234567890", "valid"),
-                ("123", "invalid"),
-                ("invalid_phone", "invalid"),
-            ]
-            metrics = validator.train(training_data, "phone")
+            List of synthetic invalid strings
         """
-        print(f"Training Generic ML Validator for '{data_type}'...")
-        print(f"Training examples: {len(training_data)}")
+        if not valid_examples:
+            return []
 
-        # Build whitelist of valid examples (case-insensitive)
-        self.valid_whitelist = set(
-            str(text).lower().strip()
-            for text, label in training_data
-            if label.lower() == "valid"
-        )
+        invalid = []
+        mutations = [
+            lambda x: x[:len(x)//2] if len(x) > 2 else "",           # Truncate
+            lambda x: x + "???",                                      # Add garbage suffix
+            lambda x: "???" + x,                                      # Add garbage prefix
+            lambda x: ''.join(random.sample(x, len(x))) if len(x) > 1 else x + "X",  # Shuffle
+            lambda x: x.replace(x[0], '@') if x else "@",            # Replace first char
+            lambda x: "",                                             # Empty
+            lambda x: "invalid_" + x[:3] if len(x) >= 3 else "invalid_X",  # Prefix garbage
+            lambda x: x[:len(x)//3] if len(x) > 3 else "X",          # Severe truncate
+            lambda x: x + x if len(x) < 20 else x[:10] + "###" + x[-10:],  # Duplicate or corrupt middle
+            lambda x: ''.join(c if random.random() > 0.3 else chr(random.randint(33, 126)) for c in x),  # Random char replacement
+            lambda x: x.upper() + "123" if x.islower() else x.lower() + "ABC",  # Case change + garbage
+            lambda x: "   " + x + "   " if random.random() > 0.5 else "\t\t",  # Extra whitespace or just tabs
+        ]
 
-        # Extract features
-        X = [self.feature_extractor.extract_features(text) for text, label in training_data]
-        y = [1 if label.lower() == "valid" else 0 for text, label in training_data]
+        for _ in range(count):
+            example = random.choice(valid_examples)
+            mutation = random.choice(mutations)
+            try:
+                mutated = mutation(str(example))
+                invalid.append(mutated)
+            except Exception:
+                invalid.append("")  # Fallback to empty string
 
-        # Check for class imbalance and warn
-        valid_count = sum(y)
-        invalid_count = len(y) - valid_count
-        total = len(y)
-        valid_pct = valid_count / total * 100
-        invalid_pct = invalid_count / total * 100
+        return invalid
 
-        print(f"Class distribution: {valid_count} valid ({valid_pct:.1f}%), {invalid_count} invalid ({invalid_pct:.1f}%)")
+    def train(self, df: pd.DataFrame, model_name: str = "custom",
+              exclude_columns: List[str] = None, test_size: float = 0.2) -> Dict[str, dict]:
+        """
+        Train unified model on entire DataFrame.
 
-        if valid_pct < 20 or valid_pct > 80:
-            print(f"WARNING: Imbalanced training data detected! Consider adding more {'valid' if valid_pct < 20 else 'invalid'} examples.")
+        Args:
+            df: DataFrame where ALL rows are valid examples
+            model_name: Name for this model
+            exclude_columns: Columns to skip (e.g., 'id', 'timestamp')
+            test_size: Fraction for test split
 
-        if total < 50:
-            print(f"WARNING: Small training set ({total} examples). Consider adding more examples for better accuracy.")
+        Returns:
+            dict: Per-column training metrics
+        """
+        print(f"Training Unified ML Validator '{model_name}'...")
+        print(f"Total rows: {len(df)}")
 
-        # Initialize metrics dict
-        self.training_metrics = {
-            'total_samples': total,
-            'valid_count': valid_count,
-            'invalid_count': invalid_count,
-            'used_split': False,
-            'small_dataset_warning': False
-        }
+        if exclude_columns is None:
+            exclude_columns = []
 
-        min_class_count = min(valid_count, invalid_count)
+        # Determine columns to train
+        columns_to_train = [col for col in df.columns if col not in exclude_columns]
+        print(f"Training on {len(columns_to_train)} columns: {columns_to_train}")
 
-        # Decide whether to use train/test split
-        # Need at least 10 samples and 4 per class for stratified split
-        if total >= 10 and min_class_count >= 4:
-            # Perform train/test split
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=test_size, stratify=y, random_state=42
-            )
+        if len(df) < 5:
+            print("WARNING: Very small dataset (< 5 rows). Model may not perform well.")
 
-            self.training_metrics['used_split'] = True
-            self.training_metrics['train_size'] = len(X_train)
-            self.training_metrics['test_size'] = len(X_test)
+        self.model_name = model_name
+        self.columns = columns_to_train
+        self.training_metrics = {}
 
-            print(f"Train/test split: {len(X_train)} train, {len(X_test)} test")
+        for col in columns_to_train:
+            print(f"\n--- Training column: {col} ---")
 
-            # Fit scaler on train data only, transform both
-            X_train_scaled = self.scaler.fit_transform(X_train)
-            X_test_scaled = self.scaler.transform(X_test)
+            # Get valid examples (all rows as valid)
+            valid_values = df[col].dropna().astype(str).tolist()
+            valid_values = [v.strip() for v in valid_values if v.strip()]
 
-            # Train model on train set only
-            self.model.fit(X_train_scaled, y_train)
+            if not valid_values:
+                print(f"  Skipping '{col}': no valid values")
+                continue
 
-            # Evaluate on train set
-            y_train_pred = self.model.predict(X_train_scaled)
-            train_metrics = self._calculate_metrics(y_train, y_train_pred, prefix='train')
+            unique_valid = list(set(valid_values))
+            print(f"  Valid examples: {len(valid_values)} ({len(unique_valid)} unique)")
 
-            # Evaluate on test set
-            y_test_pred = self.model.predict(X_test_scaled)
-            test_metrics = self._calculate_metrics(y_test, y_test_pred, prefix='test')
+            # Store whitelist and examples for correction
+            self.column_whitelists[col] = set(v.lower() for v in unique_valid)
+            self.column_examples[col] = unique_valid
 
-            # Store metrics
-            self.training_metrics.update(train_metrics)
-            self.training_metrics.update(test_metrics)
+            # Generate synthetic invalid examples
+            invalid_count = max(len(valid_values), 50)  # At least 50 or match valid count
+            invalid_values = self._generate_invalid_examples(unique_valid, invalid_count)
+            print(f"  Generated {len(invalid_values)} synthetic invalid examples")
 
-            print(f"Train accuracy: {train_metrics['train_accuracy']:.2%}")
-            print(f"Test accuracy: {test_metrics['test_accuracy']:.2%}")
-            print(f"Test F1 score: {test_metrics['test_f1']:.2%}")
+            # Prepare training data
+            all_texts = valid_values + invalid_values
+            all_labels = [1] * len(valid_values) + [0] * len(invalid_values)
 
-        else:
-            # Dataset too small for split - train on all data
-            self.training_metrics['small_dataset_warning'] = True
-            print(f"WARNING: Dataset too small for train/test split (need >= 10 samples, >= 4 per class)")
-            print("Training on all data - metrics may be overfit")
+            # Extract features
+            X = [self.feature_extractor.extract_features(text, col) for text in all_texts]
+            y = all_labels
 
-            # Scale all features
-            X_scaled = self.scaler.fit_transform(X)
+            # Initialize column-specific model and scaler
+            self.column_models[col] = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
+            self.column_scalers[col] = StandardScaler()
 
-            # Train model on all data
-            self.model.fit(X_scaled, y)
+            # Train/test split
+            col_metrics = {
+                'total_samples': len(all_texts),
+                'valid_count': len(valid_values),
+                'invalid_count': len(invalid_values),
+                'unique_valid': len(unique_valid),
+            }
 
-            # Calculate training metrics (on same data - will be overfit)
-            y_pred = self.model.predict(X_scaled)
-            train_metrics = self._calculate_metrics(y, y_pred, prefix='train')
-            self.training_metrics.update(train_metrics)
+            if len(all_texts) >= 10 and min(len(valid_values), len(invalid_values)) >= 4:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, test_size=test_size, stratify=y, random_state=42
+                )
 
-            print(f"Training accuracy: {train_metrics['train_accuracy']:.2%}")
+                col_metrics['used_split'] = True
+                col_metrics['train_size'] = len(X_train)
+                col_metrics['test_size'] = len(X_test)
+
+                # Fit scaler and model
+                X_train_scaled = self.column_scalers[col].fit_transform(X_train)
+                X_test_scaled = self.column_scalers[col].transform(X_test)
+
+                self.column_models[col].fit(X_train_scaled, y_train)
+
+                # Evaluate
+                y_train_pred = self.column_models[col].predict(X_train_scaled)
+                y_test_pred = self.column_models[col].predict(X_test_scaled)
+
+                col_metrics.update(self._calculate_metrics(y_train, y_train_pred, 'train'))
+                col_metrics.update(self._calculate_metrics(y_test, y_test_pred, 'test'))
+
+                print(f"  Train accuracy: {col_metrics['train_accuracy']:.1%}")
+                print(f"  Test accuracy: {col_metrics['test_accuracy']:.1%}")
+
+            else:
+                # Too small for split - train on all
+                col_metrics['used_split'] = False
+                col_metrics['small_dataset_warning'] = True
+
+                X_scaled = self.column_scalers[col].fit_transform(X)
+                self.column_models[col].fit(X_scaled, y)
+
+                y_pred = self.column_models[col].predict(X_scaled)
+                col_metrics.update(self._calculate_metrics(y, y_pred, 'train'))
+
+                print(f"  Train accuracy (no split): {col_metrics['train_accuracy']:.1%}")
+
+            self.training_metrics[col] = col_metrics
 
         self.is_trained = True
-        self.data_type = data_type
-        print("Training complete!")
+        print(f"\nTraining complete for {len(self.column_models)} columns!")
 
         return self.training_metrics
 
-    def _calculate_metrics(self, y_true, y_pred, prefix=''):
+    def _calculate_metrics(self, y_true, y_pred, prefix='') -> dict:
         """Calculate accuracy, precision, recall, F1, and confusion matrix."""
         metrics = {}
         key_prefix = f"{prefix}_" if prefix else ""
@@ -185,12 +226,67 @@ class GenericMLValidator:
 
         return metrics
 
-    def validate(self, text: str) -> Tuple[bool, float]:
+    def _match_columns(self, input_columns: List[str]) -> Dict[str, str]:
         """
-        Validate a single value.
+        Match input columns to trained columns.
+
+        Strategy:
+        1. Exact match (case-insensitive)
+        2. Normalized match (remove _, -, spaces)
+        3. Substring match
+
+        Args:
+            input_columns: List of column names from input DataFrame
+
+        Returns:
+            {input_col: trained_col} mapping
+        """
+        mapping = {}
+        trained_cols_remaining = set(self.columns)
+
+        def normalize(s):
+            return s.lower().replace('_', '').replace('-', '').replace(' ', '')
+
+        # Pass 1: Exact match (case-insensitive)
+        for input_col in input_columns:
+            for trained_col in trained_cols_remaining:
+                if input_col.lower() == trained_col.lower():
+                    mapping[input_col] = trained_col
+                    trained_cols_remaining.discard(trained_col)
+                    break
+
+        # Pass 2: Normalized match
+        for input_col in input_columns:
+            if input_col in mapping:
+                continue
+            input_norm = normalize(input_col)
+            for trained_col in trained_cols_remaining:
+                if input_norm == normalize(trained_col):
+                    mapping[input_col] = trained_col
+                    trained_cols_remaining.discard(trained_col)
+                    break
+
+        # Pass 3: Substring match
+        for input_col in input_columns:
+            if input_col in mapping:
+                continue
+            input_norm = normalize(input_col)
+            for trained_col in trained_cols_remaining:
+                trained_norm = normalize(trained_col)
+                if input_norm in trained_norm or trained_norm in input_norm:
+                    mapping[input_col] = trained_col
+                    trained_cols_remaining.discard(trained_col)
+                    break
+
+        return mapping
+
+    def validate(self, text: str, column_name: str) -> Tuple[bool, float]:
+        """
+        Validate a single value for a specific column.
 
         Args:
             text: Text to validate
+            column_name: Column name this value belongs to
 
         Returns:
             (is_valid, confidence) where:
@@ -200,26 +296,124 @@ class GenericMLValidator:
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() or load() first.")
 
-        # First check whitelist (exact match, case-insensitive)
-        text_lower = str(text).lower().strip()
-        if self.valid_whitelist and text_lower in self.valid_whitelist:
-            return True, 1.0  # Exact match = definitely valid
+        if column_name not in self.column_models:
+            # Column not trained - return uncertain
+            return True, 0.5
 
-        # Otherwise use ML model
-        features = self.feature_extractor.extract_features(text)
-        features_scaled = self.scaler.transform([features])
-        prediction = self.model.predict(features_scaled)[0]
-        probabilities = self.model.predict_proba(features_scaled)[0]
+        text_str = str(text).strip()
+        text_lower = text_str.lower()
+
+        # Get combined whitelist (training data + reference lists)
+        whitelist = self._get_combined_whitelist(column_name)
+
+        if whitelist:
+            # Exact match = definitely valid
+            if text_lower in whitelist:
+                return True, 1.0
+
+            # For numeric values, try normalized comparison (95 == 95.0)
+            try:
+                numeric_val = float(text_str)
+                # Check both integer and float string representations
+                if str(int(numeric_val)) in whitelist or str(numeric_val) in whitelist or f"{numeric_val:.1f}" in whitelist:
+                    return True, 1.0
+            except (ValueError, TypeError):
+                pass  # Not numeric, continue with normal flow
+
+            # Determine if this column should use strict typo detection
+            # Only use for columns with finite valid values (country, currency, etc.)
+            # NOT for open-ended columns (name, phone, address, email)
+            col_lower = column_name.lower()
+            open_ended_columns = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar']
+            use_strict_typo_detection = not any(kw in col_lower for kw in open_ended_columns)
+
+            # Also use strict detection if we have a reference list for this column
+            if column_name in self.reference_lists:
+                use_strict_typo_detection = True
+
+            if use_strict_typo_detection:
+                # Fuzzy match to catch typos - if similar to a valid value but not exact, it's likely a typo
+                for valid_value in whitelist:
+                    similarity = difflib.SequenceMatcher(None, text_lower, valid_value).ratio()
+
+                    # High similarity (>0.8) but not exact = likely typo = INVALID
+                    if similarity >= 0.8:
+                        return False, similarity  # Invalid - it's a typo of a known value
+
+        # For values not similar to whitelist, use ML model
+        features = self.feature_extractor.extract_features(text_str, column_name)
+        features_scaled = self.column_scalers[column_name].transform([features])
+        prediction = self.column_models[column_name].predict(features_scaled)[0]
+        probabilities = self.column_models[column_name].predict_proba(features_scaled)[0]
         confidence = float(max(probabilities))
 
         return bool(prediction), confidence
 
-    def validate_batch(self, texts: List[str]) -> List[Tuple[bool, float]]:
+    def validate_row(self, row: pd.Series, column_mapping: Dict[str, str] = None) -> Dict[str, Tuple[bool, float]]:
         """
-        Validate multiple values at once (faster).
+        Validate entire row at once.
+
+        Args:
+            row: pandas Series representing a row
+            column_mapping: Optional mapping from row columns to trained columns
+
+        Returns:
+            {column_name: (is_valid, confidence)}
+        """
+        if not self.is_trained:
+            raise ValueError("Model not trained. Call train() or load() first.")
+
+        results = {}
+
+        if column_mapping is None:
+            column_mapping = self._match_columns(row.index.tolist())
+
+        for input_col, trained_col in column_mapping.items():
+            if trained_col in self.column_models:
+                value = str(row[input_col])
+                results[input_col] = self.validate(value, trained_col)
+            else:
+                results[input_col] = (True, 0.5)  # Unknown column
+
+        return results
+
+    def validate_dataframe(self, df: pd.DataFrame, column_mapping: Dict[str, str] = None) -> pd.DataFrame:
+        """
+        Validate entire DataFrame.
+
+        Args:
+            df: DataFrame to validate
+            column_mapping: Optional mapping from df columns to trained columns
+
+        Returns:
+            DataFrame with validation results per cell
+        """
+        if not self.is_trained:
+            raise ValueError("Model not trained. Call train() or load() first.")
+
+        if column_mapping is None:
+            column_mapping = self._match_columns(df.columns.tolist())
+
+        # Create result structure
+        results = {col: [] for col in df.columns}
+
+        for idx, row in df.iterrows():
+            row_results = self.validate_row(row, column_mapping)
+            for col in df.columns:
+                if col in row_results:
+                    results[col].append(row_results[col])
+                else:
+                    results[col].append((True, 0.5))  # Unknown column
+
+        return pd.DataFrame(results, index=df.index)
+
+    def validate_batch(self, texts: List[str], column_name: str) -> List[Tuple[bool, float]]:
+        """
+        Validate multiple values at once for a specific column (faster).
 
         Args:
             texts: List of texts to validate
+            column_name: Column name these values belong to
 
         Returns:
             List of (is_valid, confidence) tuples
@@ -227,26 +421,69 @@ class GenericMLValidator:
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() or load() first.")
 
+        if column_name not in self.column_models:
+            return [(True, 0.5)] * len(texts)
+
         results = []
         texts_for_ml = []
         ml_indices = []
 
-        # First pass: check whitelist
+        # Get combined whitelist (training data + reference lists)
+        whitelist = self._get_combined_whitelist(column_name)
+
+        # Determine if this column should use strict typo detection
+        col_lower = column_name.lower()
+        open_ended_columns = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar']
+        use_strict_typo_detection = not any(kw in col_lower for kw in open_ended_columns)
+
+        # Also use strict detection if we have a reference list for this column
+        if column_name in self.reference_lists:
+            use_strict_typo_detection = True
+
+        # First pass: check whitelist with fuzzy matching
         for i, text in enumerate(texts):
-            text_lower = str(text).lower().strip()
-            if self.valid_whitelist and text_lower in self.valid_whitelist:
-                results.append((True, 1.0))  # Exact match
-            else:
+            text_str = str(text).strip()
+            text_lower = text_str.lower()
+
+            # Exact match = valid
+            if text_lower in whitelist:
+                results.append((True, 1.0))
+                continue
+
+            # For numeric values, try normalized comparison (95 == 95.0)
+            numeric_match = False
+            try:
+                numeric_val = float(text_str)
+                if str(int(numeric_val)) in whitelist or str(numeric_val) in whitelist or f"{numeric_val:.1f}" in whitelist:
+                    results.append((True, 1.0))
+                    numeric_match = True
+            except (ValueError, TypeError):
+                pass
+
+            if numeric_match:
+                continue
+
+            # Fuzzy match to catch typos (only for columns with finite valid values)
+            found_typo = False
+            if use_strict_typo_detection:
+                for valid_value in whitelist:
+                    similarity = difflib.SequenceMatcher(None, text_lower, valid_value).ratio()
+                    if similarity >= 0.8:  # High similarity but not exact = typo
+                        results.append((False, similarity))  # Invalid - typo
+                        found_typo = True
+                        break
+
+            if not found_typo:
                 results.append(None)  # Placeholder for ML
-                texts_for_ml.append(text)
+                texts_for_ml.append(text_str)
                 ml_indices.append(i)
 
-        # Second pass: ML for non-whitelist entries
+        # Second pass: ML for entries not matching whitelist
         if texts_for_ml:
-            X = [self.feature_extractor.extract_features(text) for text in texts_for_ml]
-            X_scaled = self.scaler.transform(X)
-            predictions = self.model.predict(X_scaled)
-            probabilities = self.model.predict_proba(X_scaled)
+            X = [self.feature_extractor.extract_features(text, column_name) for text in texts_for_ml]
+            X_scaled = self.column_scalers[column_name].transform(X)
+            predictions = self.column_models[column_name].predict(X_scaled)
+            probabilities = self.column_models[column_name].predict_proba(X_scaled)
 
             for idx, pred, prob in zip(ml_indices, predictions, probabilities):
                 is_valid = bool(pred)
@@ -255,12 +492,77 @@ class GenericMLValidator:
 
         return results
 
-    def explain_invalidity(self, text: str) -> str:
+    def correct(self, value: str, column_name: str) -> Optional[str]:
+        """
+        Suggest correction using column's valid examples.
+        Uses difflib similarity matching.
+
+        Args:
+            value: Value to correct
+            column_name: Column name this value belongs to
+
+        Returns:
+            Corrected value or None if no good match
+        """
+        if not self.is_trained:
+            return None
+
+        if column_name not in self.column_examples:
+            return None
+
+        valid_examples = self.column_examples[column_name]
+        if not valid_examples:
+            return None
+
+        # Don't suggest corrections for empty, NaN, or whitespace-only strings
+        if not value or str(value).strip() == '' or str(value).lower() in ['nan', 'none', 'null']:
+            return None
+
+        text_str = str(value)
+        text_lower = text_str.lower()
+
+        # Find all matches above threshold
+        similarity_threshold = 0.6
+        candidates = []
+        for valid_example in valid_examples:
+            valid_example_str = str(valid_example)
+            similarity = difflib.SequenceMatcher(None, text_lower, valid_example_str.lower()).ratio()
+
+            if similarity >= similarity_threshold:
+                candidates.append((valid_example_str, similarity))
+
+        if not candidates:
+            return None
+
+        # Sort by similarity (desc), then by canonical form preference
+        def canonical_score(s):
+            if len(s) <= 3 and s.isupper():
+                return 0  # Best for short: "USA", "UK"
+            elif s.istitle():
+                return 1  # Best for long: "Singapore"
+            elif s[0].isupper() if s else False:
+                return 2  # OK: "United States"
+            elif s.isupper():
+                return 3  # Less preferred for long
+            else:
+                return 4  # Least preferred
+
+        candidates.sort(key=lambda x: (-x[1], canonical_score(x[0]), len(x[0])))
+        best_match = candidates[0][0]
+
+        # Only return if not identical to input
+        if text_str != best_match:
+            return best_match
+
+        return None
+
+    def explain_invalidity(self, text: str, column_name: str = None) -> str:
         """
         Explain why a text is considered invalid.
 
         Args:
             text: Text to analyze
+            column_name: Optional column name for context
 
         Returns:
             Human-readable explanation of what's wrong
@@ -269,26 +571,8 @@ class GenericMLValidator:
             return "Model not trained"
 
         # Extract features
-        features = self.feature_extractor.extract_features(text)
+        features = self.feature_extractor.extract_features(text, column_name)
 
-        # Get feature names for reference
-        feature_names = [
-            'length', 'word_count', 'comma_parts',
-            'digit_ratio', 'letter_ratio', 'space_ratio', 'uppercase_ratio', 'lowercase_ratio',
-            'count_plus', 'count_at', 'count_dot', 'count_hash', 'count_dash',
-            'count_underscore', 'count_lparen', 'count_rparen', 'count_slash',
-            'starts_uppercase', 'starts_digit', 'starts_plus', 'ends_digit', 'ends_letter',
-            'email_like', 'has_single_at', 'has_username', 'domain_has_dot', 'domain_has_extension', 'common_domain',
-            'phone_like', 'mixed_alphanum',
-            'digit_sequences', 'capitalized_words', 'long_digits',
-            'has_blk', 'has_ave', 'has_road', 'has_street', 'has_singapore',
-            'has_com', 'has_net', 'has_org', 'has_edu',
-            'has_at', 'has_plus', 'has_hash',
-            'repeated_chars', 'triple_chars', 'max_bigram_freq', 'char_variety',
-            'vowel_ratio', 'max_consecutive_consonants'
-        ]
-
-        # Analyze features to determine issues
         issues = []
 
         # Length checks
@@ -297,75 +581,41 @@ class GenericMLValidator:
         elif features[0] > 100:
             issues.append("too long")
 
-        # Data type specific checks based on training data type
-        data_type_lower = self.data_type.lower()
+        # Check for empty or whitespace
+        if not text or str(text).strip() == '':
+            issues.append("empty value")
 
-        # Helper to detect data type category with multiple keywords
-        def is_type(keywords):
-            return any(kw in data_type_lower for kw in keywords)
+        # Pattern checks based on column name hints
+        if column_name:
+            col_lower = column_name.lower()
 
-        if is_type(['email', 'mail', 'e-mail', 'e_mail']):
-            if features[9] == 0:  # count_at
-                issues.append("missing '@' symbol")
-            elif features[9] > 1:
-                issues.append("multiple '@' symbols")
-            if features[10] == 0:  # count_dot
-                issues.append("missing domain extension")
-            if features[23] == 0:  # email_like pattern
-                issues.append("invalid email format")
+            if any(kw in col_lower for kw in ['email', 'mail', 'e-mail']):
+                if features[9] == 0:  # count_at
+                    issues.append("missing '@' symbol")
+                elif features[9] > 1:
+                    issues.append("multiple '@' symbols")
+                if features[10] == 0:  # count_dot
+                    issues.append("missing domain extension")
 
-        elif is_type(['phone', 'mobile', 'cell', 'tel', 'contact_number', 'phone_number']):
-            digit_ratio = features[3]
-            if digit_ratio < 0.5:
-                issues.append(f"insufficient digits ({digit_ratio*100:.0f}% digits)")
-            if features[8] == 0 and features[0] > 8:  # No + sign for longer numbers
-                issues.append("missing country code")
-            if features[0] < 8:
-                issues.append("too short for phone number")
+            elif any(kw in col_lower for kw in ['phone', 'mobile', 'cell', 'tel']):
+                digit_ratio = features[3]
+                if digit_ratio < 0.5:
+                    issues.append(f"insufficient digits ({digit_ratio*100:.0f}% digits)")
+                if features[0] < 8:
+                    issues.append("too short for phone number")
 
-        elif is_type(['name', 'person', 'full_name', 'fullname', 'customer_name']):
-            if features[1] < 2:  # word_count
-                issues.append("missing first or last name")
-            if features[3] > 0.1:  # digit_ratio > 10%
-                issues.append("contains numbers")
-            if features[6] > 0.8:  # uppercase_ratio
-                issues.append("too many uppercase letters")
-            if features[17] == 0:  # starts_uppercase
-                issues.append("should start with capital letter")
-
-        elif is_type(['country', 'location', 'nation', 'region', 'territory']):
-            if features[1] > 5:  # word_count
-                issues.append("too many words for country name")
-            if features[3] > 0.2:  # digit_ratio
-                issues.append("contains numbers")
+            elif any(kw in col_lower for kw in ['name', 'person', 'customer']):
+                if features[1] < 2:  # word_count
+                    issues.append("missing first or last name")
+                if features[3] > 0.1:  # digit_ratio > 10%
+                    issues.append("contains numbers")
 
         # General pattern issues
-        if features[46] > 0:  # triple_chars (aaa, bbb)
+        if len(features) > 46 and features[46] > 0:  # triple_chars
             issues.append("repeated characters")
 
-        # Only flag very unusual vowel/consonant patterns (more lenient)
-        if features[4] > 0.5:  # Only check if text has significant letters
-            if features[49] > 0.95:  # vowel_ratio extremely high
-                issues.append("unusual vowel pattern")
-            elif features[49] < 0.05:  # vowel_ratio extremely low
-                issues.append("unusual consonant pattern")
-
-        if features[50] > 6:  # max_consecutive_consonants (increased threshold)
-            issues.append("too many consecutive consonants")
-
-        # Special character issues
-        special_chars = sum([features[i] for i in [11, 12, 13, 14, 15, 16]])  # hash, dash, underscore, parens, slash
-        if special_chars > 10:
-            issues.append("too many special characters")
-
-        # If no specific issues found, provide generic message
         if not issues:
-            # Check confidence level
-            _, confidence = self.validate(text)
-            if confidence < 0.6:
-                issues.append("pattern doesn't match training data")
-            else:
-                issues.append("unusual pattern detected")
+            issues.append("pattern doesn't match training data")
 
         # Format the explanation
         if len(issues) == 1:
@@ -377,10 +627,10 @@ class GenericMLValidator:
 
     def save(self, filepath: str):
         """
-        Save trained model.
+        Save unified model to single file.
 
         Args:
-            filepath: Path to save model (e.g., "models/phone_validator.pkl")
+            filepath: Path to save model (e.g., "models/my_data_model.pkl")
         """
         if not self.is_trained:
             raise ValueError("Cannot save untrained model")
@@ -388,21 +638,24 @@ class GenericMLValidator:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
         model_data = {
-            'model': self.model,
-            'scaler': self.scaler,
-            'data_type': self.data_type,
-            'is_trained': self.is_trained,
-            'valid_whitelist': self.valid_whitelist,
+            'model_name': self.model_name,
+            'columns': self.columns,
+            'column_models': self.column_models,
+            'column_scalers': self.column_scalers,
+            'column_whitelists': self.column_whitelists,
+            'column_examples': self.column_examples,
+            'reference_lists': self.reference_lists,
             'training_metrics': self.training_metrics,
+            'is_trained': self.is_trained,
+            'version': '2.1',  # Updated with reference lists
         }
 
         joblib.dump(model_data, filepath)
-        self.model_path = filepath
         print(f"Model saved to {filepath}")
 
     def load(self, filepath: str) -> bool:
         """
-        Load trained model.
+        Load unified model from file.
 
         Args:
             filepath: Path to saved model
@@ -416,56 +669,238 @@ class GenericMLValidator:
 
         try:
             model_data = joblib.load(filepath)
-            self.model = model_data['model']
-            self.scaler = model_data.get('scaler', StandardScaler())  # Backward compatibility
-            self.data_type = model_data['data_type']
-            self.is_trained = model_data['is_trained']
-            self.valid_whitelist = model_data.get('valid_whitelist', set())  # Load whitelist
-            self.training_metrics = model_data.get('training_metrics', {})  # Load metrics
-            self.model_path = filepath
-            print(f"Model loaded: {self.data_type} validator")
+
+            # Check version
+            version = model_data.get('version', '1.0')
+            if version not in ['2.0', '2.1']:
+                print(f"Warning: Loading old model format (v{version}). Some features may not work.")
+
+            self.model_name = model_data.get('model_name', 'unknown')
+            self.columns = model_data.get('columns', [])
+            self.column_models = model_data.get('column_models', {})
+            self.column_scalers = model_data.get('column_scalers', {})
+            self.column_whitelists = model_data.get('column_whitelists', {})
+            self.column_examples = model_data.get('column_examples', {})
+            self.reference_lists = model_data.get('reference_lists', {})
+            self.training_metrics = model_data.get('training_metrics', {})
+            self.is_trained = model_data.get('is_trained', False)
+
+            print(f"Model loaded: {self.model_name} ({len(self.columns)} columns)")
             return True
         except Exception as e:
             print(f"Error loading model: {e}")
             return False
 
+    def get_trained_columns(self) -> List[str]:
+        """Get list of trained column names."""
+        return self.columns.copy()
+
+    def get_column_metrics(self, column_name: str) -> dict:
+        """Get training metrics for a specific column."""
+        return self.training_metrics.get(column_name, {})
+
+    def add_training_data(self, df: pd.DataFrame, retrain: bool = True) -> Dict[str, dict]:
+        """
+        Add more training data to an existing model (stacking).
+
+        This allows users to incrementally improve their model by adding
+        more valid examples without starting from scratch.
+
+        Args:
+            df: DataFrame with additional valid examples
+            retrain: Whether to retrain the model after adding data
+
+        Returns:
+            dict: Updated training metrics (if retrain=True)
+        """
+        if not self.is_trained:
+            raise ValueError("No existing model to add to. Use train() first.")
+
+        print(f"Adding {len(df)} rows to existing model '{self.model_name}'...")
+
+        # Add new examples to existing whitelists and examples
+        for col in df.columns:
+            if col in self.columns:
+                # Get new valid values
+                new_values = df[col].dropna().astype(str).tolist()
+                new_values = [v.strip() for v in new_values if v.strip()]
+
+                if not new_values:
+                    continue
+
+                # Add to whitelist (lowercase for matching)
+                if col not in self.column_whitelists:
+                    self.column_whitelists[col] = set()
+                self.column_whitelists[col].update(v.lower() for v in new_values)
+
+                # Add to examples (original case for corrections)
+                if col not in self.column_examples:
+                    self.column_examples[col] = []
+                existing = set(self.column_examples[col])
+                for v in new_values:
+                    if v not in existing:
+                        self.column_examples[col].append(v)
+
+                print(f"  {col}: Added {len(new_values)} examples (total whitelist: {len(self.column_whitelists[col])})")
+            else:
+                print(f"  {col}: Skipped (not in trained columns)")
+
+        # Optionally retrain ML models with combined data
+        if retrain:
+            print("\nRetraining ML models with combined data...")
+            # We need to retrain from scratch with all examples
+            # Build combined training data from whitelists
+            combined_data = {}
+            for col in self.columns:
+                if col in self.column_examples:
+                    combined_data[col] = self.column_examples[col]
+
+            # Create DataFrame from examples (may have different lengths)
+            max_len = max(len(v) for v in combined_data.values()) if combined_data else 0
+            for col in combined_data:
+                # Pad shorter columns by repeating values
+                while len(combined_data[col]) < max_len:
+                    combined_data[col].extend(combined_data[col][:max_len - len(combined_data[col])])
+                combined_data[col] = combined_data[col][:max_len]
+
+            combined_df = pd.DataFrame(combined_data)
+            return self.train(combined_df, self.model_name)
+
+        return self.training_metrics
+
+    def load_reference_list(self, column_name: str, filepath: str) -> bool:
+        """
+        Load a reference list of valid values for a column.
+
+        This supplements the training data whitelist with additional valid values.
+        Useful for standardized fields like countries, currencies, etc.
+
+        Args:
+            column_name: Column name to associate the reference list with
+            filepath: Path to text file with one valid value per line
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not os.path.exists(filepath):
+            print(f"Reference list not found: {filepath}")
+            return False
+
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                values = [line.strip().lower() for line in f if line.strip()]
+
+            if column_name not in self.reference_lists:
+                self.reference_lists[column_name] = set()
+
+            self.reference_lists[column_name].update(values)
+
+            # Also add to column_examples for corrections
+            if column_name not in self.column_examples:
+                self.column_examples[column_name] = []
+
+            # Add original case versions for corrections
+            with open(filepath, 'r', encoding='utf-8') as f:
+                original_values = [line.strip() for line in f if line.strip()]
+
+            existing = set(self.column_examples[column_name])
+            for val in original_values:
+                if val not in existing:
+                    self.column_examples[column_name].append(val)
+
+            print(f"Loaded {len(values)} values for '{column_name}' from {filepath}")
+            return True
+        except Exception as e:
+            print(f"Error loading reference list: {e}")
+            return False
+
+    def load_reference_lists_from_dir(self, directory: str) -> Dict[str, int]:
+        """
+        Load all reference lists from a directory.
+
+        Files should be named {column_name}.txt (e.g., countries.txt, currencies.txt)
+
+        Args:
+            directory: Path to directory containing reference list files
+
+        Returns:
+            Dict mapping column names to number of values loaded
+        """
+        results = {}
+        if not os.path.exists(directory):
+            print(f"Reference directory not found: {directory}")
+            return results
+
+        for filename in os.listdir(directory):
+            if filename.endswith('.txt'):
+                column_name = filename.replace('.txt', '')
+                filepath = os.path.join(directory, filename)
+
+                if self.load_reference_list(column_name, filepath):
+                    results[column_name] = len(self.reference_lists.get(column_name, set()))
+
+        return results
+
+    def _get_combined_whitelist(self, column_name: str) -> set:
+        """Get combined whitelist from training data and reference lists."""
+        combined = set()
+
+        if column_name in self.column_whitelists:
+            combined.update(self.column_whitelists[column_name])
+
+        if column_name in self.reference_lists:
+            combined.update(self.reference_lists[column_name])
+
+        return combined
+
+
+# Keep backward compatibility alias
+GenericMLValidator = UnifiedMLValidator
+
 
 if __name__ == "__main__":
-    # Example: Train a phone validator
+    # Example: Train a unified model
     print("=" * 70)
-    print("GENERIC ML VALIDATOR - TEST")
+    print("UNIFIED ML VALIDATOR - TEST")
     print("=" * 70)
 
-    # Create validator
-    validator = GenericMLValidator()
+    # Create sample DataFrame
+    sample_data = {
+        'name': ['John Doe', 'Jane Smith', 'Bob Wilson', 'Alice Brown'],
+        'email': ['john@example.com', 'jane@test.org', 'bob@company.net', 'alice@mail.com'],
+        'phone': ['+1234567890', '+65 9123 4567', '+44 20 1234 5678', '+1 555 123 4567'],
+    }
+    df = pd.DataFrame(sample_data)
 
-    # Example training data (you would use YOUR data)
-    training_data = [
-        ("+1234567890", "valid"),
-        ("+65 9123 4567", "valid"),
-        ("+44 20 1234 5678", "valid"),
-        ("123", "invalid"),
-        ("abc123", "invalid"),
-        ("invalid_phone", "invalid"),
-        ("+", "invalid"),
-    ]
+    print("\nSample training data:")
+    print(df)
 
-    # Train
-    validator.train(training_data, "phone")
+    # Create and train validator
+    validator = UnifiedMLValidator()
+    metrics = validator.train(df, "sample_model")
 
     # Save
-    validator.save("models/phone_validator.pkl")
+    validator.save("models/sample_model.pkl")
 
-    # Test
-    test_cases = [
-        "+1234567890",
-        "123456",
-        "invalid",
-    ]
+    # Test validation
+    print("\n" + "=" * 70)
+    print("VALIDATION TEST")
+    print("=" * 70)
 
-    print("\nValidation Results:")
-    print("-" * 70)
-    for text in test_cases:
-        is_valid, confidence = validator.validate(text)
-        status = "VALID" if is_valid else "INVALID"
-        print(f"{text:<20} -> {status} ({confidence:.1%} confidence)")
+    test_data = {
+        'name': ['John Doe', 'J', 'Invalid123'],
+        'email': ['john@example.com', 'invalid', 'missing@at'],
+        'phone': ['+1234567890', '123', 'invalid_phone'],
+    }
+    test_df = pd.DataFrame(test_data)
+
+    print("\nTest data:")
+    print(test_df)
+
+    print("\nValidation results:")
+    for col in test_df.columns:
+        print(f"\n{col}:")
+        results = validator.validate_batch(test_df[col].tolist(), col)
+        for val, (is_valid, conf) in zip(test_df[col], results):
+            status = "VALID" if is_valid else "INVALID"
+            print(f"  {val:<25} -> {status} ({conf:.1%})")

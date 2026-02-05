@@ -1,0 +1,545 @@
+name,email,phone,country,age,address,blood_sugar
+John Doe,john.doe@gmail.com,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,95.0
+Jane Smith,jane.smith@yahoo.com,+1 555 234 5678,USA,25,456 Oak Avenue Los Angeles CA 90001,102.0
+Robert Johnson,robert.j@outlook.com,+1 555 345 6789,US,19,789 Pine Road Chicago IL 60601,88.0
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,65,10 Downing Street London SW1A 2AA,110.0
+Michael Brown,m.brown@company.com,+44 20 7946 0958,UK,35,25 Baker Street London W1U 8EW,73.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,98.0
+David Lee,david.lee@example.org,+65 9123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,105.0
+Lisa Chen,lisa.chen@test.net,+65 9234 5678,SG,26,45 Orchard Road #10-01 Singapore 238866,82.0
+James Wang,james.wang@mail.com,+65 8123 4567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,91.0
+Jennifer Kim,jennifer.k@business.co,+61 2 9876 5432,Australia,24,42 George Street Sydney NSW 2000,115.0
+William Park,william.p@work.com,+61 3 9876 1234,AU,61,100 Collins Street Melbourne VIC 3000,78.0
+Jessica Taylor,jessica.t@agency.net,+61 4 1234 5678,AUS,65,55 Eagle Street Brisbane QLD 4000,99.0
+Christopher Martinez,chris.m@startup.com,+81 3 1234 5678,Japan,75,1-1-1 Shibuya Tokyo 150-0002,86.0
+Amanda Garcia,amanda.g@firm.com,+81 6 9876 5432,JP,52,2-3-4 Namba Osaka 542-0076,107.0
+Daniel Rodriguez,daniel.r@services.org,+81 90 1234 5678,JPN,23,5-6-7 Sakae Nagoya 460-0008,94.0
+Michelle Anderson,michelle.a@tech.io,+49 30 1234 5678,Germany,55,Unter den Linden 1 Berlin 10117,112.0
+Kevin Thomas,kevin.t@design.co,+49 89 9876 5432,DE,45,Marienplatz 1 Munich 80331,81.0
+Rachel Jackson,rachel.j@media.com,+49 40 1234 5678,DEU,20,Jungfernstieg 1 Hamburg 20095,97.0
+Brian White,brian.w@health.org,+33 1 2345 6789,France,19,1 Avenue des Champs-Elysees Paris 75008,103.0
+Stephanie Harris,stephanie.h@retail.com,+33 4 9876 5432,FR,23,10 Rue de la Republique Lyon 69001,89.0
+Andrew Clark,andrew.c@finance.net,+33 6 1234 5678,FRA,31,5 Promenade des Anglais Nice 06000,118.0
+Nicole Lewis,nicole.l@consulting.com,+39 02 1234 5678,Italy,32,Via del Corso 1 Rome 00186,76.0
+Joshua Robinson,joshua.r@solutions.io,+39 06 9876 5432,IT,50,Piazza del Duomo 1 Milan 20121,92.0
+Samantha Walker,samantha.w@digital.co,+39 055 123 4567,ITA,56,Piazza della Signoria 1 Florence 50122,108.0
+Ryan Hall,ryan.h@creative.net,+34 91 123 4567,Spain,19,Gran Via 1 Madrid 28013,84.0
+Ashley Young,ashley.y@marketing.com,+34 93 987 6543,ES,53,Las Ramblas 1 Barcelona 08001,111.0
+Brandon King,brandon.k@global.org,+34 95 123 4567,ESP,30,Avenida de la Constitucion 1 Seville 41001,79.0
+Megan Wright,megan.w@enterprise.io,+31 20 123 4567,Netherlands,63,Dam 1 Amsterdam 1012 JS,96.0
+Justin Scott,justin.s@partners.com,+31 10 987 6543,NL,59,Coolsingel 1 Rotterdam 3011 AD,104.0
+Lauren Green,lauren.g@associates.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,87.0
+Tyler Adams,tyler.a@ventures.co,+32 2 123 4567,Belgium,52,Grand Place 1 Brussels 1000,113.0
+Kayla Baker,kayla.b@investments.org,+32 3 987 6543,BE,44,Grote Markt 1 Antwerp 2000,80.0
+Aaron Nelson,aaron.n@holdings.io,+32 9 123 4567,BEL,32,Graslei 1 Ghent 9000,95.0
+Brittany Carter,brittany.c@group.com,+41 44 123 4567,Switzerland,46,Bahnhofstrasse 1 Zurich 8001,101.0
+Zachary Mitchell,zachary.m@corp.net,+41 22 987 6543,CH,55,Rue du Rhone 1 Geneva 1204,88.0
+Courtney Perez,courtney.p@inc.org,+41 31 123 4567,SUI,35,Bundesplatz 1 Bern 3003,109.0
+Dylan Roberts,dylan.r@llc.io,+1 416 123 4567,Canada,69,100 Queen Street West Toronto ON M5H 2N2,74.0
+Amber Turner,amber.t@ltd.com,+1 604 987 6543,CA,73,200 Burrard Street Vancouver BC V6C 3L6,93.0
+Ethan Phillips,ethan.p@industries.net,+1 514 123 4567,CAN,18,1000 Rue Sainte-Catherine Montreal QC H3B 1C9,106.0
+Danielle Campbell,danielle.c@systems.org,+353 1 234 5678,Ireland,66,1 Grafton Street Dublin D02 VF65,85.0
+Nathan Parker,nathan.p@solutions.com,+353 1 987 6543,IE,69,2 O'Connell Street Dublin D01 E4X0,114.0
+Brooke Evans,brooke.e@technologies.io,+353 21 123 4567,IRL,28,1 Patrick Street Cork T12 X8YH,77.0
+Austin Edwards,austin.e@services.net,+64 9 123 4567,New Zealand,62,1 Queen Street Auckland 1010,98.0
+Taylor Collins,taylor.c@consulting.org,+64 4 987 6543,NZ,45,100 Lambton Quay Wellington 6011,102.0
+Morgan Stewart,morgan.s@management.com,+64 3 123 4567,NZL,39,1 Cathedral Square Christchurch 8011,90.0
+Jordan Sanchez,jordan.s@advisory.io,+27 11 123 4567,South Africa,35,1 Nelson Mandela Square Johannesburg 2196,116.0
+Alexis Morris,alexis.m@capital.net,+27 21 987 6543,SA,27,1 Adderley Street Cape Town 8001,82.0
+Casey Rogers,casey.r@partners.org,+27 31 123 4567,ZA,31,1 Florida Road Durban 4001,99.0
+Jamie Reed,jamie.r@associates.com,+55 11 1234 5678,Brazil,79,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Quinn Cook,quinn.c@ventures.io,+55 21 9876 5432,BR,66,Av Atlantica 500 Rio de Janeiro RJ 22010-000,83.0
+Avery Murphy,avery.m@investments.net,+55 61 1234 5678,BRA,39,SBS Quadra 2 Brasilia DF 70070-120,94.0
+Riley Bailey,riley.b@holdings.org,+52 55 1234 5678,Mexico,24,Av Reforma 500 Mexico City CDMX 06600,110.0
+Drew Rivera,drew.r@group.io,+52 33 9876 5432,MX,23,Av Vallarta 1000 Guadalajara JAL 44100,78.0
+Peyton Cooper,peyton.c@corp.com,+52 81 1234 5678,MEX,42,Av Constitucion 500 Monterrey NL 64000,96.0
+Cameron Richardson,cameron.r@inc.net,+86 10 1234 5678,China,24,1 Chang'an Avenue Beijing 100001,105.0
+Hayden Cox,hayden.c@llc.org,+86 21 9876 5432,CN,40,1 Nanjing Road Shanghai 200001,89.0
+Reese Howard,reese.h@industries.io,+86 20 1234 5678,CHN,72,1 Tianhe Road Guangzhou 510620,112.0
+Finley Ward,finley.w@systems.com,+91 11 1234 5678,India,40,1 Connaught Place New Delhi 110001,81.0
+Charlie Torres,charlie.t@solutions.net,+91 22 9876 5432,IN,56,1 Marine Drive Mumbai 400001,97.0
+Emerson Peterson,emerson.p@technologies.org,+91 80 1234 5678,IND,34,1 MG Road Bangalore 560001,104.0
+Dakota Gray,dakota.g@services.io,+82 2 1234 5678,South Korea,69,1 Sejong-daero Seoul 04512,88.0
+Rowan Ramirez,rowan.r@consulting.com,+82 51 9876 5432,KR,20,1 Haeundae-ro Busan 48099,115.0
+Sawyer James,sawyer.j@management.net,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Parker Watson,parker.w@advisory.org,+66 2 123 4567,Thailand,47,1 Sukhumvit Road Bangkok 10110,100.0
+Kendall Brooks,kendall.b@capital.io,+66 53 987 6543,TH,52,1 Nimman Road Chiang Mai 50200,86.0
+Blake Kelly,blake.k@partners.com,+66 38 123 4567,THA,25,1 Beach Road Pattaya 20150,108.0
+Alex Sanders,alex.s@associates.net,+60 3 1234 5678,Malaysia,80,1 Jalan Bukit Bintang Kuala Lumpur 55100,91.0
+Jessie Price,jessie.p@ventures.org,+60 4 9876 5432,MY,77,1 Jalan Penang George Town 10000,113.0
+Skyler Bennett,skyler.b@investments.io,+60 7 1234 5678,MYS,42,1 Jalan Wong Ah Fook Johor Bahru 80000,76.0
+Robin Wood,robin.w@holdings.com,+63 2 1234 5678,Philippines,23,1 Ayala Avenue Makati 1226,95.0
+Pat Barnes,pat.b@group.net,+63 32 9876 5432,PH,53,1 Osmena Boulevard Cebu City 6000,103.0
+Sam Ross,sam.r@corp.org,+63 82 1234 5678,PHL,36,1 San Pedro Street Davao City 8000,87.0
+Lee Henderson,lee.h@inc.io,+84 24 1234 5678,Vietnam,71,1 Ba Trieu Street Hanoi 100000,117.0
+Kim Coleman,kim.c@llc.com,+84 28 9876 5432,VN,58,1 Nguyen Hue Street Ho Chi Minh City 700000,80.0
+Chris Jenkins,chris.j@industries.net,+84 236 123 4567,VNM,57,1 Bach Dang Street Da Nang 550000,93.0
+Terry Perry,terry.p@systems.org,+62 21 1234 5678,Indonesia,74,1 Jalan Sudirman Jakarta 10220,106.0
+Max Powell,max.p@solutions.io,+62 31 9876 5432,ID,73,1 Jalan Tunjungan Surabaya 60261,84.0
+Bobby Long,bobby.l@technologies.com,+62 361 123 4567,IDN,41,1 Jalan Legian Bali 80361,111.0
+Nicky Patterson,nicky.p@services.net,+971 4 123 4567,United Arab Emirates,54,1 Sheikh Zayed Road Dubai 00000,75.0
+Ricky Hughes,ricky.h@consulting.org,+971 2 987 6543,UAE,30,1 Corniche Road Abu Dhabi 00000,92.0
+Eddie Flores,eddie.f@management.io,+971 6 123 4567,Emirates,63,1 Al Majaz Street Sharjah 00000,109.0
+Frankie Washington,frankie.w@advisory.com,+966 11 123 4567,Saudi Arabia,22,1 King Fahd Road Riyadh 11564,85.0
+Bobbie Butler,bobbie.b@capital.net,+966 12 987 6543,KSA,20,1 Tahlia Street Jeddah 23431,114.0
+Tony Simmons,tony.s@partners.org,+966 13 123 4567,SA,60,1 Dhahran Street Dammam 34231,77.0
+Gerry Foster,gerry.f@associates.io,+7 495 123 4567,Russia,32,1 Tverskaya Street Moscow 125009,98.0
+Jo Gonzales,jo.g@ventures.com,+7 812 987 6543,RU,67,1 Nevsky Prospekt Saint Petersburg 191025,102.0
+Ali Bryant,ali.b@investments.net,+7 383 123 4567,RUS,36,1 Krasny Prospekt Novosibirsk 630099,90.0
+Mel Alexander,mel.a@holdings.org,+48 22 123 4567,Poland,23,1 Nowy Swiat Warsaw 00-001,116.0
+Val Russell,val.r@group.io,+48 12 987 6543,PL,72,1 Rynek Glowny Krakow 31-001,82.0
+Lou Griffin,lou.g@corp.com,+48 58 123 4567,POL,32,1 Dluga Street Gdansk 80-001,99.0
+Jean Diaz,jean.d@inc.net,+420 2 1234 5678,Czech Republic,73,1 Wenceslas Square Prague 110 00,107.0
+Dana Hayes,dana.h@llc.org,+420 5 9876 5432,CZ,24,1 Svobody Square Brno 602 00,83.0
+Gene Myers,gene.m@industries.io,+420 69 123 4567,Czechia,42,1 Masaryk Square Ostrava 702 00,94.0
+John Doe,john.doe@gmail.com,+15551234567,United States,58,123 Main Street New York NY 10001,95.0
+Jane Smith,jane.smith@yahoo.com,+15552345678,USA,25,456 Oak Avenue Los Angeles CA 90001,102.0
+Robert Johnson,robert.j@outlook.com,+15553456789,US,19,789 Pine Road Chicago IL 60601,88.0
+Emily Davis,emily.davis@hotmail.com,+15554567890,United Kingdom,65,10 Downing Street London SW1A 2AA,110.0
+Michael Brown,m.brown@company.com,+442079460958,UK,35,25 Baker Street London W1U 8EW,73.0
+Sarah Wilson,sarah.w@corp.io,+442079461234,Great Britain,33,100 Oxford Street Manchester M1 1AD,98.0
+David Lee,david.lee@example.org,+6591234567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,105.0
+Lisa Chen,lisa.chen@test.net,+6592345678,SG,26,45 Orchard Road #10-01 Singapore 238866,82.0
+James Wang,james.wang@mail.com,+6581234567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,91.0
+Jennifer Kim,jennifer.k@business.co,+61298765432,Australia,24,42 George Street Sydney NSW 2000,115.0
+William Park,william.p@work.com,+61398761234,AU,61,100 Collins Street Melbourne VIC 3000,78.0
+Jessica Taylor,jessica.t@agency.net,+61412345678,AUS,65,55 Eagle Street Brisbane QLD 4000,99.0
+Christopher Martinez,chris.m@startup.com,+81312345678,Japan,75,1-1-1 Shibuya Tokyo 150-0002,86.0
+Amanda Garcia,amanda.g@firm.com,+81698765432,JP,52,2-3-4 Namba Osaka 542-0076,107.0
+Daniel Rodriguez,daniel.r@services.org,+819012345678,JPN,23,5-6-7 Sakae Nagoya 460-0008,94.0
+Michelle Anderson,michelle.a@tech.io,+493012345678,Germany,55,Unter den Linden 1 Berlin 10117,112.0
+Kevin Thomas,kevin.t@design.co,+498998765432,DE,45,Marienplatz 1 Munich 80331,81.0
+Rachel Jackson,rachel.j@media.com,+494012345678,DEU,20,Jungfernstieg 1 Hamburg 20095,97.0
+Brian White,brian.w@health.org,+33123456789,France,19,1 Avenue des Champs-Elysees Paris 75008,103.0
+Stephanie Harris,stephanie.h@retail.com,+33498765432,FR,23,10 Rue de la Republique Lyon 69001,89.0
+John Doe,john.doe@gmail.com,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,9.5
+Jane Smith,jane.smith@yahoo.com,+1 555 234 5678,USA,25,456 Oak Avenue Los Angeles CA 90001,7.0
+Robert Johnson,robert.j@outlook.com,+1 555 345 6789,US,19,789 Pine Road Chicago IL 60601,4.3
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,65,10 Downing Street London SW1A 2AA,5.8
+Michael Brown,m.brown@company.com,+44 20 7946 0958,UK,35,25 Baker Street London W1U 8EW,10.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,9.4
+David Lee,david.lee@example.org,+65 9123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,4.0
+Lisa Chen,lisa.chen@test.net,+65 9234 5678,SG,26,45 Orchard Road #10-01 Singapore 238866,7.6
+James Wang,james.wang@mail.com,+65 8123 4567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,5.8
+Jennifer Kim,jennifer.k@business.co,+61 2 9876 5432,Australia,24,42 George Street Sydney NSW 2000,7.6
+William Park,william.p@work.com,+61 3 9876 1234,AU,61,100 Collins Street Melbourne VIC 3000,7.7
+Jessica Taylor,jessica.t@agency.net,+61 4 1234 5678,AUS,65,55 Eagle Street Brisbane QLD 4000,8.5
+Christopher Martinez,chris.m@startup.com,+81 3 1234 5678,Japan,75,1-1-1 Shibuya Tokyo 150-0002,10.0
+Amanda Garcia,amanda.g@firm.com,+81 6 9876 5432,JP,52,2-3-4 Namba Osaka 542-0076,7.4
+Daniel Rodriguez,daniel.r@services.org,+81 90 1234 5678,JPN,23,5-6-7 Sakae Nagoya 460-0008,5.0
+Michelle Anderson,michelle.a@tech.io,+49 30 1234 5678,Germany,55,Unter den Linden 1 Berlin 10117,10.4
+Kevin Thomas,kevin.t@design.co,+49 89 9876 5432,DE,45,Marienplatz 1 Munich 80331,6.0
+Rachel Jackson,rachel.j@media.com,+49 40 1234 5678,DEU,20,Jungfernstieg 1 Hamburg 20095,6.7
+Brian White,brian.w@health.org,+33 1 2345 6789,France,19,1 Avenue des Champs-Elysees Paris 75008,4.0
+Stephanie Harris,stephanie.h@retail.com,+33 4 9876 5432,FR,23,10 Rue de la Republique Lyon 69001,4.8
+John Doe,john.doe@gmail.com,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,97.0
+Jane Smith,jane.smith@yahoo.com,+1 555 234 5678,USA,25,456 Oak Avenue Los Angeles CA 90001,155.0
+Robert Johnson,robert.j@outlook.com,+1 555 345 6789,US,19,789 Pine Road Chicago IL 60601,174.0
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,65,10 Downing Street London SW1A 2AA,79.0
+Michael Brown,m.brown@company.com,+44 20 7946 0958,UK,35,25 Baker Street London W1U 8EW,91.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,98.0
+David Lee,david.lee@example.org,+65 9123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,135.0
+Lisa Chen,lisa.chen@test.net,+65 9234 5678,SG,26,45 Orchard Road #10-01 Singapore 238866,144.0
+James Wang,james.wang@mail.com,+65 8123 4567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,144.0
+Jennifer Kim,jennifer.k@business.co,+61 2 9876 5432,Australia,24,42 George Street Sydney NSW 2000,150.0
+William Park,william.p@work.com,+61 3 9876 1234,AU,61,100 Collins Street Melbourne VIC 3000,72.0
+Jessica Taylor,jessica.t@agency.net,+61 4 1234 5678,AUS,65,55 Eagle Street Brisbane QLD 4000,180.0
+Christopher Martinez,chris.m@startup.com,+81 3 1234 5678,Japan,75,1-1-1 Shibuya Tokyo 150-0002,106.0
+Amanda Garcia,amanda.g@firm.com,+81 6 9876 5432,JP,52,2-3-4 Namba Osaka 542-0076,71.0
+Daniel Rodriguez,daniel.r@services.org,+81 90 1234 5678,JPN,23,5-6-7 Sakae Nagoya 460-0008,111.0
+Michelle Anderson,michelle.a@tech.io,+49 30 1234 5678,Germany,55,Unter den Linden 1 Berlin 10117,136.0
+Kevin Thomas,kevin.t@design.co,+49 89 9876 5432,DE,45,Marienplatz 1 Munich 80331,79.0
+Rachel Jackson,rachel.j@media.com,+49 40 1234 5678,DEU,20,Jungfernstieg 1 Hamburg 20095,118.0
+Brian White,brian.w@health.org,+33 1 2345 6789,France,19,1 Avenue des Champs-Elysees Paris 75008,96.0
+Stephanie Harris,stephanie.h@retail.com,+33 4 9876 5432,FR,23,10 Rue de la Republique Lyon 69001,77.0
+Andrew Clark,andrew.c@finance.net,+33 6 1234 5678,FRA,31,5 Promenade des Anglais Nice 06000,96.0
+Nicole Lewis,nicole.l@consulting.com,+39 02 1234 5678,Italy,32,Via del Corso 1 Rome 00186,135.0
+Joshua Robinson,joshua.r@solutions.io,+39 06 9876 5432,IT,50,Piazza del Duomo 1 Milan 20121,70.0
+Samantha Walker,samantha.w@digital.co,+39 055 123 4567,ITA,56,Piazza della Signoria 1 Florence 50122,85.0
+Ryan Hall,ryan.h@creative.net,+34 91 123 4567,Spain,19,Gran Via 1 Madrid 28013,88.0
+Ashley Young,ashley.y@marketing.com,+34 93 987 6543,ES,53,Las Ramblas 1 Barcelona 08001,135.0
+Brandon King,brandon.k@global.org,+34 95 123 4567,ESP,30,Avenida de la Constitucion 1 Seville 41001,141.0
+Megan Wright,megan.w@enterprise.io,+31 20 123 4567,Netherlands,63,Dam 1 Amsterdam 1012 JS,148.0
+Justin Scott,justin.s@partners.com,+31 10 987 6543,NL,59,Coolsingel 1 Rotterdam 3011 AD,171.0
+Lauren Green,lauren.g@associates.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,72.0
+Finley Ward,finley.w@systems.com,+91 11 1234 5678,India,2,1 Connaught Place New Delhi 110001,81.0
+John Doe,john.doe@gmail.com,+1 555 123 4567,United States,5,123 Main Street New York NY 10001,95.0
+Gene Myers,gene.m@industries.io,+420 69 123 4567,Czechia,3,1 Masaryk Square Ostrava 702 00,94.0
+Christopher Martinez,chris.m@startup.com,+81 3 1234 5678,Japan,5,1-1-1 Shibuya Tokyo 150-0002,86.0
+Casey Rogers,casey.r@partners.org,+27 31 123 4567,ZA,2,1 Florida Road Durban 4001,99.0
+Lee Henderson,lee.h@inc.io,+84 24 1234 5678,Vietnam,8,1 Ba Trieu Street Hanoi 100000,117.0
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,6,10 Downing Street London SW1A 2AA,110.0
+Lauren Green,lauren.g@associates.net,+31 70 123 4567,Holland,7,Binnenhof 1 The Hague 2513 AA,87.0
+Tony Simmons,tony.s@partners.org,+966 13 123 4567,SA,12,1 Dhahran Street Dammam 34231,77.0
+Andrew Clark,andrew.c@finance.net,+33 6 1234 5678,FRA,6,5 Promenade des Anglais Nice 06000,118.0
+Peyton Cooper,peyton.c@corp.com,+52 81 1234 5678,MEX,15,Av Constitucion 500 Monterrey NL 64000,96.0
+Lauren Green,lauren.g@associates.net,+31 70 123 4567,Holland,13,Binnenhof 1 The Hague 2513 AA,87.0
+Lisa Chen,lisa.chen@test.net,+65 9234 5678,SG,16,45 Orchard Road #10-01 Singapore 238866,82.0
+Dylan Roberts,dylan.r@llc.io,+1 416 123 4567,Canada,17,100 Queen Street West Toronto ON M5H 2N2,74.0
+Kendall Brooks,kendall.b@capital.io,+66 53 987 6543,TH,16,1 Nimman Road Chiang Mai 50200,86.0
+Aaron Nelson,aaron.n@holdings.io,+32 9 123 4567,BEL,27,Graslei 1 Ghent 9000,95.0
+Pat Barnes,pat.b@group.net,+63 32 9876 5432,PH,26,1 Osmena Boulevard Cebu City 6000,103.0
+Jamie Reed,jamie.r@associates.com,+55 11 1234 5678,Brazil,21,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Dana Hayes,dana.h@llc.org,+420 5 9876 5432,CZ,29,1 Svobody Square Brno 602 00,83.0
+Ricky Hughes,ricky.h@consulting.org,+971 2 987 6543,UAE,28,1 Corniche Road Abu Dhabi 00000,92.0
+Zachary Mitchell,zachary.m@corp.net,+41 22 987 6543,CH,50,Rue du Rhone 1 Geneva 1204,88.0
+Brandon King,brandon.k@global.org,+34 95 123 4567,ESP,31,Avenida de la Constitucion 1 Seville 41001,79.0
+Alex Sanders,alex.s@associates.net,+60 3 1234 5678,Malaysia,45,1 Jalan Bukit Bintang Kuala Lumpur 55100,91.0
+Jamie Reed,jamie.r@associates.com,+55 11 1234 5678,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Hayden Cox,hayden.c@llc.org,+86 21 9876 5432,CN,32,1 Nanjing Road Shanghai 200001,89.0
+Rachel Jackson,rachel.j@media.com,+49 40 1234 5678,DEU,59,Jungfernstieg 1 Hamburg 20095,97.0
+Jessica Taylor,jessica.t@agency.net,+61 4 1234 5678,AUS,70,55 Eagle Street Brisbane QLD 4000,99.0
+Jo Gonzales,jo.g@ventures.com,+7 812 987 6543,RU,61,1 Nevsky Prospekt Saint Petersburg 191025,102.0
+Riley Bailey,riley.b@holdings.org,+52 55 1234 5678,Mexico,66,Av Reforma 500 Mexico City CDMX 06600,110.0
+John Doe,john.doe@gmail.com,+1 555 123 4567,United States,68,123 Main Street New York NY 10001,95.0
+Courtney Perez,courtney.p@inc.org,+41 31 123 4567,SUI,85,Bundesplatz 1 Bern 3003,109.0
+Riley Bailey,riley.b@holdings.org,+52 55 1234 5678,Mexico,76,Av Reforma 500 Mexico City CDMX 06600,110.0
+Pat Barnes,pat.b@group.net,+63 32 9876 5432,PH,77,1 Osmena Boulevard Cebu City 6000,103.0
+Daniel Rodriguez,daniel.r@services.org,+81 90 1234 5678,JPN,90,5-6-7 Sakae Nagoya 460-0008,94.0
+Stephanie Harris,stephanie.h@retail.com,+33 4 9876 5432,FR,74,10 Rue de la Republique Lyon 69001,89.0
+Robert Johnson,robert.j@outlook.com,+1 555 345 6789,US,97,789 Pine Road Chicago IL 60601,88.0
+Kendall Brooks,kendall.b@capital.io,+66 53 987 6543,TH,105,1 Nimman Road Chiang Mai 50200,86.0
+Megan Wright,megan.w@enterprise.io,+31 20 123 4567,Netherlands,100,Dam 1 Amsterdam 1012 JS,96.0
+Finley Ward,finley.w@systems.com,+91 11 1234 5678,India,91,1 Connaught Place New Delhi 110001,81.0
+Courtney Perez,courtney.p@inc.org,+41 31 123 4567,SUI,109,Bundesplatz 1 Bern 3003,109.0
+Alex,joshua.r@solutions.io,+39 06 9876 5432,IT,50,Piazza del Duomo 1 Milan 20121,92.0
+Jordan,ali.b@investments.net,+7 383 123 4567,RUS,36,1 Krasny Prospekt Novosibirsk 630099,90.0
+Taylor,sawyer.j@management.net,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Morgan,emerson.p@technologies.org,+91 80 1234 5678,IND,34,1 MG Road Bangalore 560001,104.0
+Casey,tony.s@partners.org,+966 13 123 4567,SA,60,1 Dhahran Street Dammam 34231,77.0
+Mary Jane Watson,sawyer.j@management.net,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+John Paul Jones,avery.m@investments.net,+55 61 1234 5678,BRA,39,SBS Quadra 2 Brasilia DF 70070-120,94.0
+Anna Marie Smith,frankie.w@advisory.com,+966 11 123 4567,Saudi Arabia,22,1 King Fahd Road Riyadh 11564,85.0
+Jean-Pierre Martin,danielle.c@systems.org,+353 1 234 5678,Ireland,66,1 Grafton Street Dublin D02 VF65,85.0
+Mary-Ann Johnson,dakota.g@services.io,+82 2 1234 5678,South Korea,69,1 Sejong-daero Seoul 04512,88.0
+Lee Min-Ho,avery.m@investments.net,+55 61 1234 5678,BRA,39,SBS Quadra 2 Brasilia DF 70070-120,94.0
+Muhammad Ali,ryan.h@creative.net,+34 91 123 4567,Spain,19,Gran Via 1 Madrid 28013,84.0
+Sri Lakshmi,avery.m@investments.net,+55 61 1234 5678,BRA,39,SBS Quadra 2 Brasilia DF 70070-120,94.0
+Ng Wei Ming,gene.m@industries.io,+420 69 123 4567,Czechia,42,1 Masaryk Square Ostrava 702 00,94.0
+O'Connor Patrick,quinn.c@ventures.io,+55 21 9876 5432,BR,66,Av Atlantica 500 Rio de Janeiro RJ 22010-000,83.0
+McDonald Ronald,taylor.c@consulting.org,+64 4 987 6543,NZ,45,100 Lambton Quay Wellington 6011,102.0
+De La Cruz Maria,sawyer.j@management.net,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Nicky Patterson,nicky.p@services.net,+1-555-123-4567,United Arab Emirates,54,1 Sheikh Zayed Road Dubai 00000,75.0
+Dakota Gray,dakota.g@services.io,(555) 123-4567,South Korea,69,1 Sejong-daero Seoul 04512,88.0
+Val Russell,val.r@group.io,555.123.4567,PL,72,1 Rynek Glowny Krakow 31-001,82.0
+Stephanie Harris,stephanie.h@retail.com,+44 (0) 20 7946 0958,FR,23,10 Rue de la Republique Lyon 69001,89.0
+Pat Barnes,pat.b@group.net,020 7946 0958,PH,53,1 Osmena Boulevard Cebu City 6000,103.0
+Riley Bailey,riley.b@holdings.org,9123 4567,Mexico,24,Av Reforma 500 Mexico City CDMX 06600,110.0
+John Doe,john.doe@gmail.com,91234567,United States,58,123 Main Street New York NY 10001,95.0
+Gene Myers,gene.m@industries.io,+86 138 0013 8000,Czechia,42,1 Masaryk Square Ostrava 702 00,94.0
+Ashley Young,ashley.y@marketing.com,+91 98765 43210,ES,53,Las Ramblas 1 Barcelona 08001,111.0
+Sarah Wilson,user+tag@gmail.com,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,98.0
+Drew Rivera,first.last@company.co.uk,+52 33 9876 5432,MX,23,Av Vallarta 1000 Guadalajara JAL 44100,78.0
+Jamie Reed,name@subdomain.domain.org,+55 11 1234 5678,Brazil,79,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Hayden Cox,user_name@example.com,+86 21 9876 5432,CN,40,1 Nanjing Road Shanghai 200001,89.0
+Kendall Brooks,USER@EXAMPLE.COM,+66 53 987 6543,TH,52,1 Nimman Road Chiang Mai 50200,86.0
+Jean Diaz,a@b.co,+420 2 1234 5678,Czech Republic,73,1 Wenceslas Square Prague 110 00,107.0
+Prince,gerry.f@associates.io,+7 495 123 4567,Russia,32,1 Tverskaya Street Moscow 125009,98.0
+Madonna,ryan.h@creative.net,+34 91 123 4567,Spain,19,Gran Via 1 Madrid 28013,84.0
+Cher,david.lee@example.org,+65 9123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,4.0
+Bono,reese.h@industries.io,+86 20 1234 5678,CHN,72,1 Tianhe Road Guangzhou 510620,112.0
+Adele,avery.m@investments.net,+55 61 1234 5678,BRA,39,SBS Quadra 2 Brasilia DF 70070-120,94.0
+Drake,frankie.w@advisory.com,+966 11 123 4567,Saudi Arabia,22,1 King Fahd Road Riyadh 11564,85.0
+Rihanna,max.p@solutions.io,+62 31 9876 5432,ID,73,1 Jalan Tunjungan Surabaya 60261,84.0
+Mary-Jane Watson,zachary.m@corp.net,+41 22 987 6543,CH,50,Rue du Rhone 1 Geneva 1204,88.0
+Jean-Claude Van Damme,rowan.r@consulting.com,+82 51 9876 5432,KR,20,1 Haeundae-ro Busan 48099,115.0
+Anne-Marie Smith,cameron.r@inc.net,+86 10 1234 5678,China,24,1 Chang'an Avenue Beijing 100001,105.0
+Jean-Luc Picard,USER@EXAMPLE.COM,+66 53 987 6543,TH,52,1 Nimman Road Chiang Mai 50200,86.0
+Mary-Kate Olsen,megan.w@enterprise.io,+31 20 123 4567,Netherlands,63,Dam 1 Amsterdam 1012 JS,148.0
+Lily-Rose Depp,chris.m@startup.com,+81 3 1234 5678,Japan,5,1-1-1 Shibuya Tokyo 150-0002,86.0
+Jamie-Lee Curtis,chris.m@startup.com,+81 3 1234 5678,Japan,75,1-1-1 Shibuya Tokyo 150-0002,86.0
+O'Brien,danielle.c@systems.org,+353 1 234 5678,Ireland,66,1 Grafton Street Dublin D02 VF65,85.0
+O'Connor,james.wang@mail.com,+65 8123 4567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,5.8
+O'Neill,lauren.g@associates.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,87.0
+D'Angelo,chris.m@startup.com,+81 3 1234 5678,Japan,5,1-1-1 Shibuya Tokyo 150-0002,86.0
+D'Arcy,pat.b@group.net,020 7946 0958,PH,53,1 Osmena Boulevard Cebu City 6000,103.0
+McDonald's John,hayden.c@llc.org,+86 21 9876 5432,CN,32,1 Nanjing Road Shanghai 200001,89.0
+MacArthur,alexis.m@capital.net,+27 21 987 6543,SA,27,1 Adderley Street Cape Town 8001,82.0
+MacKenzie,david.lee@example.org,+65 9123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,135.0
+John Paul George Ringo,courtney.p@inc.org,+41 31 123 4567,SUI,35,Bundesplatz 1 Bern 3003,109.0
+Mary Elizabeth Anne Smith,jane.smith@yahoo.com,+1 555 234 5678,USA,25,456 Oak Avenue Los Angeles CA 90001,155.0
+Lee Wei Ming,jane.smith@yahoo.com,+1 555 234 5678,USA,25,456 Oak Avenue Los Angeles CA 90001,7.0
+Tan Ah Kow,kevin.t@design.co,+498998765432,DE,45,Marienplatz 1 Munich 80331,81.0
+Ng Mei Ling,brooke.e@technologies.io,+353 21 123 4567,IRL,28,1 Patrick Street Cork T12 X8YH,77.0
+Wong Fei Hung,alex.s@associates.net,+60 3 1234 5678,Malaysia,45,1 Jalan Bukit Bintang Kuala Lumpur 55100,91.0
+Kim Jong-un,rowan.r@consulting.com,+82 51 9876 5432,KR,20,1 Haeundae-ro Busan 48099,115.0
+Park Ji-sung,samantha.w@digital.co,+39 055 123 4567,ITA,56,Piazza della Signoria 1 Florence 50122,85.0
+Lee Min-ho,robert.j@outlook.com,+1 555 345 6789,US,19,789 Pine Road Chicago IL 60601,88.0
+Song Joong-ki,nicole.l@consulting.com,+39 02 1234 5678,Italy,32,Via del Corso 1 Rome 00186,135.0
+Yuki Tanaka,ashley.y@marketing.com,+34 93 987 6543,ES,53,Las Ramblas 1 Barcelona 08001,111.0
+Kenji Yamamoto,danielle.c@systems.org,+353 1 234 5678,Ireland,66,1 Grafton Street Dublin D02 VF65,85.0
+Sakura Watanabe,riley.b@holdings.org,+52 55 1234 5678,Mexico,66,Av Reforma 500 Mexico City CDMX 06600,110.0
+Hiroshi Suzuki,jamie.r@associates.com,+55 11 1234 5678,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Li Wei,parker.w@advisory.org,+66 2 123 4567,Thailand,47,1 Sukhumvit Road Bangkok 10110,100.0
+Zhang Wei,chris.j@industries.net,+84 236 123 4567,VNM,57,1 Bach Dang Street Da Nang 550000,93.0
+Wang Fang,ali.b@investments.net,+7 383 123 4567,RUS,36,1 Krasny Prospekt Novosibirsk 630099,90.0
+Chen Ming,lauren.g@associates.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,87.0
+Raj Kumar,blake.k@partners.com,+66 38 123 4567,THA,25,1 Beach Road Pattaya 20150,108.0
+Priya Sharma,jamie.r@associates.com,+55 11 1234 5678,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Amit Patel,morgan.s@management.com,+64 3 123 4567,NZL,39,1 Cathedral Square Christchurch 8011,90.0
+Sunita Gupta,john.doe@gmail.com,+1 555 123 4567,United States,68,123 Main Street New York NY 10001,95.0
+Aishwarya Rao,dakota.g@services.io,+82 2 1234 5678,South Korea,69,1 Sejong-daero Seoul 04512,88.0
+Vikram Singh,william.p@work.com,+61 3 9876 1234,AU,61,100 Collins Street Melbourne VIC 3000,72.0
+Deepika Padukone,brandon.k@global.org,+34 95 123 4567,ESP,30,Avenida de la Constitucion 1 Seville 41001,79.0
+Mohammed Ali,sam.r@corp.org,+63 82 1234 5678,PHL,36,1 San Pedro Street Davao City 8000,87.0
+Fatima Hassan,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,65,10 Downing Street London SW1A 2AA,5.8
+Ahmed Khan,pat.b@group.net,020 7946 0958,PH,53,1 Osmena Boulevard Cebu City 6000,103.0
+Aisha Malik,chris.m@startup.com,+81312345678,Japan,75,1-1-1 Shibuya Tokyo 150-0002,86.0
+Omar Sharif,megan.w@enterprise.io,+31 20 123 4567,Netherlands,63,Dam 1 Amsterdam 1012 JS,96.0
+Layla Ahmed,rachel.j@media.com,+49 40 1234 5678,DEU,20,Jungfernstieg 1 Hamburg 20095,6.7
+Yusuf Ibrahim,sam.r@corp.org,+63 82 1234 5678,PHL,36,1 San Pedro Street Davao City 8000,87.0
+Jose Garcia,michelle.a@tech.io,+49 30 1234 5678,Germany,55,Unter den Linden 1 Berlin 10117,112.0
+Maria Rodriguez,stephanie.h@retail.com,+33 4 9876 5432,FR,23,10 Rue de la Republique Lyon 69001,4.8
+Carlos Martinez,mel.a@holdings.org,+48 22 123 4567,Poland,23,1 Nowy Swiat Warsaw 00-001,116.0
+Ana Lopez,michelle.a@tech.io,+49 30 1234 5678,Germany,55,Unter den Linden 1 Berlin 10117,10.4
+Juan Carlos,jessica.t@agency.net,+61412345678,AUS,65,55 Eagle Street Brisbane QLD 4000,99.0
+Maria del Carmen,amanda.g@firm.com,+81 6 9876 5432,JP,52,2-3-4 Namba Osaka 542-0076,7.4
+Jose Luis,jordan.s@advisory.io,+27 11 123 4567,South Africa,35,1 Nelson Mandela Square Johannesburg 2196,116.0
+Hans Mueller,stephanie.h@retail.com,+33498765432,FR,23,10 Rue de la Republique Lyon 69001,89.0
+Pierre Dubois,zachary.m@corp.net,+41 22 987 6543,CH,50,Rue du Rhone 1 Geneva 1204,88.0
+Giovanni Rossi,john.doe@gmail.com,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,97.0
+Sven Eriksson,robert.j@outlook.com,+1 555 345 6789,US,19,789 Pine Road Chicago IL 60601,88.0
+Olga Ivanova,daniel.r@services.org,+819012345678,JPN,23,5-6-7 Sakae Nagoya 460-0008,94.0
+Dmitri Petrov,ricky.h@consulting.org,+971 2 987 6543,UAE,28,1 Corniche Road Abu Dhabi 00000,92.0
+Ana Kowalski,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,65,10 Downing Street London SW1A 2AA,110.0
+John Smith Jr,brittany.c@group.com,+41 44 123 4567,Switzerland,46,Bahnhofstrasse 1 Zurich 8001,101.0
+Robert Brown III,zachary.m@corp.net,+41 22 987 6543,CH,50,Rue du Rhone 1 Geneva 1204,88.0
+William Davis Sr,john.doe@gmail.com,+1 555 123 4567,United States,5,123 Main Street New York NY 10001,95.0
+McDonald,courtney.p@inc.org,+41 31 123 4567,SUI,35,Bundesplatz 1 Bern 3003,109.0
+DeJohnson,first.last@company.co.uk,+52 33 9876 5432,MX,23,Av Vallarta 1000 Guadalajara JAL 44100,78.0
+LeBron,rachel.j@media.com,+49 40 1234 5678,DEU,20,Jungfernstieg 1 Hamburg 20095,118.0
+McGregor,lauren.g@associates.net,+31 70 123 4567,Holland,7,Binnenhof 1 The Hague 2513 AA,87.0
+Al,jean.d@inc.net,+420 2 1234 5678,Czech Republic,73,1 Wenceslas Square Prague 110 00,107.0
+Bo,ali.b@investments.net,+7 383 123 4567,RUS,36,1 Krasny Prospekt Novosibirsk 630099,90.0
+Ed,brian.w@health.org,+33 1 2345 6789,France,19,1 Avenue des Champs-Elysees Paris 75008,96.0
+Jo,john.doe@gmail.com,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,95.0
+Mo,jane.smith@yahoo.com,+1 555 234 5678,USA,25,456 Oak Avenue Los Angeles CA 90001,155.0
+Lu,john.doe@gmail.com,+1 555 123 4567,United States,68,123 Main Street New York NY 10001,95.0
+Ty,megan.w@enterprise.io,+31 20 123 4567,Netherlands,63,Dam 1 Amsterdam 1012 JS,96.0
+Cy,jamie.r@associates.com,+55 11 1234 5678,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Alexander Benjamin Christopher Davidson,avery.m@investments.net,+55 61 1234 5678,BRA,39,SBS Quadra 2 Brasilia DF 70070-120,94.0
+Elizabeth Victoria Alexandra Katherine,ryan.h@creative.net,+34 91 123 4567,Spain,19,Gran Via 1 Madrid 28013,88.0
+Brandon King,brandon.k@global.org,91234567,ESP,31,Avenida de la Constitucion 1 Seville 41001,79.0
+De La Cruz Maria,sawyer.j@management.net,9123 4567,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Jordan,ali.b@investments.net,9123-4567,RUS,36,1 Krasny Prospekt Novosibirsk 630099,90.0
+Joshua Robinson,joshua.r@solutions.io,81234567,IT,50,Piazza del Duomo 1 Milan 20121,92.0
+Justin Scott,justin.s@partners.com,8123 4567,NL,59,Coolsingel 1 Rotterdam 3011 AD,104.0
+Anna Marie Smith,frankie.w@advisory.com,8123-4567,Saudi Arabia,22,1 King Fahd Road Riyadh 11564,85.0
+Daniel Rodriguez,daniel.r@services.org,61234567,JPN,23,5-6-7 Sakae Nagoya 460-0008,94.0
+Jamie Reed,jamie.r@associates.com,6123 4567,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Christopher Martinez,chris.m@startup.com,6123-4567,Japan,75,1-1-1 Shibuya Tokyo 150-0002,86.0
+Chris Jenkins,chris.j@industries.net,+1 (555) 123-4567,VNM,57,1 Bach Dang Street Da Nang 550000,93.0
+Kendall Brooks,USER@EXAMPLE.COM,(555) 123-4567,TH,52,1 Nimman Road Chiang Mai 50200,86.0
+John Doe,john.doe@gmail.com,555-123-4567,United States,58,123 Main Street New York NY 10001,95.0
+John Doe,john.doe@gmail.com,555.123.4567,United States,58,123 Main Street New York NY 10001,95.0
+Reese Howard,reese.h@industries.io,+1-555-123-4567,CHN,72,1 Tianhe Road Guangzhou 510620,112.0
+Stephanie Harris,stephanie.h@retail.com,1-555-123-4567,FR,23,10 Rue de la Republique Lyon 69001,4.8
+Frankie Washington,frankie.w@advisory.com,+15551234567,Saudi Arabia,22,1 King Fahd Road Riyadh 11564,85.0
+Gene Myers,gene.m@industries.io,+44 (0)20 7946 0958,Czechia,3,1 Masaryk Square Ostrava 702 00,94.0
+Anna Marie Smith,frankie.w@advisory.com,020 7946 0958,Saudi Arabia,22,1 King Fahd Road Riyadh 11564,85.0
+Rachel Jackson,rachel.j@media.com,07911 123456,DEU,20,Jungfernstieg 1 Hamburg 20095,97.0
+Ashley Young,ashley.y@marketing.com,+44 7911 123456,ES,53,Las Ramblas 1 Barcelona 08001,135.0
+Taylor,sawyer.j@management.net,0044 7911 123456,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Ashley Young,ashley.y@marketing.com,+65 9123 4567,ES,53,Las Ramblas 1 Barcelona 08001,135.0
+Val Russell,val.r@group.io,+65 91234567,PL,72,1 Rynek Glowny Krakow 31-001,82.0
+John Doe,john.doe@gmail.com,9123 4567,United States,58,123 Main Street New York NY 10001,95.0
+Gene Myers,gene.m@industries.io,91234567,Czechia,3,1 Masaryk Square Ostrava 702 00,94.0
+Joshua Robinson,joshua.r@solutions.io,+65 6123 4567,IT,50,Piazza del Duomo 1 Milan 20121,70.0
+Ricky Hughes,ricky.h@consulting.org,6123 4567,UAE,30,1 Corniche Road Abu Dhabi 00000,92.0
+Jean Diaz,a@b.co,61234567,Czech Republic,73,1 Wenceslas Square Prague 110 00,107.0
+Rachel Jackson,rachel.j@media.com,+86 138 0013 8000,DEU,20,Jungfernstieg 1 Hamburg 20095,6.7
+Stephanie Harris,stephanie.h@retail.com,+91 98765 43210,FR,23,10 Rue de la Republique Lyon 69001,89.0
+Jessie Price,jessie.p@ventures.org,+81 90-1234-5678,MY,77,1 Jalan Penang George Town 10000,113.0
+Lauren Green,lauren.g@associates.net,+49 30 12345678,Holland,62,Binnenhof 1 The Hague 2513 AA,87.0
+Lee Henderson,lee.h@inc.io,+33 6 12 34 56 78,Vietnam,71,1 Ba Trieu Street Hanoi 100000,117.0
+David Lee,david.lee@example.org,+39 333 123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,135.0
+Val Russell,val.r@group.io,+61 4 1234 5678,PL,72,1 Rynek Glowny Krakow 31-001,82.0
+Lauren Green,lauren.g@associates.net,+64 21 123 4567,Holland,13,Binnenhof 1 The Hague 2513 AA,87.0
+Parker Watson,parker.w@advisory.org,+82 10-1234-5678,Thailand,47,1 Sukhumvit Road Bangkok 10110,100.0
+Lisa Chen,lisa.chen@test.net,+1 555 123 4567 ext 123,SG,16,45 Orchard Road #10-01 Singapore 238866,82.0
+Lee Henderson,lee.h@inc.io,+1 555 123 4567 x123,Vietnam,71,1 Ba Trieu Street Hanoi 100000,117.0
+Stephanie Harris,stephanie.h@retail.com,1-800-123-4567,FR,23,10 Rue de la Republique Lyon 69001,4.8
+Ricky Hughes,ricky.h@consulting.org,1-888-555-1234,UAE,28,1 Corniche Road Abu Dhabi 00000,92.0
+Christopher Martinez,chris.m@startup.com,0800 123 4567,Japan,75,1-1-1 Shibuya Tokyo 150-0002,86.0
+Sawyer James,user+tag@gmail.com,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Brian White,john+work@example.com,+33 1 2345 6789,France,19,1 Avenue des Champs-Elysees Paris 75008,4.0
+Riley Bailey,test+123@mail.com,+52 55 1234 5678,Mexico,66,Av Reforma 500 Mexico City CDMX 06600,110.0
+Nicole Lewis,first.middle.last@domain.com,+39 02 1234 5678,Italy,32,Via del Corso 1 Rome 00186,135.0
+Lisa Chen,a.b.c.d@test.org,+65 9234 5678,SG,16,45 Orchard Road #10-01 Singapore 238866,82.0
+Brittany Carter,user_name@example.com,+41 44 123 4567,Switzerland,46,Bahnhofstrasse 1 Zurich 8001,101.0
+Lauren Green,first_last@company.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,72.0
+William Park,user123@gmail.com,+61398761234,AU,61,100 Collins Street Melbourne VIC 3000,78.0
+Mary Jane Watson,john2024@yahoo.com,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Lou Griffin,test99@hotmail.com,+48 58 123 4567,POL,32,1 Dluga Street Gdansk 80-001,99.0
+Jamie Reed,user@mail.company.com,+55 11 1234 5678,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Brooke Evans,admin@subdomain.domain.org,+353 21 123 4567,IRL,28,1 Patrick Street Cork T12 X8YH,77.0
+John Doe,user@example.co.uk,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,95.0
+Parker Watson,test@mail.com.sg,+66 2 123 4567,Thailand,47,1 Sukhumvit Road Bangkok 10110,100.0
+Val Russell,info@company.com.au,+48 12 987 6543,PL,72,1 Rynek Glowny Krakow 31-001,82.0
+Jane Smith,contact@firm.co.jp,+15552345678,USA,25,456 Oak Avenue Los Angeles CA 90001,102.0
+Michael Brown,hello@business.de,+442079460958,UK,35,25 Baker Street London W1U 8EW,73.0
+Sawyer James,support@service.fr,+82 53 1234 5678,KOR,64,1 Dongseong-ro Daegu 41911,79.0
+Jordan Sanchez,user@example.io,+27 11 123 4567,South Africa,35,1 Nelson Mandela Square Johannesburg 2196,116.0
+Tony Simmons,test@company.co,+966 13 123 4567,SA,60,1 Dhahran Street Dammam 34231,77.0
+Kim Coleman,info@startup.tech,+84 28 9876 5432,VN,58,1 Nguyen Hue Street Ho Chi Minh City 700000,80.0
+James Wang,hello@business.app,+6581234567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,91.0
+Michael Brown,contact@service.dev,+44 20 7946 0958,UK,35,25 Baker Street London W1U 8EW,73.0
+Jamie Reed,a@b.co,+55 11 1234 5678,Brazil,49,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Daniel Rodriguez,me@t.io,+81 90 1234 5678,JPN,23,5-6-7 Sakae Nagoya 460-0008,111.0
+Lauren Green,hi@x.com,+31 70 123 4567,Holland,13,Binnenhof 1 The Hague 2513 AA,87.0
+Kendall Brooks,very.long.email.address.for.testing@subdomain.longdomain.com,+66 53 987 6543,TH,105,1 Nimman Road Chiang Mai 50200,86.0
+Emily Davis,USER@EXAMPLE.COM,+15554567890,United Kingdom,65,10 Downing Street London SW1A 2AA,110.0
+William Park,John.Doe@Company.Com,+61 3 9876 1234,AU,61,100 Collins Street Melbourne VIC 3000,72.0
+Brandon King,brandon.k@global.org,+34 95 123 4567,ESP,30,"123 Main Street, New York, NY 10001",79.0
+Ryan Hall,ryan.h@creative.net,+34 91 123 4567,Spain,19,"456 Oak Avenue, Apt 2B, Los Angeles, CA 90001",88.0
+Jo Gonzales,jo.g@ventures.com,+7 812 987 6543,RU,61,"789 Pine Road, Suite 100, Chicago, IL 60601",102.0
+Brandon King,brandon.k@global.org,+34 95 123 4567,ESP,31,"1234 Broadway, Floor 5, San Francisco, CA 94102",79.0
+Jennifer Kim,jennifer.k@business.co,+61 2 9876 5432,Australia,24,"P.O. Box 123, Houston, TX 77001",115.0
+Ashley Young,ashley.y@marketing.com,+34 93 987 6543,ES,53,"10 Downing Street, London SW1A 2AA",135.0
+Riley Bailey,riley.b@holdings.org,+52 55 1234 5678,Mexico,76,"221B Baker Street, London NW1 6XE",110.0
+Daniel Rodriguez,daniel.r@services.org,+81 90 1234 5678,JPN,90,"Flat 1, 25 High Street, Manchester M1 1AD",94.0
+Tyler Adams,tyler.a@ventures.co,+32 2 123 4567,Belgium,52,Blk 123 Ang Mo Kio Ave 3 #01-234 Singapore 560123,113.0
+Tony Simmons,tony.s@partners.org,+966 13 123 4567,SA,12,45 Orchard Road #10-01 Singapore 238866,77.0
+Jennifer Kim,jennifer.k@business.co,+61 2 9876 5432,Australia,24,1 Raffles Place #20-01 One Raffles Place Singapore 048616,115.0
+Jamie Reed,jamie.r@associates.com,+55 11 1234 5678,Brazil,79,123 Bukit Timah Road Singapore 259760,107.0
+Morgan Stewart,morgan.s@management.com,+64 3 123 4567,NZL,39,"42 George Street, Sydney NSW 2000",90.0
+Jordan,ali.b@investments.net,+7 383 123 4567,RUS,36,"Level 10, 100 Collins Street, Melbourne VIC 3000",90.0
+Amanda Garcia,amanda.g@firm.com,+81698765432,JP,52,"1-1-1 Shibuya, Shibuya-ku, Tokyo 150-0002, Japan",107.0
+Daniel Rodriguez,daniel.r@services.org,+819012345678,JPN,23,"Unter den Linden 1, 10117 Berlin, Germany",94.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,"1 Avenue des Champs-Elysees, 75008 Paris, France",98.0
+Jean-Pierre Martin,danielle.c@systems.org,+353 1 234 5678,Ireland,0,1 Grafton Street Dublin D02 VF65,85.0
+Michael Brown,m.brown@company.com,+44 20 7946 0958,UK,5,25 Baker Street London W1U 8EW,73.0
+Ricky Hughes,ricky.h@consulting.org,+971 2 987 6543,UAE,10,1 Corniche Road Abu Dhabi 00000,92.0
+Casey Rogers,casey.r@partners.org,+27 31 123 4567,ZA,15,1 Florida Road Durban 4001,99.0
+Jamie Reed,jamie.r@associates.com,+55 11 1234 5678,Brazil,20,Av Paulista 1000 Sao Paulo SP 01310-100,107.0
+Nicky Patterson,nicky.p@services.net,+1-555-123-4567,United Arab Emirates,25,1 Sheikh Zayed Road Dubai 00000,75.0
+Megan Wright,megan.w@enterprise.io,+31 20 123 4567,Netherlands,30,Dam 1 Amsterdam 1012 JS,148.0
+Courtney Perez,courtney.p@inc.org,+41 31 123 4567,SUI,35,Bundesplatz 1 Bern 3003,109.0
+Jordan Sanchez,jordan.s@advisory.io,+27 11 123 4567,South Africa,40,1 Nelson Mandela Square Johannesburg 2196,116.0
+Lisa Chen,lisa.chen@test.net,+65 9234 5678,SG,45,45 Orchard Road #10-01 Singapore 238866,82.0
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,50,10 Downing Street London SW1A 2AA,79.0
+Brooke Evans,brooke.e@technologies.io,+353 21 123 4567,IRL,55,1 Patrick Street Cork T12 X8YH,77.0
+Dana Hayes,dana.h@llc.org,+420 5 9876 5432,CZ,60,1 Svobody Square Brno 602 00,83.0
+William Park,william.p@work.com,+61398761234,AU,65,100 Collins Street Melbourne VIC 3000,78.0
+Christopher Martinez,chris.m@startup.com,+81312345678,Japan,70,1-1-1 Shibuya Tokyo 150-0002,86.0
+Gerry Foster,gerry.f@associates.io,+7 495 123 4567,Russia,75,1 Tverskaya Street Moscow 125009,98.0
+Michelle Anderson,michelle.a@tech.io,+493012345678,Germany,80,Unter den Linden 1 Berlin 10117,112.0
+Frankie Washington,frankie.w@advisory.com,+966 11 123 4567,Saudi Arabia,85,1 King Fahd Road Riyadh 11564,85.0
+Riley Bailey,riley.b@holdings.org,9123 4567,Mexico,90,Av Reforma 500 Mexico City CDMX 06600,110.0
+Amanda Garcia,amanda.g@firm.com,+81 6 9876 5432,JP,95,2-3-4 Namba Osaka 542-0076,71.0
+Ryan Hall,ryan.h@creative.net,+34 91 123 4567,Spain,100,Gran Via 1 Madrid 28013,88.0
+Kim Coleman,kim.c@llc.com,+84 28 9876 5432,VN,105,1 Nguyen Hue Street Ho Chi Minh City 700000,80.0
+Jo Gonzales,jo.g@ventures.com,+7 812 987 6543,RU,110,1 Nevsky Prospekt Saint Petersburg 191025,102.0
+Kendall Brooks,kendall.b@capital.io,+66 53 987 6543,TH,115,1 Nimman Road Chiang Mai 50200,86.0
+Stephanie Harris,stephanie.h@retail.com,+44 (0) 20 7946 0958,FR,120,10 Rue de la Republique Lyon 69001,89.0
+Drew Rivera,first.last@company.co.uk,+52 33 9876 5432,MX,1,Av Vallarta 1000 Guadalajara JAL 44100,78.0
+Jennifer Kim,jennifer.k@business.co,+61 2 9876 5432,Australia,2,42 George Street Sydney NSW 2000,150.0
+Kevin Thomas,kevin.t@design.co,+49 89 9876 5432,DE,3,Marienplatz 1 Munich 80331,79.0
+Danielle Campbell,danielle.c@systems.org,+353 1 234 5678,Ireland,99,1 Grafton Street Dublin D02 VF65,85.0
+Andrew Clark,andrew.c@finance.net,+33 6 1234 5678,FRA,100,5 Promenade des Anglais Nice 06000,118.0
+Dana Hayes,dana.h@llc.org,+420 5 9876 5432,CZ,105,1 Svobody Square Brno 602 00,83.0
+Brian White,brian.w@health.org,+33123456789,France,110,1 Avenue des Champs-Elysees Paris 75008,103.0
+David Lee,david.lee@example.org,+6591234567,Singapore,115,Blk 123 Ang Mo Kio Ave 3 #01-234,105.0
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,6,10 Downing Street London SW1A 2AA,3.0
+Amber Turner,amber.t@ltd.com,+1 604 987 6543,CA,73,200 Burrard Street Vancouver BC V6C 3L6,3.5
+Blake Kelly,blake.k@partners.com,+66 38 123 4567,THA,25,1 Beach Road Pattaya 20150,4.0
+Robert Johnson,robert.j@outlook.com,+1 555 345 6789,US,97,789 Pine Road Chicago IL 60601,4.5
+James Wang,james.wang@mail.com,+65 8123 4567,Republic of Singapore,65,1 Raffles Place #20-01 Singapore 048616,5.0
+Hayden Cox,user_name@example.com,+86 21 9876 5432,CN,40,1 Nanjing Road Shanghai 200001,5.5
+Max Powell,max.p@solutions.io,+62 31 9876 5432,ID,73,1 Jalan Tunjungan Surabaya 60261,6.0
+Bobby Long,bobby.l@technologies.com,+62 361 123 4567,IDN,41,1 Jalan Legian Bali 80361,6.5
+Kendall Brooks,kendall.b@capital.io,+66 53 987 6543,TH,52,1 Nimman Road Chiang Mai 50200,7.0
+Robin Wood,robin.w@holdings.com,+63 2 1234 5678,Philippines,23,1 Ayala Avenue Makati 1226,7.5
+Jessica Taylor,jessica.t@agency.net,+61 4 1234 5678,AUS,70,55 Eagle Street Brisbane QLD 4000,8.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,8.5
+Max Powell,max.p@solutions.io,+62 31 9876 5432,ID,73,1 Jalan Tunjungan Surabaya 60261,9.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,10.0
+Robert Johnson,robert.j@outlook.com,+1 555 345 6789,US,97,789 Pine Road Chicago IL 60601,11.0
+Dylan Roberts,dylan.r@llc.io,+1 416 123 4567,Canada,17,100 Queen Street West Toronto ON M5H 2N2,12.0
+Justin Scott,justin.s@partners.com,+31 10 987 6543,NL,59,Coolsingel 1 Rotterdam 3011 AD,13.0
+Quinn Cook,quinn.c@ventures.io,+55 21 9876 5432,BR,66,Av Atlantica 500 Rio de Janeiro RJ 22010-000,14.0
+Hayden Cox,hayden.c@llc.org,+86 21 9876 5432,CN,32,1 Nanjing Road Shanghai 200001,15.0
+Lauren Green,lauren.g@associates.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,16.0
+Pat Barnes,pat.b@group.net,+63 32 9876 5432,PH,77,1 Osmena Boulevard Cebu City 6000,18.0
+Pat Barnes,pat.b@group.net,+63 32 9876 5432,PH,26,1 Osmena Boulevard Cebu City 6000,20.0
+Taylor Collins,taylor.c@consulting.org,+64 4 987 6543,NZ,45,100 Lambton Quay Wellington 6011,54.0
+Chris Jenkins,chris.j@industries.net,+84 236 123 4567,VNM,57,1 Bach Dang Street Da Nang 550000,60.0
+Amanda Garcia,amanda.g@firm.com,+81698765432,JP,52,2-3-4 Namba Osaka 542-0076,70.0
+Ricky Hughes,ricky.h@consulting.org,+971 2 987 6543,UAE,30,1 Corniche Road Abu Dhabi 00000,80.0
+Emily Davis,emily.davis@hotmail.com,+1 555 456 7890,United Kingdom,65,10 Downing Street London SW1A 2AA,90.0
+Sarah Wilson,sarah.w@corp.io,+44 20 7946 1234,Great Britain,33,100 Oxford Street Manchester M1 1AD,100.0
+Lauren Green,lauren.g@associates.net,+31 70 123 4567,Holland,62,Binnenhof 1 The Hague 2513 AA,110.0
+Ashley Young,ashley.y@marketing.com,+34 93 987 6543,ES,53,Las Ramblas 1 Barcelona 08001,120.0
+Sarah Wilson,sarah.w@corp.io,+442079461234,Great Britain,33,100 Oxford Street Manchester M1 1AD,130.0
+John Doe,john.doe@gmail.com,+1 555 123 4567,United States,58,123 Main Street New York NY 10001,140.0
+Stephanie Harris,stephanie.h@retail.com,+33 4 9876 5432,FR,23,10 Rue de la Republique Lyon 69001,150.0
+Riley Bailey,riley.b@holdings.org,+52 55 1234 5678,Mexico,76,Av Reforma 500 Mexico City CDMX 06600,160.0
+Megan Wright,megan.w@enterprise.io,+31 20 123 4567,Netherlands,63,Dam 1 Amsterdam 1012 JS,170.0
+Samantha Walker,samantha.w@digital.co,+39 055 123 4567,ITA,56,Piazza della Signoria 1 Florence 50122,180.0
+Austin Edwards,austin.e@services.net,+64 9 123 4567,New Zealand,62,1 Queen Street Auckland 1010,200.0
+David Lee,david.lee@example.org,+65 9123 4567,Singapore,32,Blk 123 Ang Mo Kio Ave 3 #01-234,220.0
+Aaron Nelson,aaron.n@holdings.io,+32 9 123 4567,BEL,32,Graslei 1 Ghent 9000,250.0
+Michelle Anderson,michelle.a@tech.io,+49 30 1234 5678,Germany,55,Unter den Linden 1 Berlin 10117,280.0
+Danielle Campbell,danielle.c@systems.org,+353 1 234 5678,Ireland,66,1 Grafton Street Dublin D02 VF65,300.0
+Michael Brown,m.brown@company.com,+44 20 7946 0958,UK,35,25 Baker Street London W1U 8EW,350.0
+Jean-Pierre,jean.pierre@email.fr,+33 1 2345 6789,France,45,1 Rue de Rivoli Paris 75001,95.0
+Marie-Claire,marie.claire@outlook.com,+33 4 9876 5432,FR,38,10 Avenue Foch Lyon 69001,102.0
+Jean-Paul Sartre,jp.sartre@philosophy.edu,+33 6 1234 5678,FRA,52,5 Place Saint-Germain Paris 75006,88.0
+Marie-Louise Bernard,ml.bernard@mail.fr,+33 1 9876 5432,France,29,25 Rue de la Paix Nice 06000,110.0
+Pierre-Antoine Dupont,pa.dupont@business.fr,+33 4 1234 5678,FR,61,100 Boulevard Haussmann Paris 75008,78.0
+Jean-Marc Leblanc,jm.leblanc@corp.fr,+33 6 9876 5432,FRA,44,15 Rue Victor Hugo Bordeaux 33000,99.0
+Anne-Sophie Martin,as.martin@example.fr,+33 1 1234 5678,France,33,50 Avenue des Ternes Paris 75017,105.0
+Marie-Helene Girard,mh.girard@mail.fr,+33 4 9876 1234,FR,56,8 Rue Nationale Toulouse 31000,82.0
+Jean-Francois Morel,jf.morel@tech.fr,+33 6 5678 1234,FRA,48,20 Place Bellecour Lyon 69002,91.0
+Kim Ji-Yeon,jiyeon.kim@gmail.com,+82 2 1234 5678,South Korea,28,1 Gangnam-daero Seoul 06236,115.0
+Park Min-Jun,minjun.park@naver.com,+82 51 9876 5432,KR,35,5 Haeundae-ro Busan 48099,79.0
+Lee Soo-Hyun,soohyun.lee@kakao.com,+82 53 1234 5678,KOR,42,10 Dongseong-ro Daegu 41911,96.0
+Choi Yun-Hee,yunhee.choi@daum.net,+82 2 9876 5432,South Korea,31,25 Itaewon-ro Seoul 04344,104.0
+Jung Min-Seo,minseo.jung@outlook.kr,+82 51 5678 1234,KR,26,15 Seomyeon-ro Busan 47286,87.0
+Kang Ha-Neul,haneul.kang@hanmail.net,+82 53 9876 1234,KOR,39,8 Suseong-ro Daegu 42181,113.0
+Son Ye-Jin,yejin.son@gmail.com,+82 2 5678 9876,South Korea,37,30 Apgujeong-ro Seoul 06010,80.0
+Smith-Jones,smith.jones@company.com,+44 20 7946 0958,UK,45,10 High Street London EC1A 1BB,95.0
+Brown-Wilson,brown.wilson@mail.co.uk,+44 161 234 5678,Great Britain,52,25 Market Street Manchester M1 1WR,102.0
+Taylor-Clark,taylor.clark@business.uk,+44 131 456 7890,UK,38,15 Princes Street Edinburgh EH2 2AN,88.0
+Anderson-White,anderson.white@corp.uk,+44 121 987 6543,Great Britain,61,50 Bull Street Birmingham B4 6AF,110.0
+Johnson-Davis,johnson.davis@agency.co.uk,+44 117 123 4567,UK,29,8 Queen Square Bristol BS1 4NT,78.0
+Williams-Harris,williams.harris@firm.uk,+44 113 456 7890,Great Britain,44,20 Park Row Leeds LS1 5JF,99.0
+Billy-Bob Johnson,billybob@example.com,+1 555 123 4567,United States,55,123 Rural Route Texas TX 75001,105.0
+Betty-Lou Anderson,bettylou@mail.com,+1 555 234 5678,USA,48,456 Country Road Alabama AL 36101,82.0
+Mary-Beth Smith,marybeth@gmail.com,+1 555 345 6789,US,33,789 Oak Street Georgia GA 30301,91.0
+Peggy-Sue Williams,peggysue@yahoo.com,+1 555 456 7890,United States,41,321 Maple Avenue Tennessee TN 37201,115.0
+Bobby-Joe Davis,bobbyjoe@outlook.com,+1 555 567 8901,USA,36,654 Pine Lane Kentucky KY 40601,79.0
+Jean-Baptiste,jb.baptiste@mail.fr,+33 1 8765 4321,France,50,12 Rue Saint-Honore Paris 75001,96.0
+Marie-Therese,mt.dupont@gmail.com,+33 4 5678 1234,FR,63,35 Cours Mirabeau Aix-en-Provence 13100,104.0
+Louis-Philippe,lp.martin@business.fr,+33 6 4321 8765,FRA,47,18 Quai des Chartrons Bordeaux 33000,87.0
+Charles-Henri,ch.leclerc@corp.fr,+33 1 2345 6789,France,54,7 Avenue Montaigne Paris 75008,113.0
+Anne-Charlotte,ac.bernard@example.fr,+33 4 6789 1234,FR,39,22 Rue de la Republique Marseille 13001,80.0
+Yoo Jae-Suk,jaesuk.yoo@sbs.co.kr,+82 2 3456 7890,South Korea,51,40 Yeouido-dong Seoul 07241,95.0
+Bae Yong-Joon,yongjoon.bae@kbs.co.kr,+82 2 4567 8901,KR,49,55 Sangam-dong Seoul 03926,102.0
+Hyun Bin,hyunbin@agency.kr,+82 2 5678 9012,KOR,41,12 Cheongdam-dong Seoul 06053,88.0
+Song Hye-Kyo,hyekyo.song@talent.kr,+82 2 6789 0123,South Korea,43,28 Sinsa-dong Seoul 06025,110.0
+Gong Yoo,gongyoo@star.kr,+82 2 7890 1234,KR,45,35 Nonhyeon-dong Seoul 06039,78.0
+Sarah-Jane,sarah.jane@mail.com,+44 20 1234 5678,UK,32,5 Church Lane London SW1A 1AA,99.0
+Anna-Maria,anna.maria@example.it,+39 02 1234 5678,Italy,36,Via Roma 10 Milan 20121,105.0
+Eva-Marie,eva.marie@mail.de,+49 30 1234 5678,Germany,40,Friedrichstrasse 100 Berlin 10117,82.0
+Karl-Heinz,karl.heinz@business.de,+49 89 9876 5432,DE,58,Maximilianstrasse 50 Munich 80538,91.0
+Hans-Peter,hans.peter@corp.de,+49 40 1234 5678,DEU,52,Jungfernstieg 25 Hamburg 20354,115.0
+Ana-Maria,ana.maria@outlook.es,+34 91 1234 5678,Spain,34,Gran Via 50 Madrid 28013,79.0
+Jose-Luis,jose.luis@mail.es,+34 93 9876 5432,ES,46,Las Ramblas 100 Barcelona 08001,96.0
+Maria-Teresa,maria.teresa@business.es,+34 95 1234 5678,ESP,53,Avenida de la Constitucion 25 Seville 41001,104.0
+Carlos-Alberto,carlos.alberto@corp.mx,+52 55 1234 5678,Mexico,41,Reforma 500 Mexico City CDMX 06600,87.0
+Maria-Fernanda,maria.fernanda@mail.mx,+52 33 9876 5432,MX,29,Vallarta 1000 Guadalajara JAL 44100,113.0
+Mary-Ann,mary.ann@example.com,+1 555 111 2222,USA,32,100 Main Street Texas TX 75001,95.0
+Billy-Bob,billy.bob@mail.com,+1 555 222 3333,US,45,200 Oak Road Alabama AL 36101,102.0
+Betty-Lou,betty.lou@gmail.com,+1 555 333 4444,United States,38,300 Elm Street Georgia GA 30301,88.0
+Bobby-Joe,bobby.joe@yahoo.com,+1 555 444 5555,USA,51,400 Pine Avenue Kentucky KY 40601,110.0
+Peggy-Sue,peggy.sue@outlook.com,+1 555 555 6666,US,29,500 Maple Lane Tennessee TN 37201,78.0
+Mary-Beth,mary.beth@mail.com,+1 555 666 7777,United States,36,600 Cedar Street Mississippi MS 39201,99.0
+Jo-Ann,jo.ann@example.com,+1 555 777 8888,USA,44,700 Walnut Road Arkansas AR 72201,105.0
+Sue-Ellen,sue.ellen@gmail.com,+1 555 888 9999,US,52,800 Birch Avenue Louisiana LA 70801,82.0
+Bobbie-Jean,bobbie.jean@yahoo.com,+1 555 999 0000,United States,41,900 Spruce Lane Oklahoma OK 73101,91.0
+Lee-Ann,lee.ann@outlook.com,+1 555 123 9876,USA,33,123 Cypress Street Missouri MO 65101,115.0
+Mary-Jane,mary.jane@mail.com,+1 555 234 8765,US,48,234 Hickory Road Kansas KS 66601,79.0
+Ann-Marie,ann.marie@example.com,+44 20 1111 2222,UK,35,10 Church Street London SW1A 1BB,96.0
+Jo-Anne,jo.anne@mail.co.uk,+44 161 2222 3333,Great Britain,42,25 King Street Manchester M1 1WR,104.0
+Mary-Lou,mary.lou@gmail.com,+1 555 345 7654,United States,39,345 Oak Court Indiana IN 46201,87.0

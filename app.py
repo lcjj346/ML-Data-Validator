@@ -2,7 +2,7 @@
 ML Data Validator - Streamlit App
 
 A clean, focused ML validator:
-- Train on YOUR data
+- Train on YOUR data (any CSV, all rows treated as valid)
 - Validate ANY column type
 - Suggest corrections
 - No complexity, just pure ML
@@ -14,8 +14,7 @@ Usage:
 import streamlit as st
 import pandas as pd
 import os
-from ml.validator import GenericMLValidator
-from ml.corrector import GenericMLCorrector
+from ml.validator import UnifiedMLValidator
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 st.set_page_config(page_title="ML Data Validator", layout="wide", page_icon="🔍")
@@ -193,125 +192,90 @@ with tab_validate:
 
         st.divider()
 
-        # ========== STEP 2: Configure ==========
+        # ========== STEP 2: Select Model ==========
         models_dir = "models"
         available_models = []
         if os.path.exists(models_dir):
-            available_models = [f.replace('_validator.pkl', '')
+            available_models = [f.replace('_model.pkl', '')
                               for f in os.listdir(models_dir)
-                              if f.endswith('_validator.pkl')]
+                              if f.endswith('_model.pkl')]
 
         if not available_models:
             st.warning("No trained models found. Go to 'Train Models' tab first.")
         else:
-            st.markdown('<span class="step-badge">Step 2</span> **Map columns to validators**', unsafe_allow_html=True)
+            st.markdown('<span class="step-badge">Step 2</span> **Select trained model**', unsafe_allow_html=True)
 
-            # Define base validation types
-            base_validators = ['name', 'email', 'phone', 'country', 'blood_sugar', 'age', 'address']
+            selected_model = st.selectbox(
+                "Choose a model:",
+                available_models,
+                help="Select a model that was trained on similar data"
+            )
 
-            # Auto-map columns
-            column_mappings = {}
-            unmapped_columns = []
+            # Load model to show column info
+            if selected_model:
+                model_path = f"{models_dir}/{selected_model}_model.pkl"
+                preview_validator = UnifiedMLValidator(model_path)
 
-            for column in df.columns:
-                column_lower = column.lower().replace('_', '').replace('-', '').replace(' ', '')
-                matched = False
-                for base_val in base_validators:
-                    base_val_normalized = base_val.replace('_', '').replace('-', '').replace(' ', '')
-                    if base_val_normalized in column_lower:
-                        if base_val in available_models:
-                            column_mappings[column] = base_val
-                            matched = True
-                            break
-                        elif base_val_normalized in available_models:
-                            column_mappings[column] = base_val_normalized
-                            matched = True
-                            break
-                if not matched:
-                    unmapped_columns.append(column)
+                if preview_validator.is_trained:
+                    trained_cols = preview_validator.get_trained_columns()
 
-            with st.expander("Column Mapping Configuration", expanded=bool(unmapped_columns)):
-                # Show auto-mapped
-                if column_mappings:
-                    st.markdown("**Auto-detected mappings:**")
-                    for column, validator in column_mappings.items():
-                        col1, col2 = st.columns([2, 2])
-                        with col1:
-                            st.write(f"**{column}**")
-                        with col2:
-                            st.write(f"✓ {validator}")
+                    # Auto-match columns
+                    column_mapping = preview_validator._match_columns(df.columns.tolist())
 
-                # Show unmapped
-                if unmapped_columns:
-                    st.markdown("---")
-                    st.markdown("**Map additional columns:**")
-                    for column in unmapped_columns:
-                        col1, col2 = st.columns([2, 2])
-                        with col1:
-                            st.write(f"**{column}**")
-                        with col2:
-                            validator_choice = st.selectbox(
-                                f"Validator for {column}",
-                                ["(Skip)"] + available_models,
-                                key=f"validator_{column}",
-                                label_visibility="collapsed"
-                            )
-                            if validator_choice != "(Skip)":
-                                column_mappings[column] = validator_choice
-                else:
-                    st.success("All columns auto-mapped!")
+                    with st.expander("Column Matching", expanded=True):
+                        st.markdown(f"**Model trained on:** {', '.join(trained_cols)}")
 
-            st.session_state.column_mappings = column_mappings
+                        if column_mapping:
+                            st.markdown("**Auto-detected matches:**")
+                            for input_col, trained_col in column_mapping.items():
+                                st.markdown(f"  - `{input_col}` → `{trained_col}`")
+
+                        unmatched = [c for c in df.columns if c not in column_mapping]
+                        if unmatched:
+                            st.markdown(f"**Unmatched columns (will be skipped):** {', '.join(unmatched)}")
+
+                    st.session_state.column_mappings = column_mapping
 
             st.divider()
 
             # ========== STEP 3: Validate ==========
             st.markdown('<span class="step-badge">Step 3</span> **Run validation**', unsafe_allow_html=True)
 
-            if column_mappings and st.button("Validate", type="primary", use_container_width=True):
+            if selected_model and st.button("Validate", type="primary", width='stretch'):
                 # Progress bar
-                progress_bar = st.progress(0, text="Starting validation...")
+                progress_bar = st.progress(0, text="Loading model...")
 
-                cell_validity = {}
-                all_corrections = {}
-                total_columns = len(column_mappings)
+                # Load validator
+                model_path = f"{models_dir}/{selected_model}_model.pkl"
+                validator = UnifiedMLValidator(model_path)
 
-                for col_idx, (column, validator_name) in enumerate(column_mappings.items()):
-                    progress_bar.progress(
-                        (col_idx) / total_columns,
-                        text=f"Validating column: {column}..."
-                    )
+                if not validator.is_trained:
+                    st.error("Failed to load model")
+                else:
+                    column_mapping = validator._match_columns(df.columns.tolist())
 
-                    validator_path = f"{models_dir}/{validator_name}_validator.pkl"
-                    try:
-                        validator = GenericMLValidator(validator_path)
-                    except Exception as e:
-                        st.warning(f"Failed to load validator for '{column}': {e}")
-                        continue
+                    cell_validity = {}
+                    all_corrections = {}
+                    total_columns = len(column_mapping)
 
-                    if validator.is_trained:
-                        results = validator.validate_batch(df[column].astype(str).tolist())
+                    for col_idx, (input_col, trained_col) in enumerate(column_mapping.items()):
+                        progress_bar.progress(
+                            (col_idx) / total_columns,
+                            text=f"Validating column: {input_col}..."
+                        )
+
+                        # Validate batch
+                        results = validator.validate_batch(df[input_col].astype(str).tolist(), trained_col)
 
                         for idx, (is_valid, confidence) in enumerate(results):
-                            cell_validity[(idx, column)] = is_valid
+                            cell_validity[(idx, input_col)] = is_valid
 
-                        corrector_path = f"{models_dir}/{validator_name}_corrector.pkl"
-                        corrector = None
-                        if os.path.exists(corrector_path):
-                            try:
-                                corrector = GenericMLCorrector(corrector_path)
-                            except Exception as e:
-                                st.warning(f"Failed to load corrector for '{column}': {e}")
-
+                        # Get corrections for invalid cells
                         for idx, row in df.iterrows():
                             if not results[idx][0]:
-                                original = str(row[column])
-                                corrected = None
-
-                                if corrector:
-                                    corrected = corrector.correct(original)
-
-                                reason = validator.explain_invalidity(original)
+                                original = str(row[input_col])
+                                corrected = validator.correct(original, trained_col)
+                                reason = validator.explain_invalidity(original, trained_col)
 
                                 if idx not in all_corrections:
                                     all_corrections[idx] = {}
@@ -319,37 +283,37 @@ with tab_validate:
                                 suggested = corrected if (corrected and corrected != original) else original
                                 has_correction = corrected is not None and corrected != original
 
-                                all_corrections[idx][column] = {
+                                all_corrections[idx][input_col] = {
                                     'original': original,
                                     'suggested': suggested,
                                     'has_correction': has_correction,
                                     'reason': reason
                                 }
 
-                progress_bar.progress(1.0, text="Validation complete!")
+                    progress_bar.progress(1.0, text="Validation complete!")
 
-                # Store in session state
-                st.session_state.validated_df = df
-                st.session_state.original_df = df.copy()
-                st.session_state.cell_validity = cell_validity
-                st.session_state.modified_cells = set()
-                st.session_state.column_mappings = column_mappings
+                    # Store in session state
+                    st.session_state.validated_df = df
+                    st.session_state.original_df = df.copy()
+                    st.session_state.cell_validity = cell_validity
+                    st.session_state.modified_cells = set()
+                    st.session_state.column_mappings = column_mapping
 
-                corrections = []
-                for idx, col_corrections in all_corrections.items():
-                    for column, correction_data in col_corrections.items():
-                        corrections.append({
-                            'Row Index': idx,
-                            'Row': idx + 1,
-                            'Column': column,
-                            'Original': correction_data['original'],
-                            'Suggested': correction_data['suggested'],
-                            'Has Correction': correction_data['has_correction'],
-                            'Reason': correction_data.get('reason', 'Unknown')
-                        })
+                    corrections = []
+                    for idx, col_corrections in all_corrections.items():
+                        for column, correction_data in col_corrections.items():
+                            corrections.append({
+                                'Row Index': idx,
+                                'Row': idx + 1,
+                                'Column': column,
+                                'Original': correction_data['original'],
+                                'Suggested': correction_data['suggested'],
+                                'Has Correction': correction_data['has_correction'],
+                                'Reason': correction_data.get('reason', 'Unknown')
+                            })
 
-                st.session_state.corrections_data = corrections if corrections else None
-                st.rerun()
+                    st.session_state.corrections_data = corrections if corrections else None
+                    st.rerun()
 
         # ==================== RESULTS ====================
         if st.session_state.validated_df is not None:
@@ -554,7 +518,7 @@ with tab_validate:
                                 if st.button(
                                     f"Apply All {len(applicable_corrections)} Corrections",
                                     type="primary",
-                                    use_container_width=True
+                                    width='stretch'
                                 ):
                                     for correction in applicable_corrections:
                                         row_idx = correction['Row Index']
@@ -660,7 +624,7 @@ with tab_validate:
                         file_name=f"validated_{uploaded_file.name if uploaded_file else 'data.csv'}",
                         mime="text/csv",
                         type="primary",
-                        use_container_width=True
+                        width='stretch'
                     )
                 with export_col2:
                     st.metric("Total Rows", len(export_df))
@@ -673,132 +637,173 @@ with tab_train:
     # Instructions (collapsible)
     with st.expander("How to Train", expanded=False):
         st.markdown("""
-        1. Prepare a CSV file with 2 columns:
-           - `text`: Your data (phone numbers, emails, addresses, etc.)
-           - `label`: Either "valid" or "invalid"
-        2. Upload the CSV below
-        3. Give your model a name (e.g., "phone", "email", "address")
-        4. Click "Train Validator & Corrector"
+        **New Simplified Training:**
 
-        **Important:** Avoid commas in the `text` column as they break CSV structure.
-        Use spaces instead (e.g., "123 Main Street New York" not "123 Main Street, New York").
+        1. Upload ANY CSV file (your actual data!)
+        2. All rows are treated as **valid examples**
+        3. Give your model a name
+        4. Optionally exclude columns (like ID, timestamp)
+        5. Click "Train Model"
 
-        **Example CSV:**
-        ```csv
-        text,label
-        +1234567890,valid
-        123,invalid
-        +65 9123 4567,valid
-        abc123,invalid
-        ```
+        The system automatically:
+        - Trains a validator for each column
+        - Generates synthetic invalid examples
+        - Stores everything in one model file
+
+        **Example:** Upload a CSV with columns `name`, `email`, `phone` - the model learns what valid names, emails, and phones look like from your data.
         """)
 
     # Upload training file
-    st.markdown('<span class="step-badge">Step 1</span> **Upload training data**', unsafe_allow_html=True)
+    st.markdown('<span class="step-badge">Step 1</span> **Upload your data CSV**', unsafe_allow_html=True)
+    st.caption("All rows will be treated as valid examples")
+
     training_file = st.file_uploader("Upload Training Data CSV", type=['csv'], key="training", label_visibility="collapsed")
 
     if training_file:
         train_df = pd.read_csv(training_file)
 
-        if 'text' in train_df.columns and 'label' in train_df.columns:
+        # Stats
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Rows", len(train_df))
+        col2.metric("Columns", len(train_df.columns))
+        col3.metric("File", training_file.name)
 
-            # Stats
-            valid_count = (train_df['label'].str.lower() == 'valid').sum()
-            invalid_count = len(train_df) - valid_count
+        # Preview
+        with st.expander("Preview training data", expanded=True):
+            st.dataframe(train_df.head(10), width='stretch')
 
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Total Examples", len(train_df))
-            col2.metric("Valid", valid_count)
-            col3.metric("Invalid", invalid_count)
+        st.divider()
 
-            # Preview
-            with st.expander("Preview training data", expanded=False):
-                st.dataframe(train_df.head(10), width='stretch')
+        # Column selection
+        st.markdown('<span class="step-badge">Step 2</span> **Configure columns**', unsafe_allow_html=True)
 
-            st.divider()
+        all_columns = train_df.columns.tolist()
+        exclude_columns = st.multiselect(
+            "Exclude columns (optional):",
+            all_columns,
+            help="Skip columns like ID, timestamp, etc. that shouldn't be validated"
+        )
 
-            # Model name and train
-            st.markdown('<span class="step-badge">Step 2</span> **Name and train your model**', unsafe_allow_html=True)
-            model_name = st.text_input("Model name", value="custom", placeholder="e.g., phone, email, address")
+        columns_to_train = [c for c in all_columns if c not in exclude_columns]
+        st.info(f"Will train on {len(columns_to_train)} columns: {', '.join(columns_to_train)}")
 
-            if st.button("Train Validator & Corrector", type="primary", use_container_width=True):
+        st.divider()
+
+        # Model name and train
+        st.markdown('<span class="step-badge">Step 3</span> **Choose training mode**', unsafe_allow_html=True)
+
+        # Check for existing models
+        existing_models = []
+        if os.path.exists("models"):
+            existing_models = [f.replace('_model.pkl', '') for f in os.listdir("models") if f.endswith('_model.pkl')]
+
+        training_mode = st.radio(
+            "Training mode:",
+            ["Create new model", "Add data to existing model"],
+            help="Create new: Start fresh. Add data: Improve existing model with more examples."
+        )
+
+        if training_mode == "Create new model":
+            model_name = st.text_input("Model name", value="my_model", placeholder="e.g., customer_data, sales_records")
+        else:
+            if not existing_models:
+                st.warning("No existing models found. Please create a new model first.")
+                model_name = None
+            else:
+                model_name = st.selectbox("Select model to improve:", existing_models)
+
+        # Reference lists option
+        st.markdown("**Reference Lists (Optional):**")
+        use_reference_lists = st.checkbox(
+            "Load reference lists for standard fields",
+            value=True,
+            help="Automatically load valid values for countries, etc. from reference_lists/ folder"
+        )
+
+        button_label = "Train Model" if training_mode == "Create new model" else "Add Data & Retrain"
+        if st.button(button_label, type="primary", width='stretch'):
+            if not model_name:
+                st.error("Please select or enter a model name.")
+            elif len(columns_to_train) == 0:
+                st.error("No columns selected for training. Please include at least one column.")
+            else:
                 progress = st.progress(0, text=f"Training {model_name}...")
 
-                # Train validator
-                validator = GenericMLValidator()
-                training_data = list(zip(train_df['text'], train_df['label']))
-                progress.progress(20, text="Extracting features...")
-                metrics = validator.train(training_data, model_name)
+                if training_mode == "Create new model":
+                    # Create fresh model
+                    validator = UnifiedMLValidator()
+                    progress.progress(10, text="Initializing...")
+                    metrics = validator.train(train_df, model_name, exclude_columns)
+                else:
+                    # Add to existing model
+                    model_path = f"models/{model_name}_model.pkl"
+                    validator = UnifiedMLValidator(model_path)
+                    progress.progress(10, text="Loading existing model...")
 
-                progress.progress(50, text="Saving validator...")
+                    if not validator.is_trained:
+                        st.error(f"Failed to load model: {model_name}")
+                        st.stop()
+
+                    progress.progress(30, text="Adding new data...")
+                    metrics = validator.add_training_data(train_df, retrain=True)
+
+                # Load reference lists if enabled
+                if use_reference_lists and os.path.exists("reference_lists"):
+                    progress.progress(70, text="Loading reference lists...")
+                    ref_results = validator.load_reference_lists_from_dir("reference_lists")
+                    if ref_results:
+                        st.info(f"Loaded reference lists: {', '.join(f'{k} ({v} values)' for k, v in ref_results.items())}")
+
+                progress.progress(80, text="Saving model...")
                 os.makedirs("models", exist_ok=True)
-                validator_path = f"models/{model_name}_validator.pkl"
-                validator.save(validator_path)
-
-                # Train corrector
-                progress.progress(60, text="Training corrector...")
-                corrector = GenericMLCorrector()
-                valid_examples = train_df[train_df['label'].str.lower() == 'valid']['text'].tolist()
-                corrector.train(valid_examples, model_name)
-
-                progress.progress(80, text="Saving corrector...")
-                corrector_path = f"models/{model_name}_corrector.pkl"
-                corrector.save(corrector_path)
+                model_path = f"models/{model_name}_model.pkl"
+                validator.save(model_path)
 
                 progress.progress(100, text="Done!")
-                st.success(f"Model **{model_name}** trained and saved!")
+                if training_mode == "Create new model":
+                    st.success(f"Model **{model_name}** trained and saved!")
+                else:
+                    st.success(f"Model **{model_name}** updated with new data!")
 
                 # Display training metrics
                 st.divider()
                 st.subheader("Training Metrics")
 
-                if metrics.get('small_dataset_warning'):
-                    st.warning("Dataset too small for train/test split. Metrics shown are from training data (may be overfit).")
-                    st.markdown(f"**Total samples:** {metrics.get('total_samples', 'N/A')}")
+                # Per-column metrics
+                for col_name, col_metrics in metrics.items():
+                    with st.expander(f"Column: {col_name}", expanded=True):
+                        # Basic stats
+                        stat_col1, stat_col2, stat_col3 = st.columns(3)
+                        stat_col1.metric("Unique Valid Examples", col_metrics.get('unique_valid', 'N/A'))
+                        stat_col2.metric("Total Samples", col_metrics.get('total_samples', 'N/A'))
 
-                    # Show training metrics only
-                    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
-                    metric_col1.metric("Accuracy", f"{metrics.get('train_accuracy', 0):.1%}")
-                    metric_col2.metric("Precision", f"{metrics.get('train_precision', 0):.1%}")
-                    metric_col3.metric("Recall", f"{metrics.get('train_recall', 0):.1%}")
-                    metric_col4.metric("F1 Score", f"{metrics.get('train_f1', 0):.1%}")
+                        if col_metrics.get('used_split', False):
+                            stat_col3.metric("Test Size", col_metrics.get('test_size', 'N/A'))
 
-                    if 'train_confusion_matrix' in metrics:
-                        display_confusion_matrix(metrics['train_confusion_matrix'], "Training Confusion Matrix")
+                            # Train vs Test comparison
+                            train_col, test_col = st.columns(2)
 
-                else:
-                    # Show train/test split info
-                    st.markdown(f"**Split:** {metrics.get('train_size', 0)} train / {metrics.get('test_size', 0)} test (80/20)")
+                            with train_col:
+                                st.markdown("**Train Set**")
+                                m1, m2 = st.columns(2)
+                                m1.metric("Accuracy", f"{col_metrics.get('train_accuracy', 0):.1%}")
+                                m2.metric("F1 Score", f"{col_metrics.get('train_f1', 0):.1%}")
 
-                    # Two columns for train vs test metrics
-                    train_col, test_col = st.columns(2)
+                            with test_col:
+                                st.markdown("**Test Set**")
+                                m1, m2 = st.columns(2)
+                                m1.metric("Accuracy", f"{col_metrics.get('test_accuracy', 0):.1%}")
+                                m2.metric("F1 Score", f"{col_metrics.get('test_f1', 0):.1%}")
 
-                    with train_col:
-                        st.markdown("#### Train Set")
-                        m1, m2 = st.columns(2)
-                        m1.metric("Accuracy", f"{metrics.get('train_accuracy', 0):.1%}")
-                        m2.metric("Precision", f"{metrics.get('train_precision', 0):.1%}")
-                        m3, m4 = st.columns(2)
-                        m3.metric("Recall", f"{metrics.get('train_recall', 0):.1%}")
-                        m4.metric("F1 Score", f"{metrics.get('train_f1', 0):.1%}")
+                            if 'test_confusion_matrix' in col_metrics:
+                                display_confusion_matrix(col_metrics['test_confusion_matrix'], "Test Confusion Matrix")
+                        else:
+                            stat_col3.metric("Split", "N/A (small dataset)")
+                            st.warning("Dataset too small for train/test split. Metrics may be overfit.")
 
-                        if 'train_confusion_matrix' in metrics:
-                            display_confusion_matrix(metrics['train_confusion_matrix'], "Train Confusion Matrix")
-
-                    with test_col:
-                        st.markdown("#### Test Set")
-                        m1, m2 = st.columns(2)
-                        m1.metric("Accuracy", f"{metrics.get('test_accuracy', 0):.1%}")
-                        m2.metric("Precision", f"{metrics.get('test_precision', 0):.1%}")
-                        m3, m4 = st.columns(2)
-                        m3.metric("Recall", f"{metrics.get('test_recall', 0):.1%}")
-                        m4.metric("F1 Score", f"{metrics.get('test_f1', 0):.1%}")
-
-                        if 'test_confusion_matrix' in metrics:
-                            display_confusion_matrix(metrics['test_confusion_matrix'], "Test Confusion Matrix")
-
-        else:
-            st.error("CSV must have columns: `text` and `label`")
+                            m1, m2 = st.columns(2)
+                            m1.metric("Accuracy", f"{col_metrics.get('train_accuracy', 0):.1%}")
+                            m2.metric("F1 Score", f"{col_metrics.get('train_f1', 0):.1%}")
 
     st.divider()
 
@@ -806,19 +811,29 @@ with tab_train:
     with st.expander("Trained Models", expanded=True):
         models_dir = "models"
         if os.path.exists(models_dir):
-            models = [f for f in os.listdir(models_dir) if f.endswith('_validator.pkl')]
+            # Look for new unified models
+            models = [f for f in os.listdir(models_dir) if f.endswith('_model.pkl')]
 
             if models:
                 model_list = []
                 for model_file in models:
-                    model_name = model_file.replace('_validator.pkl', '')
+                    model_name = model_file.replace('_model.pkl', '')
                     model_path = os.path.join(models_dir, model_file)
-                    corrector_path = os.path.join(models_dir, f"{model_name}_corrector.pkl")
-                    has_corrector = os.path.exists(corrector_path)
+
+                    # Load to get column info
+                    try:
+                        temp_validator = UnifiedMLValidator(model_path)
+                        columns = temp_validator.get_trained_columns()
+                        columns_str = ', '.join(columns[:5])
+                        if len(columns) > 5:
+                            columns_str += f" (+{len(columns)-5} more)"
+                    except Exception:
+                        columns_str = "Unknown"
+
                     model_list.append({
                         'Name': model_name,
-                        'Validator': f"{os.path.getsize(model_path) / 1024:.1f} KB",
-                        'Corrector': f"{os.path.getsize(corrector_path) / 1024:.1f} KB" if has_corrector else "N/A",
+                        'Size': f"{os.path.getsize(model_path) / 1024:.1f} KB",
+                        'Columns': columns_str,
                     })
 
                 st.dataframe(pd.DataFrame(model_list), width='stretch', hide_index=True)
