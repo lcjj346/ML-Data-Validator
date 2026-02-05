@@ -14,6 +14,7 @@ Usage:
 import streamlit as st
 import pandas as pd
 import os
+import json
 from ml.validator import UnifiedMLValidator
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
@@ -378,8 +379,6 @@ with tab_validate:
                     gb.configure_column(col, editable=True, suppressMenu=True)
 
                     if 'column_mappings' in st.session_state and col in st.session_state.column_mappings:
-                        import json
-
                         modified_cells_list = [[int(idx), str(c)] for idx, c in st.session_state.get('modified_cells', set())]
                         cell_validity_for_col = {
                             f"{idx}_{col}": ('true' if v else 'false')

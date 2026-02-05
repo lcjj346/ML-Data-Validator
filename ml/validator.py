@@ -31,6 +31,10 @@ class UnifiedMLValidator:
     - One model file stores all column validators
     """
 
+    # Columns that are open-ended (no strict typo detection)
+    # These columns have unlimited valid values, so fuzzy matching would cause false positives
+    OPEN_ENDED_COLUMNS = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar']
+
     def __init__(self, model_path: Optional[str] = None):
         """
         Initialize unified validator.
@@ -324,8 +328,7 @@ class UnifiedMLValidator:
             # Only use for columns with finite valid values (country, currency, etc.)
             # NOT for open-ended columns (name, phone, address, email)
             col_lower = column_name.lower()
-            open_ended_columns = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar']
-            use_strict_typo_detection = not any(kw in col_lower for kw in open_ended_columns)
+            use_strict_typo_detection = not any(kw in col_lower for kw in self.OPEN_ENDED_COLUMNS)
 
             # Also use strict detection if we have a reference list for this column
             if column_name in self.reference_lists:
@@ -433,8 +436,7 @@ class UnifiedMLValidator:
 
         # Determine if this column should use strict typo detection
         col_lower = column_name.lower()
-        open_ended_columns = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar']
-        use_strict_typo_detection = not any(kw in col_lower for kw in open_ended_columns)
+        use_strict_typo_detection = not any(kw in col_lower for kw in self.OPEN_ENDED_COLUMNS)
 
         # Also use strict detection if we have a reference list for this column
         if column_name in self.reference_lists:

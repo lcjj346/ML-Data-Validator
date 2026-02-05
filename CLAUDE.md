@@ -7,6 +7,59 @@ ML Data Validator - A Streamlit app for training ML models to validate data (pho
 - **Main branch:** `main`
 - **Working branch:** `Revamp`
 
+---
+
+## Quick Commands
+
+Copy-paste these prompts to Claude:
+
+### Get Context (Start of Session)
+```
+Read SESSION_LOG.md and give me a summary of recent changes
+```
+
+### Code Cleanup
+```
+clean up the code
+```
+Scans for: unused imports, dead code, duplicates, undefined variables
+
+### Run Tests
+```
+test
+```
+or
+```
+run tests
+```
+Runs: `pytest tests/ -v`
+
+### Log Changes
+```
+log it
+```
+Appends entry to SESSION_LOG.md with date, changes, files, test outcome
+
+### Full Check (All 3)
+```
+clean, test, and log
+```
+Runs cleanup scan, pytest, then logs results
+
+### Retrain Base Model
+```
+retrain the base model
+```
+Retrains `models/base_model.pkl` with `training_data/base_training_data.csv`
+
+### Add Training Data
+```
+add more [names/countries/phones/etc] to training data
+```
+Expands `training_data/base_training_data.csv` and retrains
+
+---
+
 ## Session Log Workflow
 
 **IMPORTANT:** This project uses `SESSION_LOG.md` to track progress.
@@ -37,7 +90,10 @@ ML Data Validator - A Streamlit app for training ML models to validate data (pho
 - `ml/` - Core ML modules (validator.py, corrector.py, feature_extractor.py)
 - `models/` - Trained ML models
 - `training_data/` - Training CSV files
+- `reference_lists/` - Valid values for finite columns (country, age, etc.)
+- `tests/` - Pytest test suite (30 tests)
 - `SESSION_LOG.md` - Progress tracking log
+- `MODEL_GUIDE.md` - How to improve model accuracy
 
 ## Sub-Agent Workflows
 
@@ -59,11 +115,11 @@ Say **"do all three in parallel"** or **"run cleanup, tests, and log in parallel
 2. User says "log it" to record the changes
 3. Optionally run cleanup agent to check code quality
 
-### Known Issues (from cleanup agent scan 2026-02-04):
-- `self.typo_map` undefined in `ml/corrector.py:81` (critical)
-- Unused imports in `app.py:16,20`
-- No automated test infrastructure yet
-- Print statements should be replaced with logging
+### Known Issues (updated 2026-02-05):
+- ~~`self.typo_map` undefined in `ml/corrector.py:81`~~ ✅ Fixed
+- ~~Unused imports~~ ✅ Fixed (moved to top-level)
+- ~~No automated test infrastructure~~ ✅ Fixed (30 tests in `tests/`)
+- Print statements should be replaced with logging (low priority)
 
 ## Recommended Workflow
 
@@ -87,6 +143,5 @@ Say **"do all three in parallel"** or **"run cleanup, tests, and log in parallel
 ### Why not auto-run everything:
 - Overkill for small fixes
 - User must test before logging
-- No automated tests exist yet
 - Cleanup may find unrelated issues
 - Wastes time on trivial changes

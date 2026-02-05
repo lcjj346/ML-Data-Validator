@@ -170,6 +170,32 @@
   - Old models incompatible with new architecture (clean break)
   - Users can now train on ANY CSV structure without manual column mapping
 
+#### Part 6: Code Cleanup & Test Suite
+- **Code Fixes:**
+  - Moved `json` import from line 381 to top-level (`app.py`)
+  - Moved `math` import from line 174 to top-level (`ml/feature_extractor.py`)
+  - Extracted duplicate `open_ended_columns` to class constant `OPEN_ENDED_COLUMNS` (`ml/validator.py`)
+
+- **Test Suite Created:** `tests/test_validator.py` (30 tests)
+  | Test Class | Tests | Coverage |
+  |------------|-------|----------|
+  | TestFeatureExtractor | 7 | Feature extraction, consistency, patterns |
+  | TestUnifiedMLValidator | 7 | Training, validation, save/load, corrections |
+  | TestTypoDetection | 3 | Typo detection for countries vs names |
+  | TestNumericValidation | 2 | Numeric normalization |
+  | TestModelStacking | 2 | Adding data to existing models |
+  | TestCorrector | 4 | Correction suggestions |
+  | TestEdgeCases | 5 | Empty data, unicode, special chars |
+
+- **New Files:**
+  - `tests/__init__.py`
+  - `tests/test_validator.py`
+  - `pytest.ini`
+  - `MODEL_GUIDE.md`
+
+- **Updated:** `requirements.txt` (added pytest, pytest-cov)
+- **Test Result:** All 30 tests passed
+
 ---
 
 ## Future Sessions

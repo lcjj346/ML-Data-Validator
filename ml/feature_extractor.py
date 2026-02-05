@@ -13,6 +13,7 @@ The key: Extract GENERIC patterns, not hardcoded rules.
 
 from typing import List
 import re
+import math
 
 
 class GenericFeatureExtractor:
@@ -171,7 +172,6 @@ class GenericFeatureExtractor:
         # ========== NUMERIC VALUE FEATURES ==========
         # Enhanced numeric features for better range validation (blood sugar, age, weight, etc.)
         # These features are GENERIC and work for any numeric column
-        import math
         try:
             numeric_value = float(text)
             # Check if it's NaN (special float value)
