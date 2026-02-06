@@ -1,0 +1,15 @@
+name,email,phone,country,age,address,blood_sugar
+John Smith,john.smith@gmail.com,+1 555 123 4567,United States,35,123 Main St New York NY 10001,95.0
+Jane Doe,jane.doe@yahoo.com,+65 9123 4567,Singapore,28,45 Orchard Road Singapore 238866,102.0
+Bob Wilson,bob.wilson@outlook.com,+44 20 7946 0958,United Kingdom,42,25 Baker Street London W1U 8EW,88.0
+Alice Chen,alice.chen@company.com,+61 2 9876 5432,Australia,31,100 Collins Street Melbourne VIC 3000,110.0
+Michael Lee,michael.lee@test.net,+81 3 1234 5678,Japan,55,1-1-1 Shibuya Tokyo 150-0002,76.0
+J,invalid-email,123,Singaproe,-5,Bad Address,999.0
+,missing@email.com,phone_invalid,UUUSA,150,,25.0
+Test123,test@@double.com,+65 9999,Malasia,abc,123 Street,invalid
+INVALID NAME,notanemail,abcdefgh,XYZ123,0,Valid Address Here,85.0
+Marie-Claire,marie.claire@mail.fr,+33 1 2345 6789,France,45,10 Rue de Paris Lyon 69001,91.0
+Kevin O'Brien,kevin.obrien@firm.com,+353 1 234 5678,Ireland,38,15 Grafton Street Dublin 2,98.0
+,,,,,empty_row,
+Billy-Bob Johnson,billyb@email.com,+1 555 999 8888,USA,22,456 Oak Avenue LA CA 90001,105.0
+Tanaka Hiroshi,tanaka.h@business.jp,+81 90 1234 5678,JP,67,2-3-4 Namba Osaka 542-0076,82.0

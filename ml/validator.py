@@ -33,7 +33,88 @@ class UnifiedMLValidator:
 
     # Columns that are open-ended (no strict typo detection)
     # These columns have unlimited valid values, so fuzzy matching would cause false positives
-    OPEN_ENDED_COLUMNS = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar']
+    OPEN_ENDED_COLUMNS = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar', 'salary', 'price', 'amount', 'percentage', 'date']
+
+    # Numeric columns - don't suggest corrections (numbers don't have "typos")
+    NUMERIC_COLUMNS = ['age', 'blood_sugar', 'salary', 'price', 'amount', 'percentage', 'income', 'cost', 'quantity']
+
+    # Columns requiring high similarity for corrections (to avoid random suggestions)
+    HIGH_SIMILARITY_COLUMNS = ['phone', 'email']
+    HIGH_SIMILARITY_THRESHOLD = 0.85  # 85% similarity required
+
+    # Base model validation rules (hardcoded for known columns)
+    VALIDATION_RULES = {
+        'age': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 120,
+        },
+        'blood_sugar': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 500,
+        },
+        'salary': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100000000,  # 100 million max
+        },
+        'price': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100000000,
+        },
+        'amount': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100000000,
+        },
+        'income': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100000000,
+        },
+        'cost': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100000000,
+        },
+        'quantity': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100000000,
+        },
+        'percentage': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100,
+        },
+        'phone': {
+            'type': 'pattern',
+            'min_digits': 7,
+        },
+        'email': {
+            'type': 'pattern',
+        },
+        'country': {
+            'type': 'reference',
+        },
+        'gender': {
+            'type': 'reference',
+        },
+        'currency': {
+            'type': 'reference',
+        },
+        'status': {
+            'type': 'reference',
+        },
+        'name': {
+            'type': 'text',
+        },
+        'date': {
+            'type': 'date',
+        },
+    }
 
     def __init__(self, model_path: Optional[str] = None):
         """
@@ -284,6 +365,28 @@ class UnifiedMLValidator:
 
         return mapping
 
+    def _load_reference_list_for_column(self, column_name: str) -> set:
+        """Load reference list for a column from file if available."""
+        import os
+        ref_dir = "reference_lists"
+        if not os.path.exists(ref_dir):
+            return set()
+
+        # Try exact filename match
+        filepath = os.path.join(ref_dir, f"{column_name}.txt")
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    values = set()
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            values.add(line.lower())
+                    return values
+            except Exception:
+                pass
+        return set()
+
     def validate(self, text: str, column_name: str) -> Tuple[bool, float]:
         """
         Validate a single value for a specific column.
@@ -300,12 +403,106 @@ class UnifiedMLValidator:
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() or load() first.")
 
-        if column_name not in self.column_models:
-            # Column not trained - return uncertain
-            return True, 0.5
-
         text_str = str(text).strip()
         text_lower = text_str.lower()
+        col_lower = column_name.lower() if column_name else ''
+
+        # HARDCODED VALIDATION for known base model columns
+        # This catches invalid values BEFORE checking if column is trained
+        # Allows validation of untrained columns like salary, percentage, etc.
+
+        # Age validation
+        if 'age' in col_lower:
+            try:
+                age_val = float(text_str)
+                if age_val < 0:
+                    return False, 0.95  # Negative age is definitely invalid
+                if age_val > 120:
+                    return False, 0.90  # Age > 120 is invalid
+            except (ValueError, TypeError):
+                return False, 0.95  # Non-numeric age is invalid
+
+        # Blood sugar validation
+        if 'blood_sugar' in col_lower or 'bloodsugar' in col_lower:
+            try:
+                bs_val = float(text_str)
+                if bs_val < 0:
+                    return False, 0.95  # Negative blood sugar is invalid
+                if bs_val > 500:
+                    return False, 0.85  # Extremely high blood sugar is suspicious
+            except (ValueError, TypeError):
+                return False, 0.95  # Non-numeric blood sugar is invalid
+
+        # Phone validation - minimum digits check
+        if 'phone' in col_lower or 'mobile' in col_lower or 'tel' in col_lower:
+            digit_count = sum(1 for c in text_str if c.isdigit())
+            if digit_count == 0:
+                return False, 0.95  # Phone must have digits
+            if digit_count < 7:
+                return False, 0.90  # Incomplete phone number
+
+        # Email validation - must have @ and domain
+        if 'email' in col_lower or 'mail' in col_lower:
+            if '@' not in text_str:
+                return False, 0.95  # Email must have @
+            if text_str.count('@') > 1:
+                return False, 0.95  # Multiple @ is invalid
+            domain_part = text_str.split('@')[-1]
+            if '.' not in domain_part:
+                return False, 0.90  # Must have domain extension
+
+        # Salary/Price/Amount/Income/Cost validation - must be non-negative numeric
+        if any(kw in col_lower for kw in ['salary', 'price', 'amount', 'income', 'cost', 'quantity']):
+            try:
+                val = float(text_str.replace(',', '').replace('$', '').replace('£', '').replace('€', ''))
+                if val < 0:
+                    return False, 0.95  # Cannot be negative
+            except (ValueError, TypeError):
+                return False, 0.95  # Must be numeric
+
+        # Percentage validation - must be 0-100
+        if 'percent' in col_lower or col_lower.endswith('%'):
+            try:
+                pct_val = float(text_str.replace('%', ''))
+                if pct_val < 0:
+                    return False, 0.95  # Cannot be negative
+                if pct_val > 100:
+                    return False, 0.90  # Cannot exceed 100%
+            except (ValueError, TypeError):
+                return False, 0.95  # Must be numeric
+
+        # Date validation - basic format check
+        if 'date' in col_lower:
+            import re
+            # Check for common date patterns
+            date_patterns = [
+                r'\d{4}-\d{2}-\d{2}',  # YYYY-MM-DD
+                r'\d{2}/\d{2}/\d{4}',  # DD/MM/YYYY or MM/DD/YYYY
+                r'\d{2}-\d{2}-\d{4}',  # DD-MM-YYYY
+                r'\d{1,2}/\d{1,2}/\d{2,4}',  # D/M/YY or similar
+            ]
+            is_date_format = any(re.match(pattern, text_str) for pattern in date_patterns)
+            if not is_date_format and not text_str.replace('-', '').replace('/', '').isdigit():
+                return False, 0.85  # Doesn't look like a date
+
+        # Check if column is trained - if not and passed hardcoded rules, return valid with low confidence
+        if column_name not in self.column_models:
+            # Column not trained in ML model
+            # If we got here, it passed hardcoded rules (if any applied)
+            # Check reference lists for untrained columns
+            if column_name and col_lower in ['gender', 'currency', 'status']:
+                # Load reference list if available
+                ref_list = self._load_reference_list_for_column(col_lower)
+                if ref_list:
+                    if text_lower in ref_list:
+                        return True, 1.0
+                    # Check for typos
+                    for valid in ref_list:
+                        sim = difflib.SequenceMatcher(None, text_lower, valid.lower()).ratio()
+                        if sim >= 0.8:
+                            return False, sim  # Likely typo
+                    return False, 0.7  # Not in reference list
+            return True, 0.5  # Uncertain - column not trained
 
         # Get combined whitelist (training data + reference lists)
         whitelist = self._get_combined_whitelist(column_name)
@@ -327,7 +524,6 @@ class UnifiedMLValidator:
             # Determine if this column should use strict typo detection
             # Only use for columns with finite valid values (country, currency, etc.)
             # NOT for open-ended columns (name, phone, address, email)
-            col_lower = column_name.lower()
             use_strict_typo_detection = not any(kw in col_lower for kw in self.OPEN_ENDED_COLUMNS)
 
             # Also use strict detection if we have a reference list for this column
@@ -497,14 +693,14 @@ class UnifiedMLValidator:
     def correct(self, value: str, column_name: str) -> Optional[str]:
         """
         Suggest correction using column's valid examples.
-        Uses difflib similarity matching.
+        Uses difflib similarity matching with smart thresholds.
 
         Args:
             value: Value to correct
             column_name: Column name this value belongs to
 
         Returns:
-            Corrected value or None if no good match
+            Corrected value or None if no good match / not appropriate to suggest
         """
         if not self.is_trained:
             return None
@@ -512,25 +708,70 @@ class UnifiedMLValidator:
         if column_name not in self.column_examples:
             return None
 
-        valid_examples = self.column_examples[column_name]
-        if not valid_examples:
-            return None
-
         # Don't suggest corrections for empty, NaN, or whitespace-only strings
         if not value or str(value).strip() == '' or str(value).lower() in ['nan', 'none', 'null']:
             return None
 
-        text_str = str(value)
+        text_str = str(value).strip()
+        col_lower = column_name.lower() if column_name else ''
+
+        # RULE 1: Never suggest corrections for numeric columns
+        # Numbers don't have "typos" - a wrong number is just wrong
+        for num_col in self.NUMERIC_COLUMNS:
+            if num_col in col_lower:
+                return None  # No correction for age, blood_sugar, etc.
+
+        # RULE 2: Simple email typo fixes (double @@ -> single @)
+        if 'email' in col_lower or 'mail' in col_lower:
+            if '@@' in text_str:
+                # Fix double @@ to single @
+                fixed_email = text_str.replace('@@', '@')
+                # Only suggest if the fixed version looks valid
+                if '@' in fixed_email and fixed_email.count('@') == 1:
+                    domain = fixed_email.split('@')[-1]
+                    if '.' in domain:
+                        return fixed_email
+
+        # RULE 3: For phone/email, require very high similarity (85%)
+        # Prevents suggesting random phone numbers for incomplete inputs
+        is_high_similarity_column = any(col in col_lower for col in self.HIGH_SIMILARITY_COLUMNS)
+
+        # RULE 4: For phone numbers, also check digit count similarity
+        if 'phone' in col_lower:
+            input_digits = sum(1 for c in text_str if c.isdigit())
+            # If input has very few digits, don't suggest
+            if input_digits < 5:
+                return None  # Too incomplete to suggest
+
+        valid_examples = self.column_examples[column_name]
+        if not valid_examples:
+            return None
+
         text_lower = text_str.lower()
 
+        # Determine similarity threshold based on column type
+        if is_high_similarity_column:
+            similarity_threshold = self.HIGH_SIMILARITY_THRESHOLD  # 85%
+        elif 'country' in col_lower:
+            similarity_threshold = 0.7  # 70% for countries (typo detection)
+        else:
+            similarity_threshold = 0.6  # 60% default for names, etc.
+
         # Find all matches above threshold
-        similarity_threshold = 0.6
         candidates = []
         for valid_example in valid_examples:
             valid_example_str = str(valid_example)
             similarity = difflib.SequenceMatcher(None, text_lower, valid_example_str.lower()).ratio()
 
             if similarity >= similarity_threshold:
+                # For phone numbers, also check digit count is similar
+                if 'phone' in col_lower:
+                    input_digits = sum(1 for c in text_str if c.isdigit())
+                    example_digits = sum(1 for c in valid_example_str if c.isdigit())
+                    # Require digit counts to be within 2 of each other
+                    if abs(input_digits - example_digits) > 2:
+                        continue
+
                 candidates.append((valid_example_str, similarity))
 
         if not candidates:
@@ -550,10 +791,10 @@ class UnifiedMLValidator:
                 return 4  # Least preferred
 
         candidates.sort(key=lambda x: (-x[1], canonical_score(x[0]), len(x[0])))
-        best_match = candidates[0][0]
+        best_match, best_similarity = candidates[0]
 
-        # Only return if not identical to input
-        if text_str != best_match:
+        # Only return if not identical to input and similarity is meaningful
+        if text_str.lower() != best_match.lower():
             return best_match
 
         return None
@@ -572,60 +813,155 @@ class UnifiedMLValidator:
         if not self.is_trained:
             return "Model not trained"
 
-        # Extract features
-        features = self.feature_extractor.extract_features(text, column_name)
+        # Check for empty or whitespace first
+        if not text or str(text).strip() == '' or str(text).lower() in ['nan', 'none', 'null']:
+            return "Empty or missing value"
 
+        text_str = str(text).strip()
         issues = []
 
-        # Length checks
-        if features[0] < 3:  # length
-            issues.append("too short")
-        elif features[0] > 100:
-            issues.append("too long")
-
-        # Check for empty or whitespace
-        if not text or str(text).strip() == '':
-            issues.append("empty value")
-
-        # Pattern checks based on column name hints
+        # Check hardcoded rules for known base model columns
         if column_name:
             col_lower = column_name.lower()
 
-            if any(kw in col_lower for kw in ['email', 'mail', 'e-mail']):
-                if features[9] == 0:  # count_at
-                    issues.append("missing '@' symbol")
-                elif features[9] > 1:
-                    issues.append("multiple '@' symbols")
-                if features[10] == 0:  # count_dot
-                    issues.append("missing domain extension")
+            # Find matching rule set (prefer exact match, then word boundary match)
+            rule_key = None
+            # First try exact match
+            if col_lower in self.VALIDATION_RULES:
+                rule_key = col_lower
+            else:
+                # Try word boundary match (avoid 'age' matching 'percentage')
+                import re
+                for key in self.VALIDATION_RULES:
+                    # Match as whole word
+                    if re.search(r'\b' + re.escape(key) + r'\b', col_lower):
+                        rule_key = key
+                        break
+                    # Or if column starts with key
+                    if col_lower.startswith(key + '_') or col_lower.startswith(key):
+                        if rule_key is None or len(key) > len(rule_key):
+                            rule_key = key
 
-            elif any(kw in col_lower for kw in ['phone', 'mobile', 'cell', 'tel']):
-                digit_ratio = features[3]
-                if digit_ratio < 0.5:
-                    issues.append(f"insufficient digits ({digit_ratio*100:.0f}% digits)")
-                if features[0] < 8:
-                    issues.append("too short for phone number")
+            if rule_key:
+                rules = self.VALIDATION_RULES[rule_key]
 
-            elif any(kw in col_lower for kw in ['name', 'person', 'customer']):
-                if features[1] < 2:  # word_count
-                    issues.append("missing first or last name")
-                if features[3] > 0.1:  # digit_ratio > 10%
-                    issues.append("contains numbers")
+                # Numeric column validation (age, blood_sugar)
+                if rules.get('type') == 'numeric':
+                    try:
+                        num_val = float(text_str)
+                        if 'min' in rules and num_val < rules['min']:
+                            if num_val < 0:
+                                return f"{rule_key.replace('_', ' ').title()} cannot be negative"
+                            return f"{rule_key.replace('_', ' ').title()} is below minimum ({rules['min']})"
+                        if 'max' in rules and num_val > rules['max']:
+                            return f"{rule_key.replace('_', ' ').title()} must be between {rules['min']} and {rules['max']}"
+                    except (ValueError, TypeError):
+                        return f"{rule_key.replace('_', ' ').title()} must be a valid number"
+
+                # Phone validation
+                elif rule_key == 'phone':
+                    digit_count = sum(1 for c in text_str if c.isdigit())
+                    if digit_count == 0:
+                        return "Phone number must contain digits"
+                    if digit_count < 7:
+                        return f"Incomplete phone number ({digit_count} digits, minimum 7 required)"
+
+                # Email validation
+                elif rule_key == 'email':
+                    if '@' not in text_str:
+                        return "Email must contain @ symbol"
+                    if text_str.count('@') > 1:
+                        return "Email cannot have multiple @ symbols"
+                    domain_part = text_str.split('@')[-1]
+                    if '.' not in domain_part:
+                        return "Email must have a valid domain (e.g., .com, .org)"
+
+                # Name validation
+                elif rule_key == 'name':
+                    if any(c.isdigit() for c in text_str):
+                        return "Name should not contain numbers"
+                    if len(text_str) < 2:
+                        return "Name is too short"
+
+                # Country validation (check against reference list)
+                elif rule_key == 'country':
+                    if 'country' in self.reference_lists:
+                        # Check for close typos
+                        ref_list = self.reference_lists['country']
+                        best_match = None
+                        best_similarity = 0
+                        for valid in ref_list:
+                            sim = difflib.SequenceMatcher(None, text_str.lower(), valid.lower()).ratio()
+                            if sim > best_similarity:
+                                best_similarity = sim
+                                best_match = valid
+                        if best_similarity > 0.7 and best_similarity < 1.0:
+                            return f"Possible typo - did you mean '{best_match}'?"
+                        return "Country not recognized"
+
+                # Gender validation (check against reference list)
+                elif rule_key == 'gender':
+                    valid_genders = ['male', 'female', 'm', 'f', 'other', 'non-binary', 'prefer not to say', 'unknown']
+                    if text_str.lower() not in valid_genders:
+                        return "Gender not recognized (use: Male, Female, M, F, Other, etc.)"
+
+                # Currency validation (check against reference list)
+                elif rule_key == 'currency':
+                    if 'currency' in self.reference_lists:
+                        return "Currency code not recognized (use: USD, EUR, GBP, SGD, etc.)"
+                    return "Invalid currency code"
+
+                # Status validation (check against reference list)
+                elif rule_key == 'status':
+                    if 'status' in self.reference_lists:
+                        return "Status not recognized (use: Active, Inactive, Pending, etc.)"
+                    return "Invalid status value"
+
+                # Date validation
+                elif rule_key == 'date':
+                    return "Invalid date format (use: YYYY-MM-DD, DD/MM/YYYY, etc.)"
+
+        # Additional checks for columns not in VALIDATION_RULES but with keywords
+        if column_name:
+            col_lower = column_name.lower()
+
+            # Salary/Price/Amount validation
+            if any(kw in col_lower for kw in ['salary', 'price', 'amount', 'income', 'cost', 'quantity']):
+                try:
+                    val = float(text_str.replace(',', '').replace('$', '').replace('£', '').replace('€', ''))
+                    if val < 0:
+                        return f"{col_lower.title()} cannot be negative"
+                except (ValueError, TypeError):
+                    return f"{col_lower.title()} must be a valid number"
+
+            # Percentage validation
+            if 'percent' in col_lower:
+                try:
+                    pct_val = float(text_str.replace('%', ''))
+                    if pct_val < 0:
+                        return "Percentage cannot be negative"
+                    if pct_val > 100:
+                        return "Percentage cannot exceed 100%"
+                except (ValueError, TypeError):
+                    return "Percentage must be a valid number"
+
+        # Fallback: Extract features for generic analysis
+        features = self.feature_extractor.extract_features(text, column_name)
 
         # General pattern issues
         if len(features) > 46 and features[46] > 0:  # triple_chars
-            issues.append("repeated characters")
+            issues.append("contains repeated characters")
+
+        # Length checks for unknown columns
+        if features[0] < 2:
+            issues.append("value too short")
+        elif features[0] > 200:
+            issues.append("value too long")
 
         if not issues:
-            issues.append("pattern doesn't match training data")
+            issues.append("pattern doesn't match expected format")
 
-        # Format the explanation
-        if len(issues) == 1:
-            return issues[0].capitalize()
-        elif len(issues) == 2:
-            return f"{issues[0].capitalize()} and {issues[1]}"
-        else:
-            return f"{issues[0].capitalize()}, {', '.join(issues[1:-1])}, and {issues[-1]}"
+        return issues[0].capitalize()
 
     def save(self, filepath: str):
         """
@@ -687,7 +1023,6 @@ class UnifiedMLValidator:
             self.training_metrics = model_data.get('training_metrics', {})
             self.is_trained = model_data.get('is_trained', False)
 
-            print(f"Model loaded: {self.model_name} ({len(self.columns)} columns)")
             return True
         except Exception as e:
             print(f"Error loading model: {e}")

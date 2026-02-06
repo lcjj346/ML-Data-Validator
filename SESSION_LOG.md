@@ -198,6 +198,58 @@
 
 ---
 
+### 2026-02-06 (Validation Improvements & Cleanup)
+
+#### Part 1: Bug Fixes
+- Fixed `width='stretch'` errors in `app.py` (7 occurrences) → `use_container_width=True`
+- Fixed sklearn version mismatch warnings - retrained base model with sklearn 1.7.0
+- Fixed model naming inconsistency (`_model.pkl` → `.pkl`)
+- Removed print spam ("Model loaded" on every load)
+- Installed missing pytest dependencies
+
+#### Part 2: Cleanup
+- **Models:** Removed redundant `base_model_model.pkl` and `sample_data_model.pkl` (kept only `base_model.pkl`)
+- **Test data:** Removed 3 confusing CSV files, created single `demo_validation_test.csv`
+- **README files:** Removed extra READMEs (test_data/README.md, .pytest_cache/README.md)
+
+#### Part 3: Improved Validation Logic
+- **Hardcoded validation rules** for base model columns:
+  - `age`: Must be 0-120, cannot be negative
+  - `blood_sugar`: Must be 0-500, cannot be negative
+  - `phone`: Minimum 7 digits required
+  - `email`: Must have @, valid domain, fixed @@ typo correction
+  - `percentage`: Must be 0-100
+  - `salary/price/amount`: Cannot be negative
+
+- **Smarter correction suggestions:**
+  - Numeric columns (age, blood_sugar, salary): No corrections (numbers don't have typos)
+  - Phone/email: Requires 85% similarity (prevents random suggestions)
+  - Email @@: Now suggests fix (test@@email.com → test@email.com)
+
+- **Better error explanations:**
+  - Before: "too short" for age -5
+  - After: "Age cannot be negative"
+
+#### Part 4: New Reference Lists
+- `reference_lists/gender.txt` (8 values: Male, Female, M, F, Other, etc.)
+- `reference_lists/currency.txt` (37 currencies: USD, SGD, EUR, etc.)
+- `reference_lists/status.txt` (24 statuses: Active, Pending, Completed, etc.)
+
+#### Test Results
+| Input | Column | Before | After |
+|-------|--------|--------|-------|
+| `-5` | age | "Too short" | "Age cannot be negative" |
+| `150` | age | Valid | Invalid - "Age must be between 0 and 120" |
+| `+65 9999` | phone | Suggested random phone | No suggestion (incomplete) |
+| `test@@email.com` | email | No suggestion | `test@email.com` |
+| `Singaproe` | country | Correction: Singapore | Correction: Singapore (unchanged) |
+
+- **Files:** `app.py`, `ml/validator.py`, `test_data/demo_validation_test.csv`, `reference_lists/*.txt`
+- **Tested:** Yes - 30 tests passing
+- **Notes:** New columns (gender, currency, status, salary, percentage, date) will auto-validate when users upload data with those column names
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:

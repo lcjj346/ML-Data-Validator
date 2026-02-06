@@ -189,7 +189,7 @@ with tab_validate:
 
         # Preview data
         with st.expander("Preview uploaded data", expanded=False):
-            st.dataframe(df.head(10), width='stretch')
+            st.dataframe(df.head(10), use_container_width=True)
 
         st.divider()
 
@@ -197,9 +197,9 @@ with tab_validate:
         models_dir = "models"
         available_models = []
         if os.path.exists(models_dir):
-            available_models = [f.replace('_model.pkl', '')
+            available_models = [f.replace('.pkl', '')
                               for f in os.listdir(models_dir)
-                              if f.endswith('_model.pkl')]
+                              if f.endswith('.pkl')]
 
         if not available_models:
             st.warning("No trained models found. Go to 'Train Models' tab first.")
@@ -214,7 +214,7 @@ with tab_validate:
 
             # Load model to show column info
             if selected_model:
-                model_path = f"{models_dir}/{selected_model}_model.pkl"
+                model_path = f"{models_dir}/{selected_model}.pkl"
                 preview_validator = UnifiedMLValidator(model_path)
 
                 if preview_validator.is_trained:
@@ -242,12 +242,12 @@ with tab_validate:
             # ========== STEP 3: Validate ==========
             st.markdown('<span class="step-badge">Step 3</span> **Run validation**', unsafe_allow_html=True)
 
-            if selected_model and st.button("Validate", type="primary", width='stretch'):
+            if selected_model and st.button("Validate", type="primary", use_container_width=True):
                 # Progress bar
                 progress_bar = st.progress(0, text="Loading model...")
 
                 # Load validator
-                model_path = f"{models_dir}/{selected_model}_model.pkl"
+                model_path = f"{models_dir}/{selected_model}.pkl"
                 validator = UnifiedMLValidator(model_path)
 
                 if not validator.is_trained:
@@ -517,7 +517,7 @@ with tab_validate:
                                 if st.button(
                                     f"Apply All {len(applicable_corrections)} Corrections",
                                     type="primary",
-                                    width='stretch'
+                                    use_container_width=True
                                 ):
                                     for correction in applicable_corrections:
                                         row_idx = correction['Row Index']
@@ -623,7 +623,7 @@ with tab_validate:
                         file_name=f"validated_{uploaded_file.name if uploaded_file else 'data.csv'}",
                         mime="text/csv",
                         type="primary",
-                        width='stretch'
+                        use_container_width=True
                     )
                 with export_col2:
                     st.metric("Total Rows", len(export_df))
@@ -669,7 +669,7 @@ with tab_train:
 
         # Preview
         with st.expander("Preview training data", expanded=True):
-            st.dataframe(train_df.head(10), width='stretch')
+            st.dataframe(train_df.head(10), use_container_width=True)
 
         st.divider()
 
@@ -694,7 +694,7 @@ with tab_train:
         # Check for existing models
         existing_models = []
         if os.path.exists("models"):
-            existing_models = [f.replace('_model.pkl', '') for f in os.listdir("models") if f.endswith('_model.pkl')]
+            existing_models = [f.replace('.pkl', '') for f in os.listdir("models") if f.endswith('.pkl')]
 
         training_mode = st.radio(
             "Training mode:",
@@ -720,7 +720,7 @@ with tab_train:
         )
 
         button_label = "Train Model" if training_mode == "Create new model" else "Add Data & Retrain"
-        if st.button(button_label, type="primary", width='stretch'):
+        if st.button(button_label, type="primary", use_container_width=True):
             if not model_name:
                 st.error("Please select or enter a model name.")
             elif len(columns_to_train) == 0:
@@ -735,7 +735,7 @@ with tab_train:
                     metrics = validator.train(train_df, model_name, exclude_columns)
                 else:
                     # Add to existing model
-                    model_path = f"models/{model_name}_model.pkl"
+                    model_path = f"models/{model_name}.pkl"
                     validator = UnifiedMLValidator(model_path)
                     progress.progress(10, text="Loading existing model...")
 
@@ -755,7 +755,7 @@ with tab_train:
 
                 progress.progress(80, text="Saving model...")
                 os.makedirs("models", exist_ok=True)
-                model_path = f"models/{model_name}_model.pkl"
+                model_path = f"models/{model_name}.pkl"
                 validator.save(model_path)
 
                 progress.progress(100, text="Done!")
@@ -811,12 +811,12 @@ with tab_train:
         models_dir = "models"
         if os.path.exists(models_dir):
             # Look for new unified models
-            models = [f for f in os.listdir(models_dir) if f.endswith('_model.pkl')]
+            models = [f for f in os.listdir(models_dir) if f.endswith('.pkl')]
 
             if models:
                 model_list = []
                 for model_file in models:
-                    model_name = model_file.replace('_model.pkl', '')
+                    model_name = model_file.replace('.pkl', '')
                     model_path = os.path.join(models_dir, model_file)
 
                     # Load to get column info
@@ -835,7 +835,7 @@ with tab_train:
                         'Columns': columns_str,
                     })
 
-                st.dataframe(pd.DataFrame(model_list), width='stretch', hide_index=True)
+                st.dataframe(pd.DataFrame(model_list), use_container_width=True, hide_index=True)
             else:
                 st.info("No trained models yet. Upload training data above to get started.")
         else:

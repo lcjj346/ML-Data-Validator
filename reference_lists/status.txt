@@ -1,0 +1,24 @@
+Active
+Inactive
+Pending
+Approved
+Rejected
+Cancelled
+Completed
+In Progress
+On Hold
+Draft
+Published
+Archived
+Deleted
+Suspended
+Verified
+Unverified
+Paid
+Unpaid
+Overdue
+Processing
+Shipped
+Delivered
+Returned
+Refunded

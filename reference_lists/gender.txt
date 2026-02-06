@@ -1,0 +1,8 @@
+Male
+Female
+M
+F
+Other
+Non-binary
+Prefer not to say
+Unknown
