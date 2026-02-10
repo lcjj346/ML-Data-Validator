@@ -1,10 +1,5 @@
 # ============================================================================
-# ML-Based CSV Data Validator - Requirements (Cleaned)
-# ============================================================================
-#
-# This file contains only the dependencies actually used by the current system.
-# Legacy dependencies from the previous complex architecture have been removed.
-#
+# ML-Based CSV Data Validator - Requirements
 # ============================================================================
 
 # ============================================================================
@@ -19,10 +14,11 @@ pandas>=2.0.0               # Data manipulation and CSV/Excel handling
 scikit-learn>=1.3.0         # Logistic Regression classifier for validation
 
 # ============================================================================
-# Streamlit Frontend
+# Backend (FastAPI)
 # ============================================================================
-streamlit>=1.28.0           # Web UI framework
-streamlit-aggrid>=0.3.4     # Interactive data grid with cell editing and color coding
+fastapi>=0.104.0            # API framework
+uvicorn[standard]>=0.24.0   # ASGI server
+python-multipart>=0.0.6     # File upload support
 
 # ============================================================================
 # File Handling
@@ -41,16 +37,7 @@ pytest>=7.0.0               # Test framework
 pytest-cov>=4.0.0           # Coverage reporting (optional)
 
 # ============================================================================
-# Notes:
+# Legacy (kept for reference, can be removed)
 # ============================================================================
-# 1. Install with: pip install -r requirements.txt
-# 2. Python version: 3.8+ recommended (tested on 3.10, 3.14)
-# 3. Total install size: ~200-300 MB (lightweight)
-#
-# Removed dependencies (not used in current simple architecture):
-# - xgboost, torch, torchvision (replaced with similarity-based correction)
-# - spacy, sentence-transformers (pre-trained NLP not needed)
-# - fuzzywuzzy, python-Levenshtein (using difflib instead)
-# - phonenumbers, pycountry (generic features, not domain-specific)
-# - python-dotenv, tqdm (not used in current implementation)
-# - xlrd, scipy, streamlit-javascript (optional/unused)
+streamlit>=1.28.0           # Old UI framework (app.py)
+streamlit-aggrid>=0.3.4     # Old interactive grid
