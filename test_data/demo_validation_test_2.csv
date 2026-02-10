@@ -1,0 +1,21 @@
+name,email,phone,country,age,address,blood_sugar
+Sarah Connor,sarah.connor@gmail.com,+1 310 555 1234,United States,45,2029 Century Park East Los Angeles CA 90067,92.0
+David Tan,david.tan@hotmail.com,+65 8123 4567,Singapore,33,Blk 456 Tampines Ave 5 #12-345,108.0
+Emma Watson,emma.w@oxford.ac.uk,+44 1865 270000,United Kingdom,36,10 Downing Street London SW1A 2AA,87.0
+Li Wei,li.wei@163.com,+86 10 6553 6789,China,29,No.1 Zhongguancun Beijing 100080,99.0
+Priya Sharma,priya.sharma@outlook.in,+91 98765 43210,India,41,42 MG Road Bengaluru Karnataka 560001,115.0
+Carlos Mendez,carlos.m@correo.mx,+52 55 1234 5678,Mexico,50,Av Reforma 222 Ciudad de Mexico 06600,78.0
+Aisha Mohammed,aisha.m@domain.ae,+971 50 123 4567,United Arab Emirates,27,Sheikh Zayed Road Dubai,103.0
+Sven Eriksson,sven.e@company.se,+46 8 123 456,Sweden,62,Drottninggatan 50 Stockholm 111 21,90.0
+X,bad@@email,12,Singaopre,-3,Bad,1500.0
+,no_at_sign.com,not_a_phone,Amercia,999,,0.5
+ALLCAPS NAME,spaces in@email .com,+65 0000,Untied Kingdum,abc,x,-50.0
+!!!Invalid!!!,test@test@test.com,+++123+++,Chnia,200,12345,abc
+Roberto Silva,roberto@empresa.br,+55 11 9876 5432,Brazil,38,Rua Augusta 100 Sao Paulo SP 01310-100,94.0
+Yuki Tanaka,yuki.tanaka@mail.jp,+81 3 5555 1234,Japan,44,3-5-7 Ginza Chuo-ku Tokyo 104-0061,86.0
+Anna Mueller,anna.m@berlin.de,+49 30 1234 5678,Germany,52,Friedrichstrasse 43 Berlin 10117,97.0
+,,,,,,,
+Park Joon,park.joon@naver.com,+82 2 1234 5678,South Korea,30,123 Gangnam-daero Seoul 06236,101.0
+Fatima Al-Rashid,fatima.r@email.sa,+966 50 987 6543,Saudi Arabia,35,King Fahd Road Riyadh 11564,89.0
+Nguyễn Văn A,nguyen.a@email.vn,+84 28 1234 5678,Vietnam,26,12 Nguyen Hue Ho Chi Minh City 700000,106.0
+bad name 123,email@.com,phone here,Frnace,0,Address123!@#,999.9

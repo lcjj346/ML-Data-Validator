@@ -189,7 +189,7 @@ with tab_validate:
 
         # Preview data
         with st.expander("Preview uploaded data", expanded=False):
-            st.dataframe(df.head(10), use_container_width=True)
+            st.dataframe(df.head(10), width="stretch")
 
         st.divider()
 
@@ -242,7 +242,7 @@ with tab_validate:
             # ========== STEP 3: Validate ==========
             st.markdown('<span class="step-badge">Step 3</span> **Run validation**', unsafe_allow_html=True)
 
-            if selected_model and st.button("Validate", type="primary", use_container_width=True):
+            if selected_model and st.button("Validate", type="primary", width="stretch"):
                 # Progress bar
                 progress_bar = st.progress(0, text="Loading model...")
 
@@ -517,7 +517,7 @@ with tab_validate:
                                 if st.button(
                                     f"Apply All {len(applicable_corrections)} Corrections",
                                     type="primary",
-                                    use_container_width=True
+                                    width="stretch"
                                 ):
                                     for correction in applicable_corrections:
                                         row_idx = correction['Row Index']
@@ -623,7 +623,7 @@ with tab_validate:
                         file_name=f"validated_{uploaded_file.name if uploaded_file else 'data.csv'}",
                         mime="text/csv",
                         type="primary",
-                        use_container_width=True
+                        width="stretch"
                     )
                 with export_col2:
                     st.metric("Total Rows", len(export_df))
@@ -669,7 +669,7 @@ with tab_train:
 
         # Preview
         with st.expander("Preview training data", expanded=True):
-            st.dataframe(train_df.head(10), use_container_width=True)
+            st.dataframe(train_df.head(10), width="stretch")
 
         st.divider()
 
@@ -720,7 +720,7 @@ with tab_train:
         )
 
         button_label = "Train Model" if training_mode == "Create new model" else "Add Data & Retrain"
-        if st.button(button_label, type="primary", use_container_width=True):
+        if st.button(button_label, type="primary", width="stretch"):
             if not model_name:
                 st.error("Please select or enter a model name.")
             elif len(columns_to_train) == 0:
@@ -835,7 +835,7 @@ with tab_train:
                         'Columns': columns_str,
                     })
 
-                st.dataframe(pd.DataFrame(model_list), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(model_list), width="stretch", hide_index=True)
             else:
                 st.info("No trained models yet. Upload training data above to get started.")
         else:
