@@ -5,6 +5,40 @@ body {
   font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
+/* Glass card utility */
+.glass-card {
+  @apply bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes stripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.25s ease-out;
+}
+
 /* AG Grid dark theme overrides */
 .ag-theme-alpine-dark {
   --ag-background-color: #111827;
@@ -12,4 +46,20 @@ body {
   --ag-odd-row-background-color: #0f172a;
   --ag-row-hover-color: #1e293b;
   --ag-border-color: #374151;
+  --ag-input-focus-border-color: #6366f1;
+  --ag-data-color: #e5e7eb;
+  --ag-input-border-color: #4b5563;
+}
+
+/* AG Grid cell editing - ensure dark bg + light text */
+.ag-theme-alpine-dark .ag-cell-inline-editing {
+  background-color: #1e293b !important;
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-cell-inline-editing input[type="text"],
+.ag-theme-alpine-dark .ag-cell-inline-editing .ag-input-field-input {
+  background-color: #1e293b !important;
+  color: #f3f4f6 !important;
+  border-color: #6366f1 !important;
 }

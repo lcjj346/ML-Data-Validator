@@ -13,7 +13,6 @@ interface Props {
 export default function CorrectionsPanel({ corrections, modifiedCells, onApplySingle, onApplyAll, applying }: Props) {
   const modifiedSet = useMemo(() => new Set(modifiedCells), [modifiedCells]);
 
-  // Filter out already-applied corrections
   const pending = useMemo(
     () => corrections.filter((c) => !modifiedSet.has(`${c.row_index}_${c.column}`)),
     [corrections, modifiedSet],
@@ -35,7 +34,10 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
 
   if (!pending.length) {
     return (
-      <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 text-green-300 text-sm">
+      <div className="glass-card border-green-500/30 p-4 text-green-300 text-sm flex items-center gap-2">
+        <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
         All corrections have been applied! Your data is clean.
       </div>
     );
@@ -53,7 +55,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
           <select
             value={filterCol}
             onChange={(e) => setFilterCol(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="w-full bg-gray-800/80 border border-white/10 rounded-xl px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all duration-200"
           >
             <option value="all">All Columns</option>
             {uniqueCols.map((c) => (
@@ -65,7 +67,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
           <button
             onClick={onApplyAll}
             disabled={applying}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shadow-lg shadow-indigo-500/20"
           >
             {applying ? 'Applying...' : `Apply All ${applicable.length} Corrections`}
           </button>
@@ -73,7 +75,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
       </div>
 
       {/* Header */}
-      <div className="grid grid-cols-[50px_1fr_1.5fr_1.5fr_2fr_70px] gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-700 pb-2 mb-2">
+      <div className="grid grid-cols-[50px_1fr_1.5fr_1.5fr_2fr_70px] gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wide border-b border-white/10 pb-2 mb-2">
         <span>Row</span>
         <span>Column</span>
         <span>Original</span>
@@ -87,20 +89,23 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
         {filtered.map((c, i) => (
           <div
             key={`${c.row_index}_${c.column}_${i}`}
-            className={`grid grid-cols-[50px_1fr_1.5fr_1.5fr_2fr_70px] gap-2 items-center py-2 text-sm border-b border-gray-800/50 ${
-              c.has_correction ? 'border-l-2 border-l-green-500 pl-2' : 'border-l-2 border-l-red-500 pl-2'
+            className={`grid grid-cols-[50px_1fr_1.5fr_1.5fr_2fr_70px] gap-2 items-center py-2.5 text-sm border-b border-white/5 hover:bg-white/5 transition-colors ${
+              c.has_correction ? 'border-l-2 border-l-green-500/60 pl-2' : 'border-l-2 border-l-red-500/60 pl-2'
             }`}
           >
-            <span className="font-bold">{c.row}</span>
+            <span className="font-bold text-gray-300">{c.row}</span>
             <code className="text-indigo-400 text-xs">{c.column}</code>
             <span className="text-red-400 font-medium truncate">{c.original}</span>
             <span>
               {c.has_correction ? (
-                <span className="text-green-400">
-                  -&gt; <strong>{c.suggested}</strong>
+                <span className="text-green-400 flex items-center gap-1">
+                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  <strong>{c.suggested}</strong>
                 </span>
               ) : (
-                <span className="text-gray-500">No suggestion</span>
+                <span className="text-gray-500 italic">No suggestion</span>
               )}
             </span>
             <span className="text-gray-400 text-xs truncate">{c.reason}</span>
@@ -108,7 +113,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
               {c.has_correction && (
                 <button
                   onClick={() => onApplySingle(c)}
-                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded transition-colors"
+                  className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105"
                 >
                   Fix
                 </button>

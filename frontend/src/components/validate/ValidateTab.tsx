@@ -15,8 +15,8 @@ import ExportSection from './ExportSection';
 
 function StepBadge({ n }: { n: number }) {
   return (
-    <span className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-3 py-0.5 rounded-full text-xs font-semibold mr-2">
-      Step {n}
+    <span className="inline-flex items-center justify-center w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full text-xs font-bold mr-2 shadow-lg shadow-indigo-500/20">
+      {n}
     </span>
   );
 }
@@ -25,11 +25,15 @@ export default function ValidateTab() {
   const v = useValidation();
   const { toasts, addToast, removeToast } = useToast();
   const [applyingAll, setApplyingAll] = useState(false);
+  const [uploadKey, setUploadKey] = useState(0);
 
   const handleFile = useCallback(
     async (file: File) => {
       v.reset();
-      await v.upload(file);
+      const info = await v.upload(file);
+      if (info) {
+        setUploadKey((k) => k + 1);
+      }
     },
     [v],
   );
@@ -79,14 +83,15 @@ export default function ValidateTab() {
   }, [v, addToast]);
 
   return (
-    <div>
+    <div className="animate-fadeIn">
       <Toast toasts={toasts} onRemove={removeToast} />
 
       {/* Step 1: Upload */}
-      <div className="mb-6">
-        <p className="text-sm font-medium mb-2">
-          <StepBadge n={1} /> <strong>Upload your CSV file</strong>
-        </p>
+      <div className="mb-8">
+        <div className="flex items-center mb-3">
+          <StepBadge n={1} />
+          <span className="text-sm font-semibold text-gray-200">Upload your CSV file</span>
+        </div>
         <FileUpload onFile={handleFile} disabled={v.isValidating} />
       </div>
 
@@ -95,29 +100,31 @@ export default function ValidateTab() {
           <FileInfo filename={v.fileInfo.filename} rows={v.fileInfo.rows} columns={v.fileInfo.columns} />
           <DataPreview preview={v.fileInfo.preview} columns={v.fileInfo.column_names} />
 
-          <hr className="border-gray-700 my-6" />
+          <div className="border-t border-white/5 my-8" />
 
           {/* Step 2: Select Model */}
-          <div className="mb-6">
-            <p className="text-sm font-medium mb-2">
-              <StepBadge n={2} /> <strong>Select trained model</strong>
-            </p>
-            <ModelSelector selected={v.selectedModel} onSelect={handleModelSelect} />
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <StepBadge n={2} />
+              <span className="text-sm font-semibold text-gray-200">Select trained model</span>
+            </div>
+            <ModelSelector key={uploadKey} selected={v.selectedModel} onSelect={handleModelSelect} />
           </div>
 
           {v.matchResult && <ColumnMatching match={v.matchResult} />}
 
-          <hr className="border-gray-700 my-6" />
+          <div className="border-t border-white/5 my-8" />
 
           {/* Step 3: Validate */}
-          <div className="mb-6">
-            <p className="text-sm font-medium mb-2">
-              <StepBadge n={3} /> <strong>Run validation</strong>
-            </p>
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <StepBadge n={3} />
+              <span className="text-sm font-semibold text-gray-200">Run validation</span>
+            </div>
             <button
               onClick={handleValidate}
               disabled={!v.selectedModel || v.isValidating}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:scale-[1.01] active:scale-[0.99]"
             >
               {v.isValidating ? 'Validating...' : 'Validate'}
             </button>
@@ -126,7 +133,7 @@ export default function ValidateTab() {
           {v.isValidating && <ProgressBar progress={v.progress} message={v.progressMessage} />}
 
           {v.error && (
-            <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-red-300 text-sm mb-4">
+            <div className="glass-card border-red-500/30 p-4 text-red-300 text-sm mb-4">
               {v.error}
             </div>
           )}
@@ -134,7 +141,7 @@ export default function ValidateTab() {
           {/* Results */}
           {v.results && (
             <>
-              <hr className="border-gray-700 my-6" />
+              <div className="border-t border-white/5 my-8" />
               <QualityMetrics
                 validCells={v.results.valid_cells}
                 invalidCells={v.results.invalid_cells}

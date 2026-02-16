@@ -13,8 +13,8 @@ import ModelsList from './ModelsList';
 
 function StepBadge({ n }: { n: number }) {
   return (
-    <span className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-3 py-0.5 rounded-full text-xs font-semibold mr-2">
-      Step {n}
+    <span className="inline-flex items-center justify-center w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full text-xs font-bold mr-2 shadow-lg shadow-indigo-500/20">
+      {n}
     </span>
   );
 }
@@ -53,7 +53,6 @@ export default function TrainTab() {
     t.train(t.uploadInfo.session_id, modelName.trim(), mode, excludeCols, useRefLists);
   }, [t, modelName, mode, excludeCols, useRefLists, addToast]);
 
-  // Refresh models list when training completes
   const prevIsTraining = useRef(false);
   useEffect(() => {
     if (prevIsTraining.current && !t.isTraining && t.metrics) {
@@ -67,16 +66,17 @@ export default function TrainTab() {
   }, [t.isTraining, t.metrics, mode, modelName, addToast]);
 
   return (
-    <div>
+    <div className="animate-fadeIn">
       <Toast toasts={toasts} onRemove={removeToast} />
 
-      <h2 className="text-xl font-semibold mb-4">Train Your ML Models</h2>
+      <h2 className="text-xl font-bold mb-6">Train Your ML Models</h2>
 
       {/* Step 1: Upload */}
-      <div className="mb-6">
-        <p className="text-sm font-medium mb-2">
-          <StepBadge n={1} /> <strong>Upload your data CSV</strong>
-        </p>
+      <div className="mb-8">
+        <div className="flex items-center mb-3">
+          <StepBadge n={1} />
+          <span className="text-sm font-semibold text-gray-200">Upload your data CSV</span>
+        </div>
         <TrainingUpload onFile={handleFile} disabled={t.isTraining} />
       </div>
 
@@ -85,13 +85,14 @@ export default function TrainTab() {
           <FileInfo filename={t.uploadInfo.filename} rows={t.uploadInfo.rows} columns={t.uploadInfo.columns} />
           <DataPreview preview={t.uploadInfo.preview} columns={t.uploadInfo.column_names} />
 
-          <hr className="border-gray-700 my-6" />
+          <div className="border-t border-white/5 my-8" />
 
           {/* Step 2: Column config */}
-          <div className="mb-6">
-            <p className="text-sm font-medium mb-2">
-              <StepBadge n={2} /> <strong>Configure columns</strong>
-            </p>
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <StepBadge n={2} />
+              <span className="text-sm font-semibold text-gray-200">Configure columns</span>
+            </div>
             <ColumnConfig
               allColumns={t.uploadInfo.column_names}
               excluded={excludeCols}
@@ -99,13 +100,14 @@ export default function TrainTab() {
             />
           </div>
 
-          <hr className="border-gray-700 my-6" />
+          <div className="border-t border-white/5 my-8" />
 
           {/* Step 3: Training mode */}
-          <div className="mb-6">
-            <p className="text-sm font-medium mb-2">
-              <StepBadge n={3} /> <strong>Choose training mode</strong>
-            </p>
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <StepBadge n={3} />
+              <span className="text-sm font-semibold text-gray-200">Choose training mode</span>
+            </div>
             <TrainingMode
               mode={mode}
               onModeChange={setMode}
@@ -120,7 +122,7 @@ export default function TrainTab() {
           <button
             onClick={handleTrain}
             disabled={t.isTraining || !modelName.trim()}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors mb-4"
+            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:scale-[1.01] active:scale-[0.99] mb-4"
           >
             {t.isTraining
               ? 'Training...'
@@ -132,21 +134,21 @@ export default function TrainTab() {
           {t.isTraining && <ProgressBar progress={t.progress} message={t.progressMessage} />}
 
           {t.error && (
-            <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-red-300 text-sm mb-4">
+            <div className="glass-card border-red-500/30 p-4 text-red-300 text-sm mb-4">
               {t.error}
             </div>
           )}
 
           {t.metrics && (
             <>
-              <hr className="border-gray-700 my-6" />
+              <div className="border-t border-white/5 my-8" />
               <TrainingMetricsView metrics={t.metrics} />
             </>
           )}
         </>
       )}
 
-      <hr className="border-gray-700 my-6" />
+      <div className="border-t border-white/5 my-8" />
       <ModelsList refreshKey={modelsRefresh} />
     </div>
   );

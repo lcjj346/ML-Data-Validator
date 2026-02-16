@@ -22,6 +22,7 @@ export default function TrainingUpload({ onFile, disabled }: Props) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) onFile(file);
+      e.target.value = '';
     },
     [onFile],
   );
@@ -31,12 +32,17 @@ export default function TrainingUpload({ onFile, disabled }: Props) {
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-        dragging ? 'border-indigo-500 bg-indigo-500/10' : 'border-gray-600 hover:border-gray-500'
+      className={`glass-card p-8 text-center transition-all duration-200 cursor-pointer border-dashed ${
+        dragging
+          ? 'border-indigo-500 bg-indigo-500/10 scale-[1.01]'
+          : 'hover:border-white/20 hover:bg-white/5'
       } ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
     >
+      <svg className="w-10 h-10 mx-auto mb-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+      </svg>
       <p className="text-gray-300 mb-1">Drag & drop training CSV here, or click to browse</p>
-      <p className="text-gray-500 text-xs mb-3">All rows will be treated as valid examples</p>
+      <p className="text-gray-500 text-xs mb-4">All rows will be treated as valid examples</p>
       <input
         type="file"
         accept=".csv"
@@ -47,7 +53,7 @@ export default function TrainingUpload({ onFile, disabled }: Props) {
       />
       <label
         htmlFor="training-upload"
-        className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-500 cursor-pointer transition-colors"
+        className="inline-block px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-500 hover:to-purple-500 cursor-pointer transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30"
       >
         Choose File
       </label>

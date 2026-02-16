@@ -7,7 +7,7 @@ interface Props {
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-gray-800 rounded-lg p-3 text-center">
+    <div className="glass-card p-3 text-center hover:bg-white/[0.07] transition-colors">
       <div className="text-gray-400 text-xs uppercase tracking-wide mb-1">{label}</div>
       <div className="text-lg font-bold">{value}</div>
     </div>
@@ -18,7 +18,7 @@ function ConfusionMatrix({ cm }: { cm: number[][] }) {
   return (
     <div className="mt-2">
       <p className="text-xs font-semibold text-gray-400 mb-1">Confusion Matrix</p>
-      <table className="text-xs border border-gray-700">
+      <table className="text-xs border border-white/10 rounded-lg overflow-hidden">
         <thead>
           <tr className="text-gray-400">
             <th className="px-2 py-1"></th>
@@ -29,13 +29,13 @@ function ConfusionMatrix({ cm }: { cm: number[][] }) {
         <tbody>
           <tr>
             <td className="px-2 py-1 text-gray-400 font-medium">Act Invalid</td>
-            <td className="px-2 py-1 text-center bg-blue-900/30">{cm[0]?.[0] ?? 0}</td>
+            <td className="px-2 py-1 text-center bg-indigo-500/15">{cm[0]?.[0] ?? 0}</td>
             <td className="px-2 py-1 text-center">{cm[0]?.[1] ?? 0}</td>
           </tr>
           <tr>
             <td className="px-2 py-1 text-gray-400 font-medium">Act Valid</td>
             <td className="px-2 py-1 text-center">{cm[1]?.[0] ?? 0}</td>
-            <td className="px-2 py-1 text-center bg-blue-900/30">{cm[1]?.[1] ?? 0}</td>
+            <td className="px-2 py-1 text-center bg-indigo-500/15">{cm[1]?.[1] ?? 0}</td>
           </tr>
         </tbody>
       </table>
@@ -46,7 +46,7 @@ function ConfusionMatrix({ cm }: { cm: number[][] }) {
 export default function TrainingMetrics({ metrics }: Props) {
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-3">Training Metrics</h3>
+      <h3 className="text-lg font-bold mb-3">Training Metrics</h3>
       {Object.entries(metrics).map(([colName, m]) => (
         <Collapsible key={colName} title={`Column: ${colName}`} defaultOpen={true}>
           <div className="grid grid-cols-3 gap-3 mb-3">
@@ -75,7 +75,7 @@ export default function TrainingMetrics({ metrics }: Props) {
             </div>
           ) : (
             <div>
-              <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-2 text-yellow-300 text-xs mb-2">
+              <div className="glass-card border-yellow-500/30 p-3 text-yellow-300 text-xs mb-2">
                 Dataset too small for train/test split. Metrics may be overfit.
               </div>
               <div className="grid grid-cols-2 gap-2">

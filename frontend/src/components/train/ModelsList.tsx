@@ -4,7 +4,7 @@ import { listModels } from '../../api/client';
 import Collapsible from '../Collapsible';
 
 interface Props {
-  refreshKey?: number; // increment to force refresh
+  refreshKey?: number;
 }
 
 export default function ModelsList({ refreshKey }: Props) {
@@ -25,21 +25,21 @@ export default function ModelsList({ refreshKey }: Props) {
       ) : models.length === 0 ? (
         <p className="text-gray-400 text-sm">No trained models yet. Upload training data above to get started.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs uppercase text-gray-400 bg-gray-800">
+            <thead className="text-xs uppercase text-gray-400 bg-gray-800/60">
               <tr>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Size</th>
-                <th className="px-3 py-2">Columns</th>
+                <th className="px-3 py-2.5 font-medium">Name</th>
+                <th className="px-3 py-2.5 font-medium">Size</th>
+                <th className="px-3 py-2.5 font-medium">Columns</th>
               </tr>
             </thead>
             <tbody>
               {models.map((m) => (
-                <tr key={m.name} className="border-b border-gray-800 hover:bg-gray-800/50">
-                  <td className="px-3 py-2 font-medium">{m.name}</td>
-                  <td className="px-3 py-2 text-gray-400">{m.size}</td>
-                  <td className="px-3 py-2 text-gray-400">{m.columns}</td>
+                <tr key={m.name} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="px-3 py-2.5 font-medium">{m.name}</td>
+                  <td className="px-3 py-2.5 text-gray-400">{m.size}</td>
+                  <td className="px-3 py-2.5 text-gray-400">{m.columns}</td>
                 </tr>
               ))}
             </tbody>

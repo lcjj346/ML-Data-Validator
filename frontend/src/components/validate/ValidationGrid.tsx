@@ -27,7 +27,6 @@ export default function ValidationGrid({
   const modifiedSet = useMemo(() => new Set(modifiedCells), [modifiedCells]);
 
   const columnDefs = useMemo<ColDef[]>(() => {
-    // Index column
     const cols: ColDef[] = [
       {
         headerName: '#',
@@ -51,14 +50,14 @@ export default function ValidationGrid({
           ? (params: CellClassParams) => {
               const key = `${params.node.rowIndex}_${col}`;
               if (modifiedSet.has(key)) {
-                return { backgroundColor: '#ff8c00', color: '#ffffff' };
+                return { borderLeft: '3px solid #f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fbbf24' };
               }
               const valid = cellValidity[key];
               if (valid === true) {
-                return { backgroundColor: '#28a745', color: '#ffffff' };
+                return { borderLeft: '3px solid #22c55e', backgroundColor: 'rgba(34,197,94,0.1)', color: '#e5e7eb' };
               }
               if (valid === false) {
-                return { backgroundColor: '#dc3545', color: '#ffffff' };
+                return { borderLeft: '3px solid #ef4444', backgroundColor: 'rgba(239,68,68,0.1)', color: '#e5e7eb' };
               }
               return null;
             }
@@ -92,7 +91,7 @@ export default function ValidationGrid({
 
   return (
     <Collapsible title="Validation Results Table" defaultOpen={true}>
-      <div className="ag-theme-alpine-dark" style={{ height: 400, width: '100%' }}>
+      <div className="ag-theme-alpine-dark rounded-lg overflow-hidden" style={{ height: 400, width: '100%' }}>
         <AgGridReact
           ref={gridRef}
           rowData={data}
@@ -102,15 +101,15 @@ export default function ValidationGrid({
           animateRows={false}
         />
       </div>
-      <div className="flex gap-4 mt-2 text-xs text-gray-400">
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#28a745' }} /> Valid
+      <div className="flex gap-5 mt-3 text-xs text-gray-400">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#22c55e' }} /> Valid
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#dc3545' }} /> Invalid
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }} /> Invalid
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#ff8c00' }} /> Manually edited
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }} /> Manually edited
         </span>
       </div>
     </Collapsible>
