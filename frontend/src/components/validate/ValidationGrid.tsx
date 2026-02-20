@@ -82,7 +82,7 @@ export default function ValidationGrid({
   const defaultColDef = useMemo(
     () => ({
       flex: 1,
-      minWidth: 100,
+      minWidth: 180,
       filter: false,
       suppressHeaderMenuButton: true,
     }),

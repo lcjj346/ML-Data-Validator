@@ -43,12 +43,19 @@ body {
 .ag-theme-alpine-dark {
   --ag-background-color: #111827;
   --ag-header-background-color: #1f2937;
+  --ag-header-foreground-color: #f3f4f6;
   --ag-odd-row-background-color: #0f172a;
   --ag-row-hover-color: #1e293b;
   --ag-border-color: #374151;
   --ag-input-focus-border-color: #6366f1;
   --ag-data-color: #e5e7eb;
   --ag-input-border-color: #4b5563;
+}
+
+/* AG Grid v35 header text - force bright white */
+.ag-theme-alpine-dark .ag-header-cell-text {
+  color: #f3f4f6 !important;
+  font-weight: 600 !important;
 }
 
 /* AG Grid cell editing - ensure dark bg + light text */

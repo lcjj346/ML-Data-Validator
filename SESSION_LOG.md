@@ -250,6 +250,28 @@
 
 ---
 
+### 2026-02-19 (Frontend UI & Cleanup)
+
+#### Part 1: Layout & Grid Improvements
+- **`frontend/src/App.tsx`** — Changed max width from `max-w-7xl` to `max-w-[95vw]` for a wider, more responsive layout
+- **`frontend/src/components/validate/ValidationGrid.tsx`** — Increased AG Grid default `minWidth` from `100` to `180` for more readable column widths
+
+#### Part 2: AG Grid Header Text Fix
+- **`frontend/src/index.css`** — Fixed invisible/dim header text in AG Grid v35 dark theme:
+  - Added `--ag-header-foreground-color: #f3f4f6`
+  - Added `.ag-header-cell-text` override: `color: #f3f4f6 !important; font-weight: 600 !important`
+
+#### Part 3: Cleanup
+- **`app.py`** — Deleted legacy Streamlit app (project fully migrated to React frontend)
+- **`requirements.txt`** — Removed legacy `streamlit>=1.28.0` and `streamlit-aggrid>=0.3.4` dependencies
+- **`models/base_model.pkl`** — Retrained base model
+
+- **Files:** `frontend/src/App.tsx`, `frontend/src/components/validate/ValidationGrid.tsx`, `frontend/src/index.css`, `requirements.txt`, `models/base_model.pkl`, `app.py` (deleted)
+- **Tested:** Yes - inferred from committed changes
+- **Notes:** Project now fully decoupled from Streamlit; React frontend is the sole UI
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:

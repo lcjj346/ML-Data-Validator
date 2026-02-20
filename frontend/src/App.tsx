@@ -8,7 +8,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('validate');
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-[95vw] mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">

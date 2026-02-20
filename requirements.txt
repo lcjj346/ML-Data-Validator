@@ -35,9 +35,3 @@ joblib>=1.3.0               # Model serialization for validators
 # ============================================================================
 pytest>=7.0.0               # Test framework
 pytest-cov>=4.0.0           # Coverage reporting (optional)
-
-# ============================================================================
-# Legacy (kept for reference, can be removed)
-# ============================================================================
-streamlit>=1.28.0           # Old UI framework (app.py)
-streamlit-aggrid>=0.3.4     # Old interactive grid
