@@ -16,7 +16,7 @@ import pandas as pd
 from typing import List, Tuple, Optional, Dict
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from ml.feature_extractor import GenericFeatureExtractor
 
@@ -41,6 +41,9 @@ class UnifiedMLValidator:
     # Columns requiring high similarity for corrections (to avoid random suggestions)
     HIGH_SIMILARITY_COLUMNS = ['phone', 'email']
     HIGH_SIMILARITY_THRESHOLD = 0.85  # 85% similarity required
+
+    # Regularization strengths to try during hyperparameter tuning
+    C_GRID = [0.01, 0.1, 1.0, 10.0, 100.0]
 
     # Base model validation rules (hardcoded for known columns)
     VALIDATION_RULES = {
@@ -241,11 +244,9 @@ class UnifiedMLValidator:
             X = [self.feature_extractor.extract_features(text, col) for text in all_texts]
             y = all_labels
 
-            # Initialize column-specific model and scaler
-            self.column_models[col] = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
+            # Initialize scaler
             self.column_scalers[col] = StandardScaler()
 
-            # Train/test split
             col_metrics = {
                 'total_samples': len(all_texts),
                 'valid_count': len(valid_values),
@@ -262,13 +263,35 @@ class UnifiedMLValidator:
                 col_metrics['train_size'] = len(X_train)
                 col_metrics['test_size'] = len(X_test)
 
-                # Fit scaler and model
+                # Fit scaler on training data only
                 X_train_scaled = self.column_scalers[col].fit_transform(X_train)
                 X_test_scaled = self.column_scalers[col].transform(X_test)
 
-                self.column_models[col].fit(X_train_scaled, y_train)
+                # Tune regularization strength C via cross-validation
+                # Adaptive folds: at most 5, bounded by smallest class count
+                min_class_count = min(
+                    sum(1 for yi in y_train if yi == 1),
+                    sum(1 for yi in y_train if yi == 0),
+                )
+                n_cv = min(5, min_class_count)
 
-                # Evaluate
+                if n_cv >= 2:
+                    base_lr = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
+                    grid = GridSearchCV(base_lr, {'C': self.C_GRID}, cv=n_cv, scoring='f1', n_jobs=-1, refit=True)
+                    grid.fit(X_train_scaled, y_train)
+                    self.column_models[col] = grid.best_estimator_
+                    col_metrics['best_C'] = grid.best_params_['C']
+                    col_metrics['cv_f1_score'] = round(grid.best_score_, 4)
+                    print(f"  Best C: {grid.best_params_['C']} (CV F1: {grid.best_score_:.1%})")
+                else:
+                    # Not enough samples per class for CV - use default C
+                    lr = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
+                    lr.fit(X_train_scaled, y_train)
+                    self.column_models[col] = lr
+                    col_metrics['best_C'] = 1.0
+                    col_metrics['cv_f1_score'] = None
+
+                # Evaluate on held-out test set
                 y_train_pred = self.column_models[col].predict(X_train_scaled)
                 y_test_pred = self.column_models[col].predict(X_test_scaled)
 
@@ -279,12 +302,16 @@ class UnifiedMLValidator:
                 print(f"  Test accuracy: {col_metrics['test_accuracy']:.1%}")
 
             else:
-                # Too small for split - train on all
+                # Too small for split - train on all data
                 col_metrics['used_split'] = False
                 col_metrics['small_dataset_warning'] = True
+                col_metrics['best_C'] = 1.0
+                col_metrics['cv_f1_score'] = None
 
                 X_scaled = self.column_scalers[col].fit_transform(X)
-                self.column_models[col].fit(X_scaled, y)
+                lr = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
+                lr.fit(X_scaled, y)
+                self.column_models[col] = lr
 
                 y_pred = self.column_models[col].predict(X_scaled)
                 col_metrics.update(self._calculate_metrics(y, y_pred, 'train'))

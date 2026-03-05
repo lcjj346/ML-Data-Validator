@@ -272,6 +272,41 @@
 
 ---
 
+### 2026-02-20 (Logistic Regression Tuning)
+
+#### Part 1: Hyperparameter Tuning via GridSearchCV
+- **`ml/validator.py`** — Replaced fixed `LogisticRegression(C=1.0)` with `GridSearchCV` tuning over `C = [0.01, 0.1, 1.0, 10.0, 100.0]`
+  - Adaptive CV folds: up to 5, bounded by smallest class count per column
+  - Falls back to default C=1.0 if not enough samples per class for CV
+  - Stores `best_C` and `cv_f1_score` in training metrics per column
+
+#### Part 2: Frontend Metrics Display
+- **`frontend/src/types/index.ts`** — Added `best_C?: number` and `cv_f1_score?: number` to `ColumnMetrics`
+- **`frontend/src/components/train/TrainingMetrics.tsx`** — Added "Hyperparameter Tuning (GridSearchCV)" section showing Best C and CV F1 Score after training
+
+#### Part 3: Base Model Retrained
+- Retrained `models/base_model.pkl` with tuned C values
+
+#### Tuning Results:
+| Column | Best C | CV F1 | Test Accuracy |
+|--------|--------|-------|---------------|
+| name | 100.0 | 88.2% | 85.8% |
+| email | 0.1 | 95.5% | 93.6% |
+| phone | 10.0 | 95.8% | 97.2% |
+| country | 100.0 | 89.7% | 86.7% |
+| age | 10.0 | 92.5% | 92.2% |
+| address | 1.0 | 95.7% | 94.0% |
+| blood_sugar | 10.0 | 96.2% | 97.2% |
+
+#### Part 4: README Cleanup
+- **`README.md`** — Removed stale reference to deleted `app.py`
+
+- **Files:** `ml/validator.py`, `frontend/src/types/index.ts`, `frontend/src/components/train/TrainingMetrics.tsx`, `models/base_model.pkl`, `README.md`
+- **Tested:** Pending - run `python run.py` + `cd frontend && npm run dev` to verify tuning metrics display in Train tab
+- **Notes:** email performs best with heavy regularization (C=0.1 — strict patterns); name/country need almost none (C=100 — highly varied data)
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:

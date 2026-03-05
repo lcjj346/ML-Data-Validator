@@ -112,8 +112,7 @@ ML-Data-Validator/
 ├── test_data/                   # Sample test CSVs
 ├── tests/                       # Pytest test suite (30 tests)
 ├── run.py                       # Entry point (uvicorn)
-├── requirements.txt             # Python dependencies
-└── app.py                       # Old Streamlit app (kept for reference)
+└── requirements.txt             # Python dependencies
 ```
 
 ## Tech Stack

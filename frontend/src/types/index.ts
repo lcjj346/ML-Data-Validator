@@ -57,6 +57,8 @@ export interface ColumnMetrics {
   test_accuracy?: number;
   test_f1?: number;
   test_confusion_matrix?: number[][];
+  best_C?: number;
+  cv_f1_score?: number;
 }
 
 export interface TrainingMetrics {

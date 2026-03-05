@@ -73,7 +73,17 @@ export default function TrainingMetrics({ metrics }: Props) {
                 {m.test_confusion_matrix && <ConfusionMatrix cm={m.test_confusion_matrix} />}
               </div>
             </div>
-          ) : (
+          ) : null}
+          {m.used_split && (m.best_C != null || m.cv_f1_score != null) ? (
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <p className="text-xs font-semibold text-gray-400 mb-2">Hyperparameter Tuning (GridSearchCV)</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Metric label="Best C (Regularization)" value={m.best_C ?? 'N/A'} />
+                <Metric label="CV F1 Score" value={m.cv_f1_score != null ? `${(m.cv_f1_score * 100).toFixed(1)}%` : 'N/A'} />
+              </div>
+            </div>
+          ) : null}
+          {!m.used_split && (
             <div>
               <div className="glass-card border-yellow-500/30 p-3 text-yellow-300 text-xs mb-2">
                 Dataset too small for train/test split. Metrics may be overfit.
