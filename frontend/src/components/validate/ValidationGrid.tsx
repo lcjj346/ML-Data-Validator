@@ -32,6 +32,8 @@ export default function ValidationGrid({
         headerName: '#',
         valueGetter: (p) => (p.node?.rowIndex ?? 0) + 1,
         width: 50,
+        minWidth: 40,
+        maxWidth: 60,
         editable: false,
         sortable: false,
         cellStyle: { textAlign: 'center', color: '#9ca3af' },

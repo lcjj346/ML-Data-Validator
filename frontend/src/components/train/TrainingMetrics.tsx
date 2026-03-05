@@ -5,15 +5,6 @@ interface Props {
   metrics: TMetrics;
 }
 
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="glass-card p-3 text-center hover:bg-white/[0.07] transition-colors">
-      <div className="text-gray-400 text-xs uppercase tracking-wide mb-1">{label}</div>
-      <div className="text-lg font-bold">{value}</div>
-    </div>
-  );
-}
-
 function ConfusionMatrix({ cm }: { cm: number[][] }) {
   return (
     <div className="mt-2">
@@ -43,59 +34,98 @@ function ConfusionMatrix({ cm }: { cm: number[][] }) {
   );
 }
 
+function accColor(value: number | undefined): string {
+  if (value == null) return 'text-gray-500';
+  const pct = value * 100;
+  if (pct >= 90) return 'text-green-400';
+  if (pct >= 75) return 'text-yellow-400';
+  return 'text-red-400';
+}
+
+function fmtPct(value: number | undefined): string {
+  if (value == null) return '—';
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 export default function TrainingMetrics({ metrics }: Props) {
+  const entries = Object.entries(metrics);
+  const columnsWithMatrix = entries.filter(([, m]) => m.test_confusion_matrix);
+
   return (
     <div>
-      <h3 className="text-lg font-bold mb-3">Training Metrics</h3>
-      {Object.entries(metrics).map(([colName, m]) => (
-        <Collapsible key={colName} title={`Column: ${colName}`} defaultOpen={true}>
-          <div className="grid grid-cols-3 gap-3 mb-3">
-            <Metric label="Unique Valid" value={m.unique_valid ?? 'N/A'} />
-            <Metric label="Total Samples" value={m.total_samples ?? 'N/A'} />
-            <Metric label="Test Size" value={m.used_split ? (m.test_size ?? 'N/A') : 'N/A (small)'} />
-          </div>
+      <h3 className="text-lg font-bold mb-4">Training Results</h3>
 
-          {m.used_split ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs font-semibold text-gray-400 mb-2">Train Set</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Metric label="Accuracy" value={m.train_accuracy != null ? `${(m.train_accuracy * 100).toFixed(1)}%` : 'N/A'} />
-                  <Metric label="F1 Score" value={m.train_f1 != null ? `${(m.train_f1 * 100).toFixed(1)}%` : 'N/A'} />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-400 mb-2">Test Set</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Metric label="Accuracy" value={m.test_accuracy != null ? `${(m.test_accuracy * 100).toFixed(1)}%` : 'N/A'} />
-                  <Metric label="F1 Score" value={m.test_f1 != null ? `${(m.test_f1 * 100).toFixed(1)}%` : 'N/A'} />
-                </div>
-                {m.test_confusion_matrix && <ConfusionMatrix cm={m.test_confusion_matrix} />}
-              </div>
-            </div>
-          ) : null}
-          {m.used_split && (m.best_C != null || m.cv_f1_score != null) ? (
-            <div className="mt-3 pt-3 border-t border-white/10">
-              <p className="text-xs font-semibold text-gray-400 mb-2">Hyperparameter Tuning (GridSearchCV)</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Metric label="Best C (Regularization)" value={m.best_C ?? 'N/A'} />
-                <Metric label="CV F1 Score" value={m.cv_f1_score != null ? `${(m.cv_f1_score * 100).toFixed(1)}%` : 'N/A'} />
-              </div>
-            </div>
-          ) : null}
-          {!m.used_split && (
-            <div>
-              <div className="glass-card border-yellow-500/30 p-3 text-yellow-300 text-xs mb-2">
-                Dataset too small for train/test split. Metrics may be overfit.
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Metric label="Accuracy" value={m.train_accuracy != null ? `${(m.train_accuracy * 100).toFixed(1)}%` : 'N/A'} />
-                <Metric label="F1 Score" value={m.train_f1 != null ? `${(m.train_f1 * 100).toFixed(1)}%` : 'N/A'} />
-              </div>
-            </div>
-          )}
-        </Collapsible>
-      ))}
+      <div className="glass-card overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-white text-xs uppercase border-b border-white/10">
+              <th className="text-left px-4 py-3 font-semibold tracking-wide">Column</th>
+              <th className="text-right px-4 py-3 font-semibold tracking-wide">Samples</th>
+              <th className="text-right px-4 py-3 font-semibold tracking-wide">Train Acc</th>
+              <th className="text-right px-4 py-3 font-semibold tracking-wide">Test Acc</th>
+              <th className="text-right px-4 py-3 font-semibold tracking-wide">Test F1</th>
+              <th className="text-right px-4 py-3 font-semibold tracking-wide">Best C</th>
+              <th className="text-right px-4 py-3 font-semibold tracking-wide">CV F1</th>
+              <th className="text-center px-4 py-3 font-semibold tracking-wide">Split</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map(([colName, m]) => (
+              <tr
+                key={colName}
+                className="border-b border-white/5 hover:bg-white/5 transition-colors"
+              >
+                <td className="px-4 py-2.5">
+                  <span className="font-mono text-indigo-300">{colName}</span>
+                </td>
+                <td className="px-4 py-2.5 text-right text-gray-300">
+                  {m.total_samples ?? '—'}
+                </td>
+                <td className={`px-4 py-2.5 text-right font-medium ${accColor(m.train_accuracy)}`}>
+                  {fmtPct(m.train_accuracy)}
+                </td>
+                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.test_accuracy) : 'text-gray-500'}`}>
+                  {m.used_split ? fmtPct(m.test_accuracy) : '—'}
+                </td>
+                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.test_f1) : 'text-gray-500'}`}>
+                  {m.used_split ? fmtPct(m.test_f1) : '—'}
+                </td>
+                <td className="px-4 py-2.5 text-right text-gray-300">
+                  {m.best_C ?? '—'}
+                </td>
+                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.cv_f1_score) : 'text-gray-500'}`}>
+                  {m.used_split ? fmtPct(m.cv_f1_score) : '—'}
+                </td>
+                <td className="px-4 py-2.5 text-center">
+                  {m.used_split ? (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400 border border-green-500/30">
+                      yes
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                      small dataset
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {columnsWithMatrix.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {columnsWithMatrix.map(([colName, m]) => (
+            <Collapsible
+              key={colName}
+              title={`Confusion Matrix: ${colName}`}
+              defaultOpen={false}
+            >
+              <ConfusionMatrix cm={m.test_confusion_matrix!} />
+            </Collapsible>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

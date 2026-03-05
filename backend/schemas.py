@@ -48,11 +48,13 @@ class CorrectionItem(BaseModel):
     suggested: str
     has_correction: bool
     reason: str
+    confidence: float = 0.0
 
 
 class ValidationResultsResponse(BaseModel):
     data: List[Dict[str, Any]]
     cell_validity: Dict[str, bool]  # "rowIdx_colName" -> bool
+    cell_confidence: Dict[str, float] = {}
     modified_cells: List[str]
     corrections: List[CorrectionItem]
     quality: float

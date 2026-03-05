@@ -1,0 +1,11 @@
+employee_id,department,job_title,employment_type,salary
+E041,IT,Engineer,Full-time,9000
+E042,Sales,Analyst,Full-time,7500
+E043,Finance,Intern,Full-time,3000
+E044,HR,Manager,Freelance,11000
+E045,Marketing,Director,Full-time,-2000
+E046,Operations,Specialist,Part-time,5500
+E047,IT,Developer,Contract,8500
+E048,Administration,Coordinator,Part-time,4000
+E049,Finance,Associate,Full-time,6800
+E050,HR,Consultant,Remote,9500

@@ -34,6 +34,9 @@ async def upload_training_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Only CSV files are accepted")
 
     contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10MB.")
+
     try:
         df = pd.read_csv(io.BytesIO(contents))
     except Exception as e:
@@ -123,6 +126,21 @@ async def run_training(
         yield f"data: {json.dumps({'type': 'done', 'metrics': serializable_metrics})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+# ── Delete Model ─────────────────────────────────────────────
+
+@models_router.delete("/{model_name}")
+async def delete_model(model_name: str):
+    if model_name == "base_model":
+        raise HTTPException(status_code=403, detail="The base model cannot be deleted.")
+
+    model_path = os.path.join("models", f"{model_name}.pkl")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found.")
+
+    os.remove(model_path)
+    return {"ok": True, "deleted": model_name}
 
 
 # ── List Models ──────────────────────────────────────────────

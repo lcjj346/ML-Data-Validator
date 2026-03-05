@@ -95,6 +95,10 @@ export function getExportUrl(sessionId: string): string {
   return `${BASE}/validate/${sessionId}/export`;
 }
 
+export function getSummaryReportUrl(sessionId: string): string {
+  return `${BASE}/validate/${sessionId}/export-report`;
+}
+
 // ── Training ────────────────────────────────────────────────
 
 export async function uploadTrainingFile(file: File): Promise<TrainUploadInfo> {
@@ -146,4 +150,9 @@ export function runTraining(
 export async function listModels(): Promise<ModelInfo[]> {
   const res = await fetch(`${BASE}/models`);
   return handleResponse<ModelInfo[]>(res);
+}
+
+export async function deleteModel(name: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${BASE}/models/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  return handleResponse<{ ok: boolean }>(res);
 }

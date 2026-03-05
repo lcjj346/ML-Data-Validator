@@ -23,11 +23,13 @@ export interface CorrectionItem {
   suggested: string;
   has_correction: boolean;
   reason: string;
+  confidence?: number;
 }
 
 export interface ValidationResults {
   data: Record<string, unknown>[];
   cell_validity: Record<string, boolean>;
+  cell_confidence: Record<string, number>;
   modified_cells: string[];
   corrections: CorrectionItem[];
   quality: number;

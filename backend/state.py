@@ -26,6 +26,7 @@ class Session:
 
         # Validation state
         self.cell_validity: Dict[str, bool] = {}  # "row_col" -> bool
+        self.cell_confidence: Dict[str, float] = {}  # "row_col" -> confidence
         self.modified_cells: set = set()  # set of "row_col" keys
         self.column_mappings: Dict[str, str] = {}
         self.corrections: list = []

@@ -55,6 +55,9 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Only CSV files are accepted")
 
     contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10MB.")
+
     try:
         df = pd.read_csv(io.BytesIO(contents))
     except Exception as e:
@@ -145,6 +148,7 @@ async def run_validation(session_id: str, model_name: str):
             for idx, (is_valid, confidence) in enumerate(results):
                 key = f"{idx}_{input_col}"
                 cell_validity[key] = is_valid
+                session.cell_confidence[key] = round(float(confidence), 3)
 
             # Get corrections for invalid cells
             for idx, row in df.iterrows():
@@ -155,6 +159,7 @@ async def run_validation(session_id: str, model_name: str):
 
                     suggested = corrected if (corrected and corrected != original) else original
                     has_correction = corrected is not None and corrected != original
+                    conf = session.cell_confidence.get(f"{idx}_{input_col}", 0.0)
 
                     all_corrections.append(
                         CorrectionItem(
@@ -165,6 +170,7 @@ async def run_validation(session_id: str, model_name: str):
                             suggested=suggested,
                             has_correction=has_correction,
                             reason=reason or "Unknown",
+                            confidence=conf,
                         ).model_dump()
                     )
 
@@ -196,6 +202,7 @@ async def get_results(session_id: str):
     return ValidationResultsResponse(
         data=df.fillna("").to_dict(orient="records"),
         cell_validity=session.cell_validity,
+        cell_confidence=session.cell_confidence,
         modified_cells=list(session.modified_cells),
         corrections=session.corrections,
         quality=quality,
@@ -291,6 +298,69 @@ async def export_csv(session_id: str):
     csv_bytes = export_df.to_csv(index=False).encode("utf-8")
 
     filename = f"validated_{session.filename}" if session.filename else "validated_data.csv"
+
+    return StreamingResponse(
+        io.BytesIO(csv_bytes),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ── Summary Report Export ────────────────────────────────────
+
+@router.get("/{session_id}/export-report")
+async def export_summary_report(session_id: str):
+    session = _get_session(session_id)
+    if session.df is None:
+        raise HTTPException(status_code=400, detail="No data in session")
+
+    df = session.df
+    cell_validity = session.cell_validity
+    corrections = session.corrections
+    column_mappings = session.column_mappings or {}
+
+    total_rows = len(df)
+    total_cells = total_rows * len(column_mappings)
+    valid_cells = sum(1 for v in cell_validity.values() if v)
+    invalid_cells = total_cells - valid_cells
+    quality = (valid_cells / total_cells * 100) if total_cells > 0 else 0
+
+    lines = []
+
+    # Section 1: Overview
+    lines.append("Section,Metric,Value")
+    lines.append(f"Overview,Total Rows,{total_rows}")
+    lines.append(f"Overview,Total Cells Validated,{total_cells}")
+    lines.append(f"Overview,Valid Cells,{valid_cells}")
+    lines.append(f"Overview,Invalid Cells,{invalid_cells}")
+    lines.append(f"Overview,Data Quality,{quality:.1f}%")
+
+    # Blank separator
+    lines.append("")
+
+    # Section 2: Per-column breakdown
+    lines.append("Column,Total Cells,Invalid Count,Invalid %,Corrections Available,Top Error Reason")
+    for input_col in column_mappings:
+        col_keys = [k for k in cell_validity if k.endswith(f"_{input_col}")]
+        col_total = len(col_keys)
+        col_invalid = sum(1 for k in col_keys if not cell_validity[k])
+        col_invalid_pct = (col_invalid / col_total * 100) if col_total > 0 else 0
+
+        col_corrections = [c for c in corrections if c["column"] == input_col]
+        corrections_available = sum(1 for c in col_corrections if c["has_correction"])
+
+        reasons = [c["reason"] for c in col_corrections if c.get("reason")]
+        top_reason = max(set(reasons), key=reasons.count) if reasons else ""
+        # Escape commas in the reason for CSV safety
+        top_reason_escaped = f'"{top_reason}"' if "," in top_reason else top_reason
+
+        lines.append(
+            f"{input_col},{col_total},{col_invalid},{col_invalid_pct:.1f}%,"
+            f"{corrections_available},{top_reason_escaped}"
+        )
+
+    csv_bytes = "\n".join(lines).encode("utf-8")
+    filename = f"validation_report_{session.filename}" if session.filename else "validation_report.csv"
 
     return StreamingResponse(
         io.BytesIO(csv_bytes),

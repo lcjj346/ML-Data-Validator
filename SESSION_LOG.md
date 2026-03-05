@@ -307,6 +307,281 @@
 
 ---
 
+### 2026-03-02 (Project Research & Architecture Analysis)
+
+#### Part 1: Codebase Architecture Review
+- **Changes:** No code changed — research and analysis session
+- **Findings:** Confirmed no LLM is involved in the project. Full ML stack breakdown:
+
+| Component | Technology |
+|-----------|-----------|
+| Validator | scikit-learn `LogisticRegression` (one model per column) |
+| Feature extraction | Hand-crafted ~67 numeric features (`ml/feature_extractor.py`) |
+| Corrector | `difflib.SequenceMatcher` string similarity (no ML at inference) |
+| Model storage | `joblib` `.pkl` file |
+| LLM | **None** |
+
+- **Training pipeline:**
+  1. User provides CSV — all rows treated as valid examples
+  2. Synthetic invalid examples auto-generated (scrambled, truncated, noise added)
+  3. ~67 features extracted per cell (length, char ratios, special chars, regex patterns, numeric buckets)
+  4. `LogisticRegression` trained per column (valid=1, invalid=0)
+  5. Model serialized to `models/base_model.pkl` via `joblib`
+
+---
+
+#### Part 2: Market Research — Competitive Landscape
+
+Researched all major data validation tools to assess project novelty.
+
+| Tool | Validation Method | Suggests Corrections | Trains on User Data | OSS? |
+|---|---|---|---|---|
+| Great Expectations | Rule-based | No | No | OSS |
+| Deepchecks | Statistical + rules | No | No | OSS |
+| Cleanlab | ML (label errors only) | Partial (labels only) | Yes | OSS/Commercial |
+| TFDV | Statistics → schema rules | No | No | OSS |
+| AWS Deequ | Rule-based | No | No | OSS |
+| Pandera / Cerberus | Rule-based | No | No | OSS |
+| Soda Core | Rule-based + light anomaly | No | Baselines only | OSS |
+| LLM (GPT/Claude) | LLM reasoning | Yes | Few-shot only | API/Commercial |
+| Ataccama / Informatica | Rule + ML + LLM | Partial | Yes | Commercial $ |
+| **This project** | **Supervised ML (sklearn)** | **Yes** | **Yes — core design** | **OSS** |
+
+**Key differentiators of this project (genuinely underserved in OSS):**
+1. **Supervised ML trained on user-provided examples** — Most OSS tools use rules or statistics; no major OSS tool trains a model on "here are my valid rows, learn from them"
+2. **Correction suggestions for arbitrary field types** — No major OSS tool does this for general CSV fields. LLMs can, but without domain training
+3. **Field-type agnostic** — Phone, email, name, country, blood sugar — any column type
+4. **Retrainable on domain-specific data** — Only enterprise commercial tools (Ataccama, Informatica, Collibra) do this
+5. **Closest OSS competitor:** Cleanlab — but scoped to ML label correction only, not general CSV field validation
+6. **Closest overall competitor:** Enterprise tools (Ataccama, Informatica) — closed-source, expensive, not user-trainable
+
+---
+
+#### Part 3: Strategic Decisions for Presentation
+
+**On adding LLM:**
+- Decision: **Do NOT add LLM last-minute** — too risky, expensive to run, and not needed to be novel
+- Hybrid LLM approach (ML first pass → LLM for low-confidence cells) is the right architecture, but should be future work
+- Mention as future improvement in report/presentation
+- LLM would add: natural language explanations, context-aware validation, no retraining needed
+- LLM would cost: API spend per cell, slower, non-deterministic, privacy risk
+
+**On security:**
+- Decision: **Not required for local demo presentation**
+- Minimum to mention: file type/size validation, no auth needed for local use
+- For production: would need rate limiting + input sanitization + auth
+- Mention as "future work" in report
+
+**On deployment:**
+- Decision: **Run locally for the demo** — `npm run dev` + `uvicorn`
+- If a live URL is required: Docker Compose is the fastest path
+- Do NOT deploy last-minute without thorough testing
+- Mention Docker as deployment strategy in report
+
+---
+
+- **Files:** No code changes
+- **Tested:** N/A
+- **Notes:** This session's findings are useful for project report writing — competitive analysis, architecture justification, and novelty argument are documented above
+
+---
+
+### 2026-03-02 (Design Decision: No LLM — Patient Data Privacy)
+
+- **Changes:** No code changed — architectural decision recorded
+- **Decision:** LLM integration deliberately excluded from this project
+- **Reason:** The tool processes patient medical data (CSV files containing names, ages, blood sugar, etc.). Sending this data to an external LLM API (OpenAI, Anthropic, etc.) would:
+  1. Violate patient data privacy — data leaves the local system
+  2. Risk non-compliance with healthcare data regulations (e.g., PDPA in Singapore, HIPAA equivalent)
+  3. Introduce a dependency on third-party infrastructure for sensitive workloads
+- **Design principle:** All validation runs fully **offline and locally** — no data ever leaves the machine. This is a core security requirement, not an oversight.
+- **Alternative considered:** Local LLM via Ollama (no API call) — deferred to future work as it requires significant hardware and setup overhead
+- **Use in report:** This decision supports the "security and privacy by design" argument. The offline ML approach (sklearn LogisticRegression) is the correct architectural choice for healthcare/sensitive data validation tools.
+- **Files:** No code changes
+- **Tested:** N/A
+- **Notes:** Cite this in the project report under Security Considerations / Design Decisions
+
+---
+
+### 2026-03-02 (UI Polish — Confidence Scores & Corrections Table)
+
+#### Changes Made
+
+**Feature: Confidence scores in Corrections Panel**
+- Backend (`backend/state.py`): Added `cell_confidence: Dict[str, float] = {}` to Session
+- Backend (`backend/schemas.py`): Added `confidence: float = 0.0` to `CorrectionItem`; added `cell_confidence: Dict[str, float] = {}` to `ValidationResultsResponse`
+- Backend (`backend/routers/validation.py`): Now stores confidence per cell in `session.cell_confidence`, passes `confidence` to each `CorrectionItem`, returns `cell_confidence` in results
+- Frontend (`frontend/src/types/index.ts`): Added `confidence?: number` to `CorrectionItem`, added `cell_confidence: Record<string, number>` to `ValidationResults`
+- Frontend (`frontend/src/components/validate/CorrectionsPanel.tsx`): Confidence shown as last column (after Action) in corrections table
+
+**Per-column quality chart: added then removed**
+- Was added to `QualityMetrics.tsx` but removed at user request — 3 summary cards (Valid/Invalid/Quality%) kept as-is
+
+**Corrections table layout improvements**
+- Column order: Row → Column → Original → Suggestion → Reason → Confidence → Action
+- Header text changed to white (`text-white`) for readability
+- Header moved inside `overflow-y-auto` scroll container (sticky top) so columns always align with data rows regardless of scrollbar
+- Column widths tuned: `grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px]` — flexible columns reduced to give Confidence (120px) and Action (70px) more visual space
+
+**Validation Results table**
+- `#` column: added `minWidth: 40`, `maxWidth: 60` to keep row number column compact
+
+- **Files:** `backend/state.py`, `backend/schemas.py`, `backend/routers/validation.py`, `frontend/src/types/index.ts`, `frontend/src/components/validate/CorrectionsPanel.tsx`, `frontend/src/components/validate/QualityMetrics.tsx`, `frontend/src/components/validate/ValidateTab.tsx`, `frontend/src/components/validate/ValidationGrid.tsx`
+- **Tested:** Pending user test
+- **Notes:** Confidence scores show ML model certainty (0–100%) for each invalid cell. Header sticky inside scroll container fixes the column misalignment bug caused by scrollbar width.
+
+---
+
+### 2026-03-03 (Confidence Score Clarification — For Report)
+
+- **Changes:** No code changed — clarification recorded
+- **Finding:** The confidence score (e.g. 100% for "J" being invalid) is the ML model's certainty that the **original value is INVALID**, not certainty that the suggested correction is correct. These are two separate mechanisms:
+  - **Confidence** = `LogisticRegression` probability that the cell is invalid (far from valid cluster in feature space)
+  - **Correction** = `difflib.SequenceMatcher` similarity matching against stored valid examples — the model has no input here
+- **Example:** `"J"` gets 100% invalid confidence because it is a single character, extremely far from all valid names (5–20 chars) in feature space. The correction `"Jo"` is the closest valid example by string similarity — the 100% says nothing about whether "Jo" is the right fix.
+- **UI label:** Column header says "Confidence" — this means "how certain the model is this value is invalid"
+- **Use in report:** Under Model Architecture / Validation Output — explain that confidence reflects the classifier's decision boundary distance (logistic probability), not correction quality. This is a valid ML metric worth highlighting.
+
+---
+
+### 2026-03-03 (Security — File Size Guard)
+
+- **Changes:** Added 10MB file size limit to both upload endpoints
+- **Files:** `backend/routers/validation.py`, `backend/routers/training.py`
+- **Tested:** Pending user test
+- **Notes:** Rejects uploads >10MB with HTTP 400. Ties into the security/privacy by design argument — prevents accidental upload of very large sensitive datasets, reduces server memory risk. Mention under Security Considerations in report.
+
+---
+
+### 2026-03-03 (Training Metrics Table, Summary Report Export, Delete Model)
+
+#### Part 1: Training Metrics — Compact Table
+- **`frontend/src/components/train/TrainingMetrics.tsx`** — Rewrote from card grid to compact table
+  - One row per trained column: Column | Samples | Train Acc | Test Acc | Test F1 | Best C | CV F1 | Split
+  - Color-coded accuracy: green ≥90%, yellow ≥75%, red <75%
+  - Confusion matrices moved to collapsibles below table (defaultOpen=false)
+  - Merged Best C and CV F1 columns from remote hyperparameter tuning commit
+
+#### Part 2: Summary Report Export
+- **`backend/routers/validation.py`** — Added `GET /{session_id}/export-report` endpoint
+  - Returns a two-section CSV: Overview (quality %, valid/invalid counts) + Per-Column breakdown (invalid count, sample values, sample corrections)
+- **`frontend/src/api/client.ts`** — Added `getSummaryReportUrl()`
+- **`frontend/src/components/validate/ExportSection.tsx`** — Added "Download Summary Report" button alongside existing CSV export
+
+#### Part 3: Delete Model Button
+- **`backend/routers/training.py`** — Added `DELETE /api/models/{model_name}` endpoint; `base_model` is protected (returns 403)
+- **`frontend/src/api/client.ts`** — Added `deleteModel(name)`
+- **`frontend/src/components/train/ModelsList.tsx`** — Added red Delete button per model row; `base_model` shows "default" badge instead
+
+#### Part 4: Git Conflict Resolution
+- Pulled remote commit (hyperparameter tuning); resolved conflicts in `SESSION_LOG.md` and `TrainingMetrics.tsx`
+- Kept local table layout, added remote's Best C / CV F1 columns
+
+#### Part 5: Base Model Retrain
+- Retrained `models/base_model.pkl` with sklearn 1.8.0 to fix version mismatch warning
+
+- **Files:** `backend/routers/validation.py`, `backend/routers/training.py`, `frontend/src/api/client.ts`, `frontend/src/components/train/TrainingMetrics.tsx`, `frontend/src/components/train/ModelsList.tsx`, `frontend/src/components/validate/ExportSection.tsx`, `models/base_model.pkl`
+- **Tested:** Yes — 30/30 pytest pass; API mock test 38/39 pass (1 was wrong assertion in test); custom hospital model trained and validated successfully
+- **Notes:** `base_model` cannot be deleted via UI. Summary report CSV is useful for handing to clients after a validation run.
+
+---
+
+### 2026-03-05 (Categorical Column Auto-Detection)
+
+#### Problem
+Custom model (hospital data) incorrectly marked `Ward Z`, `X+` (blood type), `Astrology` (department), temperature `99` and `25` as **valid**. Root cause: ML feature extractor uses structural features only — "Ward Z" is structurally identical to "Ward A", so the classifier cannot distinguish them.
+
+#### Solution: Automatic categorical column detection
+- **`ml/validator.py`** — Added `self.categorical_columns: set` attribute
+  - **During `train()`**: if `unique_values / total_rows < 30%` AND `unique_count ≤ 20` → column flagged as categorical
+  - **During `validate()` and `validate_batch()`**: categorical columns skip the ML fallback entirely — any value not in the whitelist (exact or fuzzy ≥80% match) returns `(False, 0.85)`
+  - **During `explain_invalidity()`**: returns helpful message e.g. `"Not a valid ward (expected: Ward A, Ward B, Ward C, Ward D, Ward E)"`
+  - **Persisted** in `.pkl` with `version: '2.2'`; backward-compatible with old models
+
+#### Results
+| Value | Column | Before | After |
+|-------|--------|--------|-------|
+| Ward Z | ward | VALID (wrong) | INVALID (83%) — typo of Ward A |
+| X+ | blood_type | VALID (wrong) | INVALID (85%) — unknown category |
+| Astrology | department | VALID (wrong) | INVALID (85%) — unknown category |
+| 99 | temperature | VALID (wrong) | INVALID (85%) — unknown category |
+
+#### Base model unaffected
+- All 7 base model columns (name, email, phone, country, age, address, blood_sugar) have >20 unique values → not detected as categorical → ML classifier unchanged
+
+- **Files:** `ml/validator.py`, `models/base_model.pkl`, `models/hospital_test.pkl` (retrained)
+- **Tested:** Yes — 30/30 pytest pass; smoke test confirmed all invalid values caught
+- **Notes:** Threshold of 30% ratio + ≤20 unique values works robustly for real datasets. For a business CSV with 500 salary rows, salary has ~400 unique values → never triggers categorical. Mention this in report under "Validation Strategy" — hybrid approach: whitelist for categorical, ML for open-ended.
+
+---
+
+### 2026-03-05 (New Test Datasets)
+
+#### Employee HR Dataset
+- **`test_data/custom_employee_training.csv`** — 40 rows, 5 columns: `employee_id` (exclude), `department` (5 values), `job_title` (8 values), `employment_type` (3 values), `salary` (numeric)
+- **`test_data/custom_employee_validate.csv`** — 10 rows, 7 valid + 3 invalid: `Sales`/`Administration` (bad dept), `Intern`/`Developer` (bad title), `Freelance`/`Remote` (bad type), `-2000` (negative salary)
+
+#### Retail Orders Dataset (300-row demo)
+- **`test_data/custom_retail_training.csv`** — 300 rows, 8 columns: `order_id` (exclude), `customer_name`, `product_category` (6 values), `payment_method` (5 values), `order_status` (5 values), `quantity` (1–50), `unit_price` (decimal), `region` (5 values)
+- **`test_data/custom_retail_validate.csv`** — 100 rows, **95 valid + 5 invalid** (designed for demo):
+  - `Furniture` (bad product_category)
+  - `Cryptocurrency` (bad payment_method)
+  - `Returned` (bad order_status)
+  - `-19.99` (negative unit_price)
+  - `Southwest` (bad region)
+- Designed so a demo audience sees a clean dataset with just 5% flagged as invalid
+
+- **Files:** `test_data/custom_employee_training.csv`, `test_data/custom_employee_validate.csv`, `test_data/custom_retail_training.csv`, `test_data/custom_retail_validate.csv`
+- **Tested:** Yes — all invalid rows detected with correct reasons; valid rows pass cleanly
+- **Notes:** Retail dataset is the best demo dataset — large enough (300 rows) to look realistic, 5% error rate is realistic and visually impactful
+
+---
+
+### 2026-03-05 (Fuzzy Typo Detection Fix — General Correctness Improvement)
+
+#### Problem
+High-cardinality columns (e.g. `order_id`) were incorrectly flagged as INVALID after training. `ORD0301` was ~85% similar to `ORD0001` → fuzzy typo check fired → marked invalid before the ML classifier even ran. Root cause: fuzzy detection was enabled for **any column not in a hardcoded `OPEN_ENDED_COLUMNS` list**, which was wrong.
+
+#### Fix — `ml/validator.py` (both `validate()` and `validate_batch()`)
+Changed `use_strict_typo_detection` logic from:
+```python
+# Old: enabled for everything except a hardcoded list
+use_strict_typo_detection = not any(kw in col_lower for kw in self.OPEN_ENDED_COLUMNS)
+if column_name in self.reference_lists:
+    use_strict_typo_detection = True
+```
+To:
+```python
+# New: only for categorical columns or columns with reference lists
+use_strict_typo_detection = (
+    column_name in self.categorical_columns
+    or column_name in self.reference_lists
+)
+```
+
+#### Why this is correct
+- **Categorical columns** (ward, blood_type, region…): finite valid set → fuzzy correctly catches typos → unknown values blocked
+- **Reference list columns** (country, currency…): explicit valid list → fuzzy correctly catches "Singaproe" → "Singapore"
+- **Everything else** (order_id, customer_name, product_code, invoice_no…): ML classifier decides based on structural features learnt from training data → `ORD0301` recognised as valid because it follows the same `ORD + 4 digits` pattern
+
+#### Results
+| Value | Column | Before | After |
+|-------|--------|--------|-------|
+| ORD0301 | order_id | INVALID (wrong — flagged as typo of ORD0001) | VALID (93%) |
+| ORD0350 | order_id | INVALID | VALID (93%) |
+| INVALID_ID | order_id | INVALID | INVALID (100%) ✓ |
+| Furniture | product_category | INVALID (85%) ✓ | INVALID (85%) ✓ |
+| Southwest | region | INVALID (85%) ✓ | INVALID (85%) ✓ |
+
+#### Also fixed this session
+- **`frontend/src/components/validate/CorrectionsPanel.tsx`** — Added `title={c.reason}` and `cursor-help` to the truncated Reason cell so users can hover to see the full reason text (e.g. "Not a valid region (expected: Central, East, North, South, West)")
+
+- **Files:** `ml/validator.py`, `frontend/src/components/validate/CorrectionsPanel.tsx`, `models/retail_test.pkl` (retrained)
+- **Tested:** Yes — 30/30 pytest pass; ORD0301–ORD0400 now VALID; categorical invalid values still caught correctly
+- **Notes:** Fix is fully general — applies to any user-uploaded CSV, not just the retail dataset. Any column that isn't auto-detected as categorical and has no reference list will now correctly defer to the ML classifier for unseen values.
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:

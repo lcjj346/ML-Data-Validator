@@ -1,0 +1,101 @@
+order_id,customer_name,product_category,payment_method,order_status,quantity,unit_price,region
+ORD0301,Abigail Martin,Sports,Bank Transfer,Delivered,49,271.07,South
+ORD0302,Charlotte Carter,Electronics,Bank Transfer,Delivered,34,353.36,North
+ORD0303,Nicholas Koh,Electronics,Bank Transfer,Cancelled,13,288.48,South
+ORD0304,Joshua Anderson,Home,PayPal,Pending,44,106.67,Central
+ORD0305,Sofia Ng,Home,PayPal,Pending,30,70.31,West
+ORD0306,Elizabeth Adams,Electronics,Bank Transfer,Delivered,44,404.42,North
+ORD0307,Emily Miller,Electronics,Debit Card,Cancelled,5,27.42,East
+ORD0308,David Green,Electronics,Credit Card,Delivered,3,147.11,South
+ORD0309,Matthew Martin,Food,PayPal,Delivered,25,190.94,Central
+ORD0310,Matthew Thomas,Electronics,Debit Card,Cancelled,26,266.77,South
+ORD0311,James Lim,Furniture,PayPal,Cancelled,28,268.3,South
+ORD0312,Charlotte Young,Food,Debit Card,Shipped,13,469.01,North
+ORD0313,Michael Martin,Home,Credit Card,Processing,14,38.31,Central
+ORD0314,Michael Moore,Home,Credit Card,Processing,48,26.9,West
+ORD0315,Andrew Green,Clothing,Credit Card,Processing,33,496.76,South
+ORD0316,Nicholas Anderson,Home,Bank Transfer,Shipped,16,154.37,South
+ORD0317,Avery Jones,Books,Cash,Shipped,4,280.57,Central
+ORD0318,Isabella Thompson,Home,PayPal,Pending,23,471.08,West
+ORD0319,Avery Anderson,Sports,PayPal,Delivered,10,153.44,South
+ORD0320,Benjamin Allen,Clothing,Debit Card,Shipped,46,76.45,West
+ORD0321,Emma Baker,Books,PayPal,Cancelled,34,71.37,South
+ORD0322,Ryan Brown,Food,Credit Card,Delivered,24,50.77,South
+ORD0323,Emma Davis,Books,Bank Transfer,Cancelled,3,437.43,South
+ORD0324,Scarlett Baker,Clothing,PayPal,Processing,22,155.08,North
+ORD0325,Mia Williams,Sports,Credit Card,Delivered,16,349.33,South
+ORD0326,Emily Garcia,Home,Cryptocurrency,Shipped,25,235.79,East
+ORD0327,Harper Miller,Food,Bank Transfer,Delivered,30,53.81,West
+ORD0328,Kevin Brown,Food,Cash,Delivered,3,283.44,South
+ORD0329,Ava Lim,Food,Bank Transfer,Cancelled,38,361.4,East
+ORD0330,Ava Williams,Food,Debit Card,Delivered,37,417.51,West
+ORD0331,Ella Taylor,Food,PayPal,Delivered,30,88.27,East
+ORD0332,Joshua Teo,Sports,Bank Transfer,Delivered,12,458.86,Central
+ORD0333,Emma Scott,Electronics,Credit Card,Pending,49,8.16,South
+ORD0334,Andrew Chen,Sports,Debit Card,Pending,14,255.33,East
+ORD0335,Emma Mitchell,Sports,Bank Transfer,Delivered,43,246.48,North
+ORD0336,Benjamin Baker,Books,Credit Card,Pending,34,362.48,Central
+ORD0337,Nathan Lim,Home,PayPal,Processing,7,459.42,Central
+ORD0338,Ava Garcia,Clothing,Bank Transfer,Cancelled,17,408.52,East
+ORD0339,Emily Ng,Food,PayPal,Delivered,37,125.39,South
+ORD0340,Harper Ng,Sports,Credit Card,Pending,26,192.73,Central
+ORD0341,Brandon Lee,Sports,Credit Card,Processing,6,252.42,West
+ORD0342,Evelyn Adams,Electronics,Bank Transfer,Pending,15,109.65,Central
+ORD0343,Brandon Davis,Electronics,Credit Card,Shipped,35,283.93,North
+ORD0344,Isabella Anderson,Electronics,Debit Card,Cancelled,10,377.36,West
+ORD0345,David Wilson,Clothing,Bank Transfer,Processing,37,418.14,West
+ORD0346,Benjamin Taylor,Books,Debit Card,Pending,33,373.99,East
+ORD0347,Emma Chua,Books,Debit Card,Pending,22,304.55,Central
+ORD0348,Patrick Harris,Food,Credit Card,Returned,29,247.84,East
+ORD0349,Ella White,Books,Debit Card,Cancelled,43,193.13,Central
+ORD0350,Nathan Garcia,Sports,Credit Card,Pending,18,81.34,South
+ORD0351,Jason Anderson,Food,Credit Card,Pending,1,471.76,West
+ORD0352,Abigail Davis,Electronics,Debit Card,Pending,12,218.33,Central
+ORD0353,Ella Wright,Books,Credit Card,Pending,6,180.18,North
+ORD0354,Patrick Carter,Food,PayPal,Pending,19,209.83,North
+ORD0355,Ella Garcia,Home,Bank Transfer,Processing,44,193.46,South
+ORD0356,Amelia Wilson,Food,PayPal,Processing,5,87.77,East
+ORD0357,Aaron Wilson,Books,Credit Card,Shipped,17,472.38,West
+ORD0358,Patrick Mitchell,Clothing,PayPal,Pending,9,155.8,West
+ORD0359,Evelyn Mitchell,Books,Cash,Delivered,22,218.15,Central
+ORD0360,Matthew Wilson,Food,Bank Transfer,Processing,31,160.52,West
+ORD0361,Kevin Martinez,Sports,PayPal,Cancelled,16,166.31,East
+ORD0362,Emily Jackson,Electronics,Bank Transfer,Processing,38,498.64,South
+ORD0363,Ella Lim,Sports,PayPal,Processing,29,399.85,North
+ORD0364,Aaron King,Clothing,Cash,Processing,17,331.03,West
+ORD0365,Jason Chen,Books,Bank Transfer,Delivered,38,203.39,Central
+ORD0366,Aaron Green,Electronics,Cash,Cancelled,39,320.89,North
+ORD0367,Daniel Garcia,Sports,Cash,Processing,42,308.27,Central
+ORD0368,Emily Taylor,Books,Credit Card,Pending,7,133.07,Central
+ORD0369,Avery Baker,Home,Bank Transfer,Processing,29,-19.99,West
+ORD0370,Scarlett Wright,Clothing,Cash,Pending,31,56.75,West
+ORD0371,Olivia Koh,Sports,Debit Card,Shipped,20,174.81,South
+ORD0372,Avery Allen,Food,PayPal,Pending,29,362.38,West
+ORD0373,Kevin Chen,Food,Credit Card,Pending,2,425.34,North
+ORD0374,Joshua Garcia,Home,Debit Card,Cancelled,11,168.84,West
+ORD0375,Elizabeth Jones,Books,Debit Card,Processing,41,330.36,West
+ORD0376,Sarah Mitchell,Clothing,PayPal,Cancelled,28,197.47,South
+ORD0377,Mia Davis,Sports,Credit Card,Cancelled,7,400.75,Central
+ORD0378,Isabella Jackson,Food,Debit Card,Delivered,8,134.86,West
+ORD0379,Avery Anderson,Home,PayPal,Cancelled,26,295.56,East
+ORD0380,Tyler Young,Home,Debit Card,Shipped,40,297.13,South
+ORD0381,Kevin Koh,Clothing,Cash,Pending,12,189.78,South
+ORD0382,Samuel White,Books,Bank Transfer,Processing,37,194.93,South
+ORD0383,Sofia Green,Sports,Debit Card,Cancelled,11,247.37,South
+ORD0384,Isabella Anderson,Books,Bank Transfer,Pending,23,476.15,Southwest
+ORD0385,Matthew Williams,Books,Bank Transfer,Cancelled,42,250.01,West
+ORD0386,Aaron Moore,Books,Debit Card,Pending,37,20.28,South
+ORD0387,Nathan Wong,Food,Debit Card,Cancelled,19,88.26,West
+ORD0388,Nicholas King,Home,Bank Transfer,Pending,37,61.53,Central
+ORD0389,Abigail Green,Electronics,PayPal,Cancelled,14,494.93,North
+ORD0390,Charlotte Wilson,Electronics,PayPal,Shipped,23,431.78,North
+ORD0391,Justin Koh,Clothing,Debit Card,Cancelled,45,178.56,Central
+ORD0392,Madison Smith,Home,Debit Card,Processing,14,403.68,Central
+ORD0393,Tyler Green,Food,Bank Transfer,Cancelled,11,165.21,East
+ORD0394,Nathan Adams,Food,Bank Transfer,Pending,9,481.56,West
+ORD0395,Emma Davis,Sports,Debit Card,Processing,16,77.39,East
+ORD0396,Charlotte Harris,Books,Debit Card,Cancelled,41,138.01,West
+ORD0397,Jason Moore,Electronics,Credit Card,Delivered,33,376.14,East
+ORD0398,Elizabeth King,Food,Bank Transfer,Pending,50,424.34,North
+ORD0399,Elizabeth Thomas,Electronics,Bank Transfer,Delivered,14,484.21,South
+ORD0400,Sofia Davis,Food,Cash,Shipped,36,291.07,Central

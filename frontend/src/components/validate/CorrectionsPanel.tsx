@@ -74,23 +74,24 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
         )}
       </div>
 
-      {/* Header */}
-      <div className="grid grid-cols-[50px_1fr_1.5fr_1.5fr_2fr_70px] gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wide border-b border-white/10 pb-2 mb-2">
-        <span>Row</span>
-        <span>Column</span>
-        <span>Original</span>
-        <span>Suggestion</span>
-        <span>Reason</span>
-        <span>Action</span>
-      </div>
-
-      {/* Rows */}
+      {/* Table: header sticky inside scroll container so columns always align */}
       <div className="max-h-[400px] overflow-y-auto">
+        {/* Header */}
+        <div className="grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px] gap-2 text-xs font-semibold text-white uppercase tracking-wide border-b border-white/10 pb-2 mb-2 pl-2 border-l-2 border-l-transparent sticky top-0 bg-gray-900/95 z-10">
+          <span>Row</span>
+          <span>Column</span>
+          <span>Original</span>
+          <span>Suggestion</span>
+          <span>Reason</span>
+          <span>Confidence</span>
+          <span>Action</span>
+        </div>
+
         {filtered.map((c, i) => (
           <div
             key={`${c.row_index}_${c.column}_${i}`}
-            className={`grid grid-cols-[50px_1fr_1.5fr_1.5fr_2fr_70px] gap-2 items-center py-2.5 text-sm border-b border-white/5 hover:bg-white/5 transition-colors ${
-              c.has_correction ? 'border-l-2 border-l-green-500/60 pl-2' : 'border-l-2 border-l-red-500/60 pl-2'
+            className={`grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px] gap-2 items-center py-2.5 text-sm border-b border-white/5 hover:bg-white/5 transition-colors pl-2 border-l-2 ${
+              c.has_correction ? 'border-l-green-500/60' : 'border-l-red-500/60'
             }`}
           >
             <span className="font-bold text-gray-300">{c.row}</span>
@@ -108,7 +109,10 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
                 <span className="text-gray-500 italic">No suggestion</span>
               )}
             </span>
-            <span className="text-gray-400 text-xs truncate">{c.reason}</span>
+            <span className="text-gray-400 text-xs truncate cursor-help" title={c.reason}>{c.reason}</span>
+            <span className="text-xs text-gray-400">
+              {c.confidence != null ? `${(c.confidence * 100).toFixed(0)}%` : '—'}
+            </span>
             <span>
               {c.has_correction && (
                 <button

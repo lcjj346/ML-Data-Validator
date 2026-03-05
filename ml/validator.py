@@ -133,6 +133,7 @@ class UnifiedMLValidator:
         self.reference_lists = {}    # {col_name: set of valid values from reference files}
         self.columns = []            # Ordered list of trained columns
         self.training_metrics = {}   # Per-column metrics
+        self.categorical_columns = set()  # Columns auto-detected as categorical (finite valid values)
         self.is_trained = False
         self.model_name = "unnamed"
         self.feature_extractor = GenericFeatureExtractor()
@@ -212,6 +213,7 @@ class UnifiedMLValidator:
         self.model_name = model_name
         self.columns = columns_to_train
         self.training_metrics = {}
+        self.categorical_columns = set()
 
         for col in columns_to_train:
             print(f"\n--- Training column: {col} ---")
@@ -226,6 +228,13 @@ class UnifiedMLValidator:
 
             unique_valid = list(set(valid_values))
             print(f"  Valid examples: {len(valid_values)} ({len(unique_valid)} unique)")
+
+            # Auto-detect categorical columns (finite set of valid values)
+            # Heuristic: fewer than 30% unique ratio AND at most 20 unique values
+            unique_ratio = len(unique_valid) / max(len(df), 1)
+            if unique_ratio < 0.3 and len(unique_valid) <= 20:
+                self.categorical_columns.add(col)
+                print(f"  Auto-detected as categorical ({len(unique_valid)} unique values, {unique_ratio:.1%} ratio)")
 
             # Store whitelist and examples for correction
             self.column_whitelists[col] = set(v.lower() for v in unique_valid)
@@ -548,14 +557,14 @@ class UnifiedMLValidator:
             except (ValueError, TypeError):
                 pass  # Not numeric, continue with normal flow
 
-            # Determine if this column should use strict typo detection
-            # Only use for columns with finite valid values (country, currency, etc.)
-            # NOT for open-ended columns (name, phone, address, email)
-            use_strict_typo_detection = not any(kw in col_lower for kw in self.OPEN_ENDED_COLUMNS)
-
-            # Also use strict detection if we have a reference list for this column
-            if column_name in self.reference_lists:
-                use_strict_typo_detection = True
+            # Strict typo detection only for categorical columns or columns with reference lists.
+            # High-cardinality columns (order_id, customer_name, etc.) should NOT use fuzzy
+            # matching — new unseen values that follow the same pattern are valid, not typos.
+            # The ML classifier handles those correctly via structural features.
+            use_strict_typo_detection = (
+                column_name in self.categorical_columns
+                or column_name in self.reference_lists
+            )
 
             if use_strict_typo_detection:
                 # Fuzzy match to catch typos - if similar to a valid value but not exact, it's likely a typo
@@ -565,6 +574,10 @@ class UnifiedMLValidator:
                     # High similarity (>0.8) but not exact = likely typo = INVALID
                     if similarity >= 0.8:
                         return False, similarity  # Invalid - it's a typo of a known value
+
+        # For categorical columns: value not in whitelist and not a known typo = unknown category
+        if column_name in self.categorical_columns:
+            return False, 0.85
 
         # For values not similar to whitelist, use ML model
         features = self.feature_extractor.extract_features(text_str, column_name)
@@ -657,13 +670,15 @@ class UnifiedMLValidator:
         # Get combined whitelist (training data + reference lists)
         whitelist = self._get_combined_whitelist(column_name)
 
-        # Determine if this column should use strict typo detection
+        # Strict typo detection only for categorical columns or columns with reference lists.
+        # High-cardinality columns (order_id, customer_name, etc.) should NOT use fuzzy
+        # matching — new unseen values that follow the same pattern are valid, not typos.
+        # The ML classifier handles those correctly via structural features.
         col_lower = column_name.lower()
-        use_strict_typo_detection = not any(kw in col_lower for kw in self.OPEN_ENDED_COLUMNS)
-
-        # Also use strict detection if we have a reference list for this column
-        if column_name in self.reference_lists:
-            use_strict_typo_detection = True
+        use_strict_typo_detection = (
+            column_name in self.categorical_columns
+            or column_name in self.reference_lists
+        )
 
         # First pass: check whitelist with fuzzy matching
         for i, text in enumerate(texts):
@@ -699,9 +714,12 @@ class UnifiedMLValidator:
                         break
 
             if not found_typo:
-                results.append(None)  # Placeholder for ML
-                texts_for_ml.append(text_str)
-                ml_indices.append(i)
+                if column_name in self.categorical_columns:
+                    results.append((False, 0.85))  # Unknown category - whitelist-only validation
+                else:
+                    results.append(None)  # Placeholder for ML
+                    texts_for_ml.append(text_str)
+                    ml_indices.append(i)
 
         # Second pass: ML for entries not matching whitelist
         if texts_for_ml:
@@ -972,6 +990,15 @@ class UnifiedMLValidator:
                 except (ValueError, TypeError):
                     return "Percentage must be a valid number"
 
+        # Categorical column - value not in the valid set seen during training
+        if column_name and column_name in self.categorical_columns:
+            examples = self.column_examples.get(column_name, [])
+            if examples:
+                sample = ', '.join(sorted(str(v) for v in examples[:8]))
+                suffix = f' (+{len(examples) - 8} more)' if len(examples) > 8 else ''
+                return f"Not a valid {column_name} (expected: {sample}{suffix})"
+            return f"Not a recognized value for {column_name}"
+
         # Fallback: Extract features for generic analysis
         features = self.feature_extractor.extract_features(text, column_name)
 
@@ -1011,8 +1038,9 @@ class UnifiedMLValidator:
             'column_examples': self.column_examples,
             'reference_lists': self.reference_lists,
             'training_metrics': self.training_metrics,
+            'categorical_columns': self.categorical_columns,
             'is_trained': self.is_trained,
-            'version': '2.1',  # Updated with reference lists
+            'version': '2.2',  # Updated with categorical column detection
         }
 
         joblib.dump(model_data, filepath)
@@ -1037,7 +1065,7 @@ class UnifiedMLValidator:
 
             # Check version
             version = model_data.get('version', '1.0')
-            if version not in ['2.0', '2.1']:
+            if version not in ['2.0', '2.1', '2.2']:
                 print(f"Warning: Loading old model format (v{version}). Some features may not work.")
 
             self.model_name = model_data.get('model_name', 'unknown')
@@ -1048,6 +1076,7 @@ class UnifiedMLValidator:
             self.column_examples = model_data.get('column_examples', {})
             self.reference_lists = model_data.get('reference_lists', {})
             self.training_metrics = model_data.get('training_metrics', {})
+            self.categorical_columns = model_data.get('categorical_columns', set())
             self.is_trained = model_data.get('is_trained', False)
 
             return True

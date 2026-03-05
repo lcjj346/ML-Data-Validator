@@ -1,0 +1,8 @@
+patient_id,ward,blood_type,department,temperature
+P101,Ward A,A+,Cardiology,36.6
+P102,Ward B,B+,Neurology,37.1
+INVALID_ID,Ward Z,X+,InvalidDept,99.0
+P104,Ward C,,Oncology,36.8
+P105,Ward A,A+,Cardiology,25.0
+P106,WardB,AB+,Cardiology,36.7
+P107,Ward D,O+,Orthopaedics,37.0
