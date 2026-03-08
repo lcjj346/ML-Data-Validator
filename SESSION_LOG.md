@@ -582,6 +582,20 @@ use_strict_typo_detection = (
 
 ---
 
+### 2026-03-07 (Demo Readiness — Current Validation State)
+
+- **Changes:** No code changes — demo readiness review
+- **Current state:** Validation results are functional and presentable for demo. Some cells may still be highlighted incorrectly (model limitations with edge cases).
+- **Known limitations to mention during demo / write in report:**
+  - Model accuracy depends heavily on training data size and diversity — small datasets may produce false positives/negatives
+  - Structural feature extractor cannot distinguish semantically different values with same structure (partially addressed by categorical detection)
+  - Correction suggestions use string similarity (difflib), not semantic understanding — suggestions may not always be the intended correct value
+  - Open-ended columns (name, address) rely purely on ML structural patterns — unusual but valid values may be flagged
+- **Tested:** Yes — 30/30 pytest pass, retail + hospital + employee test datasets validated
+- **Notes:** These limitations are expected for a capstone ML project and represent honest future improvement areas. Mention in report under "Limitations & Future Work". Planned future improvements: LLM integration for semantic validation, larger/more diverse training datasets, active learning from user corrections.
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:
