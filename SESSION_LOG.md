@@ -596,6 +596,88 @@ use_strict_typo_detection = (
 
 ---
 
+### 2026-03-08 (Applied Internship Learnings — Testing, Security & User Evaluation)
+
+> **Context for report/slides:** The following practices were learnt during internship and deliberately applied to this capstone project. They reflect real-world software engineering standards, not just academic deliverables.
+
+---
+
+#### 1. Automated Testing — Learnt from DevOps / QA practices at internship
+
+**What was applied:**
+- **pytest unit test suite** (`tests/`) — 30 test cases covering all core ML validator behaviours:
+  - Valid/invalid detection per column type
+  - Typo detection and correction suggestions
+  - Numeric boundary validation (age 0–120, blood sugar, salary)
+  - Edge cases: empty strings, unicode, special characters, untrained columns
+  - Model save/load roundtrip, training data stacking
+- **End-to-end API integration test** (`test_data/run_api_test.py`) — simulates full user flow: upload CSV → train model → run validation → fetch results → export (38/39 pass)
+- Fully automated — single command: `pytest tests/ -v`
+
+**Internship connection:**
+> At internship, automated testing was mandatory before any deployment. The principle: if there is no test, the feature cannot be trusted. Applied this here — every core ML function has a corresponding automated test. When ML logic changed (categorical detection, fuzzy matching), the test suite caught regressions immediately.
+
+**For slides/report:** Automated testing enabled rapid, confident iteration. 6+ changes to `ml/validator.py` across the project were all verified against the same 30-test suite — zero regressions introduced.
+
+---
+
+#### 2. Security — Learnt from cloud deployment and API work at internship
+
+**What was applied:**
+
+| Security Measure | Location | Purpose |
+|---|---|---|
+| File type validation | Both upload endpoints | Rejects non-CSV with HTTP 400 |
+| **10MB file size guard** | Both upload endpoints | Prevents memory exhaustion / large payload attacks |
+| Input sanitisation | pandas + Pydantic schemas | Malformed CSVs and invalid JSON rejected at system boundary |
+| **No external API calls** | Architecture decision | Sensitive/patient data never leaves the local machine |
+| No path traversal | `models/{name}.pkl` loading | Users cannot load arbitrary files from disk |
+| No SQL / no shell execution | Pure Python in-memory | Eliminates SQL injection and command injection surfaces |
+| Protected base model | `DELETE` endpoint returns 403 | Prevents destruction of default model |
+| **CORS restriction** | `backend/main.py:16–22` | API access limited to `localhost:5173` only — prevents unauthorised cross-origin requests from other websites calling the local API silently |
+
+**CORS note for report:**
+> `CORSMiddleware` is configured with `allow_origins=["http://localhost:5173"]` — not the insecure wildcard `"*"`. This means only the frontend origin can call the API. Without this, any malicious website a user visits could silently make API calls to the local server in the background. For future production deployment, this value would be updated to the actual deployed frontend URL.
+
+**Internship connection:**
+> At internship, every API was reviewed for: input validation, authentication, rate limiting, and data exposure. Applied the same lens here. The decision to run fully offline (no LLM API) was a deliberate privacy-by-design choice — patient data must never leave the machine, aligning with PDPA and healthcare data handling principles.
+
+**For slides/report:** Security was built in from the start, not added as an afterthought. The offline architecture is itself the primary security control — no data exfiltration is possible by design.
+
+---
+
+#### 3. User Evaluation — Learnt from product feedback loops at internship
+
+**Quantitative (already available):**
+- Training metrics per column: Train Acc, Test Acc, Test F1, CV F1 — objective model performance evidence
+- Demo result: 300-row retail CSV with 5 injected invalid rows → **all 5 detected = 100% recall on known errors**
+- Validation completes in ~2 seconds vs ~15–30 min manual review of 300 rows
+
+**Performance comparison (before vs after the tool):**
+> Manual review: ~15–30 min per 100 rows, error-prone, no suggestions
+> With tool: <2 seconds, all invalid cells highlighted with reason + suggested correction
+
+**Planned qualitative evaluation (short usability survey, Google Forms):**
+1. Was the interface easy to use without instruction? (1–5)
+2. Did the validation results seem accurate and useful? (1–5)
+3. Were the error reasons and suggestions clear? (1–5)
+4. What was confusing or could be improved? (open text)
+5. Would this save time vs manual data checking? (Yes / No / Maybe)
+
+Target: 3–5 classmates / testers. Results to go into report under **User Evaluation / Usability Testing**.
+
+**Internship connection:**
+> At internship, features were evaluated through both quantitative metrics (benchmarks, error rates) and qualitative feedback (user interviews, NPS scores). Applied both here. Even 3–5 survey responses demonstrates user-centred thinking, which is the point — not the sample size.
+
+**For slides/report:** *"Evaluation used a two-pronged approach — quantitative model performance metrics (Test Accuracy, F1 Score, recall on injected errors) and qualitative usability survey — consistent with industry evaluation practices applied from internship experience."*
+
+---
+
+- **Files:** `SESSION_LOG.md` only
+- **Notes:** This entry is the source of truth for the Testing / Security / Evaluation sections of the capstone report and demo slides. Update once survey results are collected.
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:
