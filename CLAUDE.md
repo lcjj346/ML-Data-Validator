@@ -1,11 +1,12 @@
 # Claude Code Instructions
 
 ## Project Overview
-ML Data Validator - A Streamlit app for training ML models to validate data (phone numbers, emails, names, etc.) and suggest corrections.
+ML Data Validator - A full-stack web app (React + FastAPI) for training ML models to validate data (phone numbers, emails, names, etc.) and suggest corrections. Runs fully offline — no LLM, no external API.
 
-- **Run:** `streamlit run app.py`
+- **Run backend:** `python run.py` (FastAPI on port 8000)
+- **Run frontend:** `cd frontend && npm run dev` (Vite on port 5173)
 - **Main branch:** `main`
-- **Working branch:** `Revamp`
+- **Working branch:** `Remaster`
 
 ---
 
@@ -86,11 +87,18 @@ Expands `training_data/base_training_data.csv` and retrains
 ```
 
 ## Key Files
-- `app.py` - Main Streamlit application
-- `ml/` - Core ML modules (validator.py, corrector.py, feature_extractor.py)
-- `models/` - Trained ML models
+- `run.py` - Entry point (starts uvicorn/FastAPI backend)
+- `backend/main.py` - FastAPI app, CORS, router registration
+- `backend/routers/validation.py` - Upload, validate, correct, export endpoints
+- `backend/routers/training.py` - Train, list models, delete model endpoints
+- `backend/schemas.py` - Pydantic request/response models
+- `backend/state.py` - In-memory session store (30 min TTL)
+- `ml/validator.py` - UnifiedMLValidator (train, validate, correct, explain)
+- `ml/feature_extractor.py` - GenericFeatureExtractor (67 features)
+- `frontend/src/` - React + TypeScript frontend
+- `models/` - Trained .pkl model files (base_model.pkl always present)
 - `training_data/` - Training CSV files
-- `reference_lists/` - Valid values for finite columns (country, age, etc.)
+- `reference_lists/` - Valid values for reference-list columns
 - `tests/` - Pytest test suite (30 tests)
 - `SESSION_LOG.md` - Progress tracking log
 - `MODEL_GUIDE.md` - How to improve model accuracy
@@ -115,11 +123,12 @@ Say **"do all three in parallel"** or **"run cleanup, tests, and log in parallel
 2. User says "log it" to record the changes
 3. Optionally run cleanup agent to check code quality
 
-### Known Issues (updated 2026-02-05):
+### Known Issues (updated 2026-03-09):
 - ~~`self.typo_map` undefined in `ml/corrector.py:81`~~ ✅ Fixed
-- ~~Unused imports~~ ✅ Fixed (moved to top-level)
+- ~~Unused imports~~ ✅ Fixed
 - ~~No automated test infrastructure~~ ✅ Fixed (30 tests in `tests/`)
-- Print statements should be replaced with logging (low priority)
+- ~~Fuzzy typo detection firing on high-cardinality columns~~ ✅ Fixed
+- Some edge-case cells may still highlight incorrectly — model accuracy depends on training data quality (low priority, future improvement)
 
 ## Recommended Workflow
 

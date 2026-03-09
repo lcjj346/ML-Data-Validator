@@ -1,57 +1,66 @@
 # ML Data Validator - Model Guide
 
-## Overview
-
-The ML Data Validator uses a **Unified Model Architecture** where a single model file contains validation logic for all columns in your dataset. Each column gets its own:
-- ML classifier (LogisticRegression)
-- Feature scaler (StandardScaler)
-- Whitelist of valid values
-- Valid examples for correction suggestions
-
----
-
 ## How Validation Works
 
-When validating a cell value, the system follows this flow:
+When validating a cell value, the system follows this pipeline:
 
 ```
-1. Whitelist Check
-   └─ Exact match (case-insensitive)? → VALID (100%)
+1. Whitelist exact match (case-insensitive)
+   └─ Found? → VALID (100%)
 
-2. Numeric Normalization (for numeric columns)
+2. Numeric normalisation
    └─ 95 == 95.0 == "95"? → VALID (100%)
 
-3. Reference List Check (if column has reference list)
-   └─ In reference list? → VALID (100%)
+3. Fuzzy typo detection  [categorical & reference-list columns only]
+   └─ ≥80% similar to a valid example? → INVALID (shows correction)
+   └─ High-cardinality columns (order_id, names) skip this step entirely
 
-4. Typo Detection (for columns with reference lists)
-   └─ >80% similar to valid value? → INVALID (shows correction)
+4. Hardcoded boundary rules
+   └─ Negative age / salary, age > 120, etc. → INVALID with reason
 
-5. ML Model Fallback
-   └─ Feature extraction → Model prediction → confidence score
+5. ML classifier  [open-ended & high-cardinality columns]
+   └─ 67-feature extraction → LogisticRegression prediction → confidence score
 ```
 
 ---
 
 ## Two Model Types
 
-### 1. Base Model (`models/base_model.pkl`)
-- Pre-trained on common columns: name, email, phone, country, age, address, blood_sugar
-- Ships with the app, ready to use
-- Developer maintains and improves this
+### Base Model (`models/base_model.pkl`)
+- Pre-trained on common columns: `name`, `email`, `phone`, `country`, `age`, `address`, `blood_sugar`
+- Ships with the app, ready to use immediately
+- Retrain by updating `training_data/base_training_data.csv` (see below)
 
-### 2. Custom Models (`models/{name}_model.pkl`)
-- Users create these for their specific datasets
-- Train on any CSV structure
-- Can be "stacked" with more data over time
+### Custom Models (`models/{name}.pkl`)
+- Train on any CSV domain via the **Train** tab in the UI
+- All rows in the uploaded CSV are treated as valid examples
+- Synthetic invalid examples are auto-generated for training
 
 ---
 
-## How to Improve Model Accuracy
+## Categorical Column Auto-Detection
 
-### For Developers (Base Model)
+During training, any column where:
+- `unique_values / total_rows < 30%` **AND**
+- `unique_value_count ≤ 20`
 
-#### 1. Add More Training Data
+…is automatically flagged as **categorical** and gets whitelist-only validation. This means:
+- Only exact matches (or ≥80% fuzzy matches) to training values are accepted as valid
+- The ML classifier is bypassed entirely for these columns
+- Unknown values return: `"Not a valid {column} (expected: val1, val2, ...)"`
+
+**Examples:**
+- `department` (5 values / 40 rows) → categorical → `"Astrology"` correctly INVALID
+- `ward` (5 values / 40 rows) → categorical → `"Ward Z"` correctly INVALID
+- `salary` (38 values / 40 rows) → not categorical → ML classifier used
+- `order_id` (300 values / 300 rows) → not categorical → ML classifier used
+
+---
+
+## Improving the Base Model
+
+### 1. Add Training Data
+
 Edit `training_data/base_training_data.csv`:
 ```csv
 name,email,phone,country,age,address,blood_sugar
@@ -59,119 +68,85 @@ Jean-Pierre,jp@email.fr,+33 1 2345 6789,France,45,1 Rue de Paris,95.0
 ```
 
 **Tips:**
-- Add diverse examples (different cultures, formats, edge cases)
-- Include variations: "USA", "US", "United States"
+- Add diverse examples across cultures, formats, and edge cases
+- Include variations: `"USA"`, `"US"`, `"United States"`
 - Add hyphenated names, compound names, single names
-- Include different phone formats: +65 9123 4567, 91234567, (555) 123-4567
+- Include multiple phone formats: `+65 9123 4567`, `91234567`, `(555) 123-4567`
 
-#### 2. Expand Reference Lists
-Reference lists provide strict validation for finite value sets.
+### 2. Expand Reference Lists
 
-Location: `reference_lists/`
+Reference lists enforce strict validation for finite value sets.
 
 | File | Purpose | Example Values |
 |------|---------|----------------|
-| `country.txt` | Valid countries | Singapore, USA, UK, Germany |
-| `age.txt` | Valid ages | 0-120 |
-| `email_domains.txt` | Common domains | gmail.com, yahoo.com |
-| `phone_prefixes.txt` | Country codes | +1, +65, +44 |
+| `reference_lists/country.txt` | Valid countries | Singapore, USA, UK |
+| `reference_lists/age.txt` | Valid ages | 0–120 |
+| `reference_lists/email_domains.txt` | Common domains | gmail.com, yahoo.com |
+| `reference_lists/phone_prefixes.txt` | Country codes | +1, +65, +44 |
+| `reference_lists/gender.txt` | Gender values | Male, Female, M, F |
+| `reference_lists/currency.txt` | Currency codes | USD, SGD, EUR |
+| `reference_lists/status.txt` | Status values | Active, Pending, etc. |
 
-**To add values:**
-```
-# reference_lists/country.txt
-Singapore
-SG
-Republic of Singapore
-USA
-US
-United States
-...
-```
-
-#### 3. Retrain the Model
-After updating training data or reference lists:
+### 3. Retrain via Python
 
 ```python
 from ml.validator import UnifiedMLValidator
 import pandas as pd
 
-# Load updated training data
 df = pd.read_csv('training_data/base_training_data.csv')
-
-# Create and train
 validator = UnifiedMLValidator()
 metrics = validator.train(df, model_name='base_model')
-
-# Save
 validator.save('models/base_model.pkl')
 
-# Check accuracy
 for col, m in metrics.items():
-    print(f"{col}: {m['test_accuracy']:.1%}")
+    print(f"{col}: {m['test_accuracy']:.1%}  (best C={m.get('best_C')})")
 ```
 
 ---
 
-### For Users (Custom Models)
+## Training Metrics
 
-#### Option 1: Create New Model
-1. Go to **"Train Models"** tab
-2. Upload your CSV (all rows treated as valid examples)
-3. Enter a model name
-4. (Optional) Exclude columns like ID, timestamp
-5. Click **Train Model**
+After training, the UI displays a per-column metrics table:
 
-#### Option 2: Stack Data onto Existing Model
-1. Go to **"Train Models"** tab
-2. Select **"Add data to existing model"**
-3. Upload additional CSV with more valid examples
-4. Select the model to improve
-5. Click **Add Training Data**
+| Metric | Meaning | Target |
+|--------|---------|--------|
+| Train Acc | % correct on training data | — |
+| Test Acc | % correct on held-out split | >85% |
+| Test F1 | F1 score on held-out split | >85% |
+| Best C | GridSearchCV-selected regularisation | — |
+| CV F1 | Cross-validation F1 score | >85% |
 
-This adds new valid values to the whitelist and optionally retrains the ML model.
-
----
-
-## Understanding Model Metrics
-
-After training, you'll see per-column metrics:
-
-| Metric | Meaning | Good Value |
-|--------|---------|------------|
-| Test Accuracy | % correctly classified on held-out data | >85% |
-| Unique Values | Number of distinct valid values learned | Varies |
+**Colour coding:** green ≥90%, yellow ≥75%, red <75%
 
 **Low accuracy causes:**
-- Too few training examples
-- Too little diversity in examples
-- Column has unpredictable/random values
+- Too few training examples (aim for 50+ valid rows per column)
+- Too little diversity in the training data
+- Column values are random/high-cardinality (expected — ML handles these)
 
 ---
 
-## Column Types & Recommendations
+## Hyperparameter Tuning
 
-| Column Type | Improve With | Notes |
-|-------------|--------------|-------|
-| **Names** | More training data | Add cultural variations, hyphenated, single names |
-| **Countries** | Reference list | Finite set - add all valid abbreviations |
-| **Emails** | Training data + domain list | Patterns are learnable |
-| **Phone** | Training data + prefix list | Add format variations |
-| **Age** | Reference list | Finite range (0-120) |
-| **Custom text** | Training data only | ML learns patterns |
+The system automatically runs GridSearchCV over `C = [0.01, 0.1, 1.0, 10.0, 100.0]` for each column:
+
+- **Low C** (0.01, 0.1) — heavy regularisation, good for structured columns like email
+- **High C** (10, 100) — minimal regularisation, good for diverse columns like names/countries
+
+If there are too few samples per class for cross-validation, the system falls back to `C=1.0`.
 
 ---
 
-## Typo Detection
+## Column Type Recommendations
 
-Typo detection uses fuzzy matching (>80% similarity) but only for:
-- Columns with reference lists (countries, etc.)
-- NOT for open-ended columns (names, addresses)
-
-This prevents false positives like "John Smith" being flagged as a typo of "John Smyth".
-
-**Example:**
-- "Singaproe" → 89% similar to "Singapore" → INVALID, suggests "Singapore"
-- "Jean-Pierre" → Not in reference list → Falls through to ML model → VALID
+| Column Type | Recommended Approach | Notes |
+|-------------|---------------------|-------|
+| Names | More training data | Add cultural variations |
+| Countries | Reference list | Add all valid abbreviations |
+| Emails | Training data + domain list | Patterns are learnable |
+| Phone | Training data + prefix list | Add format variations |
+| Age / Blood Sugar | Boundary rules apply automatically | Numeric columns |
+| Departments / Wards | Auto-detected as categorical | No extra config needed |
+| Order IDs / Codes | ML classifier | High cardinality, structural patterns |
 
 ---
 
@@ -180,39 +155,31 @@ This prevents false positives like "John Smith" being flagged as a typo of "John
 ```
 ML-Data-Validator/
 ├── models/
-│   ├── base_model.pkl        # Pre-trained base model
-│   └── {custom}_model.pkl    # User's custom models
+│   ├── base_model.pkl           # Pre-trained base model (protected)
+│   └── {custom}.pkl             # User-trained custom models
 ├── training_data/
-│   └── base_training_data.csv  # Training data for base model
+│   └── base_training_data.csv   # 544 rows, 7 columns
 ├── reference_lists/
-│   ├── country.txt           # Valid countries
-│   ├── age.txt               # Valid ages (0-120)
-│   ├── email_domains.txt     # Common email domains
-│   └── phone_prefixes.txt    # Country phone codes
+│   ├── country.txt
+│   ├── age.txt
+│   ├── email_domains.txt
+│   ├── phone_prefixes.txt
+│   ├── gender.txt
+│   ├── currency.txt
+│   └── status.txt
 └── ml/
-    ├── validator.py          # UnifiedMLValidator class
-    ├── corrector.py          # Correction suggestions
-    └── feature_extractor.py  # 67-feature extraction
+    ├── validator.py             # UnifiedMLValidator (train, validate, correct, explain)
+    └── feature_extractor.py     # GenericFeatureExtractor (67 features)
 ```
 
 ---
 
 ## Quick Reference
 
-### Improve Base Model:
-1. Edit `training_data/base_training_data.csv`
-2. Edit `reference_lists/*.txt`
-3. Retrain with Python script or restart app
-
-### Improve Custom Model:
-1. Use "Add data to existing model" in UI
-2. Upload more valid examples
-3. Model automatically improves
-
-### Check What's Trained:
-```python
-from ml.validator import UnifiedMLValidator
-validator = UnifiedMLValidator('models/base_model.pkl')
-print(f"Columns: {validator.columns}")
-print(f"Name whitelist size: {len(validator.column_whitelists.get('name', set()))}")
-```
+| Task | How |
+|------|-----|
+| Improve base model accuracy | Add rows to `training_data/base_training_data.csv`, retrain |
+| Add a new valid country | Edit `reference_lists/country.txt`, retrain |
+| Train a custom model | Upload CSV in the Train tab |
+| Delete a custom model | Click Delete in the model list (base_model is protected) |
+| Inspect a trained model | `python -c "from ml.validator import UnifiedMLValidator; v = UnifiedMLValidator('models/base_model.pkl'); print(v.columns, v.categorical_columns)"` |
