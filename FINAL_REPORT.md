@@ -25,6 +25,8 @@
    - 3.2 Non-Functional Requirements
    - 3.3 Final System Architecture
    - 3.4 Architecture Decision: From Streamlit to React + FastAPI
+   - 3.5 System Workflow
+   - 3.6 Requirements Changes Since Progress Report
 
 4. Implementation Details
    - 4.1 Project Structure and Code Organisation
@@ -67,6 +69,12 @@
     - 10.3 Personal Growth
 
 11. References
+
+---
+
+## Abstract
+
+ML Data Validator is a full-stack web application that uses machine learning to automatically validate and correct structured CSV data. Built with a React frontend and FastAPI backend, the system trains a Logistic Regression classifier per column on user-provided examples and uses 67 structural features to classify each cell as valid or invalid. Invalid cells are highlighted with a reason and a suggested correction. The system runs entirely offline with no external API calls, making it suitable for sensitive and healthcare data environments where data privacy is critical. Key features include categorical column auto-detection, GridSearchCV hyperparameter tuning, real-time validation progress streaming, confidence scores, and a summary report export. The system was evaluated against demo datasets achieving 100% recall on known injected errors and was verified by a 30-test automated pytest suite and an end-to-end API integration test.
 
 ---
 
@@ -251,6 +259,86 @@ At the time of the Progress Report, the system used Streamlit as both the fronte
 The migration to React + FastAPI addressed all three issues. FastAPI handles the backend API and ML logic, while React handles the UI. This decoupling made each layer independently testable (the pytest suite tests the ML logic without any UI involvement) and enabled rich UI components such as AG Grid for the interactive data table.
 
 The tradeoff was development complexity: a full-stack architecture requires more setup and configuration than Streamlit. However, this complexity is proportionate to the capabilities gained and reflects real-world engineering practice where frontend and backend are separate concerns.
+
+### 3.5 System Workflow
+
+The end-to-end user workflow is consistent regardless of the data domain or model used:
+
+```
+                        ┌─────────────────────┐
+                        │   User has CSV data  │
+                        └─────────┬───────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │  Use base model or train   │
+                    │      a custom model?       │
+                    └──────┬────────────┬────────┘
+                           │            │
+               ┌───────────▼──┐    ┌────▼──────────────────┐
+               │  Base model  │    │  Upload training CSV   │
+               │  (ready)     │    │  → System trains model │
+               └───────┬──────┘    └────┬──────────────────-┘
+                       │                │
+                       └──────┬─────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │  Upload validation  │
+                    │       CSV          │
+                    └─────────┬──────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │  Auto-match columns │
+                    │  to trained model   │
+                    └─────────┬──────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │   Run Validation    │
+                    │  (real-time SSE)    │
+                    └─────────┬──────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │  Results grid:      │
+                    │  green=valid        │
+                    │  red=invalid        │
+                    └─────────┬──────────┘
+                              │
+               ┌──────────────▼──────────────┐
+               │  Review corrections panel    │
+               │  (reason + suggestion +      │
+               │   confidence score)          │
+               └──────────────┬──────────────┘
+                              │
+               ┌──────────────▼──────────────┐
+               │  Apply corrections &         │
+               │  manual edits (orange cells) │
+               └──────────────┬──────────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │  Export cleaned CSV │
+                    │  or summary report  │
+                    └────────────────────┘
+```
+
+*Figure 2: End-to-End System Workflow*
+
+The workflow supports two entry paths: using the pre-trained base model directly (for common healthcare columns), or training a custom model first by uploading domain-specific data. Once a model is selected, the validation flow is identical for both paths — upload, auto-match columns, run validation, review corrections, export.
+
+### 3.6 Requirements Changes Since Progress Report
+
+Between the Progress Report (Form E1) and the final system, several requirements were added, changed, or dropped as a result of technical discoveries and feedback:
+
+| Category | E1 Requirement | Final State | Reason for Change |
+|---|---|---|---|
+| Frontend | Streamlit web app | React + FastAPI full-stack | Streamlit lacked cell-level interactivity and colour coding |
+| Delivery | Server-hosted URL | Local run (`python run.py`) | Deployment deferred; local demo sufficient for capstone |
+| Validation | ML classifier for all columns | Hybrid: whitelist for categorical, ML for open-ended | ML cannot distinguish semantically different values with same structure |
+| Correction | difflib similarity | difflib similarity (unchanged) | Simple approach proved sufficient; no generative model needed |
+| Hyperparameter | Fixed C=1.0 | GridSearchCV over C=[0.01–100] | Different column types need different regularisation |
+| Security | Not specified in E1 | CORS, 10MB limit, file type validation, Pydantic schemas | Applied from internship API security practices |
+| Testing | Not specified in E1 | 30 pytest unit tests + API integration test | Mandatory for confident iteration across ML changes |
+| Model management | Not specified in E1 | Delete model button (base model protected) | Practical need identified during multi-model testing |
+
+The most significant requirement change was the frontend migration from Streamlit to React + FastAPI, and the introduction of categorical column auto-detection — both driven by technical limitations discovered during development rather than changes in project scope.
 
 ---
 
