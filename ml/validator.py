@@ -636,7 +636,7 @@ class UnifiedMLValidator:
         # Create result structure
         results = {col: [] for col in df.columns}
 
-        for idx, row in df.iterrows():
+        for _, row in df.iterrows():
             row_results = self.validate_row(row, column_mapping)
             for col in df.columns:
                 if col in row_results:

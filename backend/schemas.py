@@ -74,13 +74,6 @@ class TrainUploadResponse(BaseModel):
     preview: List[Dict[str, Any]]
 
 
-class TrainRunRequest(BaseModel):
-    model_name: str
-    exclude_columns: List[str] = []
-    training_mode: str = "new"  # "new" or "existing"
-    use_reference_lists: bool = True
-
-
 class ColumnMetrics(BaseModel):
     unique_valid: Optional[int] = None
     total_samples: Optional[int] = None

@@ -224,7 +224,7 @@ class GenericFeatureExtractor:
             # Not a number - add dummy features (20 features)
             features.extend([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
-        # ========== TOTAL: ~67 FEATURES ==========
+        # ========== TOTAL: ~71 FEATURES ==========
 
         return features
 
