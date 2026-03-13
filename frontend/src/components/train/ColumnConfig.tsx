@@ -17,7 +17,7 @@ export default function ColumnConfig({ allColumns, excluded, onChange }: Props) 
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-3">Click to exclude columns from training:</p>
+      <p className="text-xs text-slate-400 mb-3">Click to exclude columns from training:</p>
       <div className="flex flex-wrap gap-2 mb-3">
         {allColumns.map((col) => {
           const isExcluded = excluded.includes(col);
@@ -27,8 +27,8 @@ export default function ColumnConfig({ allColumns, excluded, onChange }: Props) 
               onClick={() => toggle(col)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 isExcluded
-                  ? 'bg-gray-800/60 text-gray-500 line-through border border-white/5'
-                  : 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/25 hover:scale-105'
+                  ? 'bg-slate-800/60 text-slate-500 line-through border border-white/5'
+                  : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 hover:scale-105'
               }`}
             >
               {col}
@@ -36,7 +36,7 @@ export default function ColumnConfig({ allColumns, excluded, onChange }: Props) 
           );
         })}
       </div>
-      <p className="text-sm text-indigo-400">
+      <p className="text-sm text-cyan-400">
         Will train on {included.length} columns: {included.join(', ')}
       </p>
     </div>

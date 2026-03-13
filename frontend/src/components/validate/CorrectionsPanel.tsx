@@ -51,11 +51,11 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
       {/* Controls */}
       <div className="flex items-end gap-4 mb-4">
         <div className="flex-1">
-          <label className="block text-xs text-gray-400 mb-1">Filter by column</label>
+          <label className="block text-xs text-slate-400 mb-1">Filter by column</label>
           <select
             value={filterCol}
             onChange={(e) => setFilterCol(e.target.value)}
-            className="w-full bg-gray-800/80 border border-white/10 rounded-xl px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all duration-200"
+            className="w-full bg-slate-800/80 border border-white/10 rounded-xl px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all duration-200"
           >
             <option value="all">All Columns</option>
             {uniqueCols.map((c) => (
@@ -67,7 +67,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
           <button
             onClick={onApplyAll}
             disabled={applying}
-            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shadow-lg shadow-indigo-500/20"
+            className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shadow-lg shadow-cyan-500/20"
           >
             {applying ? 'Applying...' : `Apply All ${applicable.length} Corrections`}
           </button>
@@ -77,7 +77,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
       {/* Table: header sticky inside scroll container so columns always align */}
       <div className="max-h-[400px] overflow-y-auto">
         {/* Header */}
-        <div className="grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px] gap-2 text-xs font-semibold text-white uppercase tracking-wide border-b border-white/10 pb-2 mb-2 pl-2 border-l-2 border-l-transparent sticky top-0 bg-gray-900/95 z-10">
+        <div className="grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px] gap-2 text-xs font-semibold text-white uppercase tracking-wide border-b border-white/10 pb-2 mb-2 pl-2 border-l-2 border-l-transparent sticky top-0 bg-slate-900/95 z-10">
           <span>Row</span>
           <span>Column</span>
           <span>Original</span>
@@ -94,8 +94,8 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
               c.has_correction ? 'border-l-green-500/60' : 'border-l-red-500/60'
             }`}
           >
-            <span className="font-bold text-gray-300">{c.row}</span>
-            <code className="text-indigo-400 text-xs">{c.column}</code>
+            <span className="font-bold text-slate-300">{c.row}</span>
+            <code className="text-cyan-400 text-xs">{c.column}</code>
             <span className="text-red-400 font-medium truncate">{c.original}</span>
             <span>
               {c.has_correction ? (
@@ -106,18 +106,18 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
                   <strong>{c.suggested}</strong>
                 </span>
               ) : (
-                <span className="text-gray-500 italic">No suggestion</span>
+                <span className="text-slate-500 italic">No suggestion</span>
               )}
             </span>
-            <span className="text-gray-400 text-xs truncate cursor-help" title={c.reason}>{c.reason}</span>
-            <span className="text-xs text-gray-400">
+            <span className="text-slate-400 text-xs truncate cursor-help" title={c.reason}>{c.reason}</span>
+            <span className="text-xs text-slate-400">
               {c.confidence != null ? `${(c.confidence * 100).toFixed(0)}%` : '—'}
             </span>
             <span>
               {c.has_correction && (
                 <button
                   onClick={() => onApplySingle(c)}
-                  className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105"
+                  className="px-3 py-1 bg-cyan-500/80 hover:bg-cyan-400 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105"
                 >
                   Fix
                 </button>

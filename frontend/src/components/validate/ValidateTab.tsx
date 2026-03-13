@@ -15,7 +15,7 @@ import ExportSection from './ExportSection';
 
 function StepBadge({ n }: { n: number }) {
   return (
-    <span className="inline-flex items-center justify-center w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full text-xs font-bold mr-2 shadow-lg shadow-indigo-500/20">
+    <span className="inline-flex items-center justify-center w-7 h-7 bg-gradient-to-br from-cyan-400 to-sky-600 text-white rounded-full text-xs font-bold mr-2 shadow-lg shadow-cyan-500/20">
       {n}
     </span>
   );
@@ -90,7 +90,7 @@ export default function ValidateTab() {
       <div className="mb-8">
         <div className="flex items-center mb-3">
           <StepBadge n={1} />
-          <span className="text-sm font-semibold text-gray-200">Upload your CSV file</span>
+          <span className="text-sm font-semibold text-slate-200">Upload your CSV file</span>
         </div>
         <FileUpload onFile={handleFile} disabled={v.isValidating} />
       </div>
@@ -106,7 +106,7 @@ export default function ValidateTab() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <StepBadge n={2} />
-              <span className="text-sm font-semibold text-gray-200">Select trained model</span>
+              <span className="text-sm font-semibold text-slate-200">Select trained model</span>
             </div>
             <ModelSelector key={uploadKey} selected={v.selectedModel} onSelect={handleModelSelect} />
           </div>
@@ -119,12 +119,12 @@ export default function ValidateTab() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <StepBadge n={3} />
-              <span className="text-sm font-semibold text-gray-200">Run validation</span>
+              <span className="text-sm font-semibold text-slate-200">Run validation</span>
             </div>
             <button
               onClick={handleValidate}
               disabled={!v.selectedModel || v.isValidating}
-              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full py-3 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:scale-[1.01] active:scale-[0.99]"
             >
               {v.isValidating ? 'Validating...' : 'Validate'}
             </button>

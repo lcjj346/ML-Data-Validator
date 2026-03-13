@@ -25,7 +25,7 @@ const iconMap = {
 const colorMap = {
   success: 'border-green-500/30 text-green-300',
   error: 'border-red-500/30 text-red-300',
-  info: 'border-indigo-500/30 text-indigo-300',
+  info: 'border-cyan-500/30 text-cyan-300',
 };
 
 export default function Toast({ toasts, onRemove }: { toasts: ToastItem[]; onRemove: (id: number) => void }) {

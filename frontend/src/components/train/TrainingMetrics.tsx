@@ -8,10 +8,10 @@ interface Props {
 function ConfusionMatrix({ cm }: { cm: number[][] }) {
   return (
     <div className="mt-2">
-      <p className="text-xs font-semibold text-gray-400 mb-1">Confusion Matrix</p>
+      <p className="text-xs font-semibold text-slate-400 mb-1">Confusion Matrix</p>
       <table className="text-xs border border-white/10 rounded-lg overflow-hidden">
         <thead>
-          <tr className="text-gray-400">
+          <tr className="text-slate-400">
             <th className="px-2 py-1"></th>
             <th className="px-2 py-1">Pred Invalid</th>
             <th className="px-2 py-1">Pred Valid</th>
@@ -19,14 +19,14 @@ function ConfusionMatrix({ cm }: { cm: number[][] }) {
         </thead>
         <tbody>
           <tr>
-            <td className="px-2 py-1 text-gray-400 font-medium">Act Invalid</td>
-            <td className="px-2 py-1 text-center bg-indigo-500/15">{cm[0]?.[0] ?? 0}</td>
+            <td className="px-2 py-1 text-slate-400 font-medium">Act Invalid</td>
+            <td className="px-2 py-1 text-center bg-cyan-500/15">{cm[0]?.[0] ?? 0}</td>
             <td className="px-2 py-1 text-center">{cm[0]?.[1] ?? 0}</td>
           </tr>
           <tr>
-            <td className="px-2 py-1 text-gray-400 font-medium">Act Valid</td>
+            <td className="px-2 py-1 text-slate-400 font-medium">Act Valid</td>
             <td className="px-2 py-1 text-center">{cm[1]?.[0] ?? 0}</td>
-            <td className="px-2 py-1 text-center bg-indigo-500/15">{cm[1]?.[1] ?? 0}</td>
+            <td className="px-2 py-1 text-center bg-cyan-500/15">{cm[1]?.[1] ?? 0}</td>
           </tr>
         </tbody>
       </table>
@@ -35,7 +35,7 @@ function ConfusionMatrix({ cm }: { cm: number[][] }) {
 }
 
 function accColor(value: number | undefined): string {
-  if (value == null) return 'text-gray-500';
+  if (value == null) return 'text-slate-500';
   const pct = value * 100;
   if (pct >= 90) return 'text-green-400';
   if (pct >= 75) return 'text-yellow-400';
@@ -76,24 +76,24 @@ export default function TrainingMetrics({ metrics }: Props) {
                 className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
                 <td className="px-4 py-2.5">
-                  <span className="font-mono text-indigo-300">{colName}</span>
+                  <span className="font-mono text-cyan-300">{colName}</span>
                 </td>
-                <td className="px-4 py-2.5 text-right text-gray-300">
+                <td className="px-4 py-2.5 text-right text-slate-300">
                   {m.total_samples ?? '—'}
                 </td>
                 <td className={`px-4 py-2.5 text-right font-medium ${accColor(m.train_accuracy)}`}>
                   {fmtPct(m.train_accuracy)}
                 </td>
-                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.test_accuracy) : 'text-gray-500'}`}>
+                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.test_accuracy) : 'text-slate-500'}`}>
                   {m.used_split ? fmtPct(m.test_accuracy) : '—'}
                 </td>
-                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.test_f1) : 'text-gray-500'}`}>
+                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.test_f1) : 'text-slate-500'}`}>
                   {m.used_split ? fmtPct(m.test_f1) : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-right text-gray-300">
+                <td className="px-4 py-2.5 text-right text-slate-300">
                   {m.best_C ?? '—'}
                 </td>
-                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.cv_f1_score) : 'text-gray-500'}`}>
+                <td className={`px-4 py-2.5 text-right font-medium ${m.used_split ? accColor(m.cv_f1_score) : 'text-slate-500'}`}>
                   {m.used_split ? fmtPct(m.cv_f1_score) : '—'}
                 </td>
                 <td className="px-4 py-2.5 text-center">

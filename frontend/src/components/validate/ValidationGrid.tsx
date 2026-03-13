@@ -103,7 +103,7 @@ export default function ValidationGrid({
           animateRows={false}
         />
       </div>
-      <div className="flex gap-5 mt-3 text-xs text-gray-400">
+      <div className="flex gap-5 mt-3 text-xs text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#22c55e' }} /> Valid
         </span>

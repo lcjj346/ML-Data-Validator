@@ -9,12 +9,12 @@ export default function ProgressBar({ progress, message }: Props) {
   return (
     <div className="mb-4 glass-card p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-300">{message || 'Processing...'}</span>
-        <span className="text-sm font-semibold text-indigo-400">{pct}%</span>
+        <span className="text-sm text-slate-300">{message || 'Processing...'}</span>
+        <span className="text-sm font-semibold text-cyan-400">{pct}%</span>
       </div>
-      <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
         <div
-          className="h-2.5 rounded-full transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-500 relative"
+          className="h-2.5 rounded-full transition-all duration-300 bg-gradient-to-r from-cyan-500 to-sky-500 relative"
           style={{ width: `${pct}%` }}
         >
           <div

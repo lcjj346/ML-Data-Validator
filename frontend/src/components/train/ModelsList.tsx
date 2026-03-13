@@ -40,13 +40,13 @@ export default function ModelsList({ refreshKey }: Props) {
         <div className="glass-card border-red-500/30 p-3 text-red-300 text-sm mb-3">{error}</div>
       )}
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
+        <p className="text-slate-400 text-sm">Loading...</p>
       ) : models.length === 0 ? (
-        <p className="text-gray-400 text-sm">No trained models yet. Upload training data above to get started.</p>
+        <p className="text-slate-400 text-sm">No trained models yet. Upload training data above to get started.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs uppercase text-gray-400 bg-gray-800/60">
+            <thead className="text-xs uppercase text-slate-400 bg-slate-800/60">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Name</th>
                 <th className="px-3 py-2.5 font-medium">Size</th>
@@ -60,13 +60,13 @@ export default function ModelsList({ refreshKey }: Props) {
                   <td className="px-3 py-2.5 font-medium">
                     {m.name}
                     {m.name === 'base_model' && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                         default
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-gray-400">{m.size}</td>
-                  <td className="px-3 py-2.5 text-gray-400">{m.columns}</td>
+                  <td className="px-3 py-2.5 text-slate-400">{m.size}</td>
+                  <td className="px-3 py-2.5 text-slate-400">{m.columns}</td>
                   <td className="px-3 py-2.5 text-right">
                     {m.name !== 'base_model' && (
                       <button

@@ -34,16 +34,16 @@ export default function FileUpload({ onFile, disabled }: Props) {
       onDrop={handleDrop}
       className={`glass-card p-8 text-center transition-all duration-200 cursor-pointer border-dashed ${
         dragging
-          ? 'border-indigo-500 bg-indigo-500/10 scale-[1.01]'
+          ? 'border-cyan-500 bg-cyan-500/10 scale-[1.01]'
           : 'hover:border-white/20 hover:bg-white/5'
       } ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
     >
-      <svg className="w-10 h-10 mx-auto mb-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <svg className="w-10 h-10 mx-auto mb-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
       </svg>
-      <p className="text-gray-300 mb-1">Drag & drop a CSV file here, or click to browse</p>
-      <p className="text-gray-500 text-xs mb-4">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-800/80 rounded-full text-xs text-gray-400">.csv</span>
+      <p className="text-slate-300 mb-1">Drag & drop a CSV file here, or click to browse</p>
+      <p className="text-slate-500 text-xs mb-4">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-800/80 rounded-full text-xs text-slate-400">.csv</span>
       </p>
       <input
         type="file"
@@ -55,7 +55,7 @@ export default function FileUpload({ onFile, disabled }: Props) {
       />
       <label
         htmlFor="file-upload"
-        className="inline-block px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-500 hover:to-purple-500 cursor-pointer transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30"
+        className="inline-block px-5 py-2 bg-gradient-to-r from-cyan-500 to-sky-600 text-white rounded-lg text-sm font-medium hover:from-cyan-400 hover:to-sky-500 cursor-pointer transition-all duration-200 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
       >
         Choose File
       </label>

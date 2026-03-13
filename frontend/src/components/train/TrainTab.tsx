@@ -13,7 +13,7 @@ import ModelsList from './ModelsList';
 
 function StepBadge({ n }: { n: number }) {
   return (
-    <span className="inline-flex items-center justify-center w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full text-xs font-bold mr-2 shadow-lg shadow-indigo-500/20">
+    <span className="inline-flex items-center justify-center w-7 h-7 bg-gradient-to-br from-cyan-400 to-sky-600 text-white rounded-full text-xs font-bold mr-2 shadow-lg shadow-cyan-500/20">
       {n}
     </span>
   );
@@ -75,7 +75,7 @@ export default function TrainTab() {
       <div className="mb-8">
         <div className="flex items-center mb-3">
           <StepBadge n={1} />
-          <span className="text-sm font-semibold text-gray-200">Upload your data CSV</span>
+          <span className="text-sm font-semibold text-slate-200">Upload your data CSV</span>
         </div>
         <TrainingUpload onFile={handleFile} disabled={t.isTraining} />
       </div>
@@ -91,7 +91,7 @@ export default function TrainTab() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <StepBadge n={2} />
-              <span className="text-sm font-semibold text-gray-200">Configure columns</span>
+              <span className="text-sm font-semibold text-slate-200">Configure columns</span>
             </div>
             <ColumnConfig
               allColumns={t.uploadInfo.column_names}
@@ -106,7 +106,7 @@ export default function TrainTab() {
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <StepBadge n={3} />
-              <span className="text-sm font-semibold text-gray-200">Choose training mode</span>
+              <span className="text-sm font-semibold text-slate-200">Choose training mode</span>
             </div>
             <TrainingMode
               mode={mode}
@@ -122,7 +122,7 @@ export default function TrainTab() {
           <button
             onClick={handleTrain}
             disabled={t.isTraining || !modelName.trim()}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:scale-[1.01] active:scale-[0.99] mb-4"
+            className="w-full py-3 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:scale-[1.01] active:scale-[0.99] mb-4"
           >
             {t.isTraining
               ? 'Training...'
