@@ -30,17 +30,20 @@ def _get_session(session_id: str):
 
 @router.post("/upload", response_model=TrainUploadResponse)
 async def upload_training_csv(file: UploadFile = File(...)):
-    if not file.filename or not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are accepted")
+    if not file.filename or not (file.filename.endswith(".csv") or file.filename.endswith(".xlsx")):
+        raise HTTPException(status_code=400, detail="Only CSV and Excel (.xlsx) files are accepted")
 
     contents = await file.read()
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10MB.")
 
     try:
-        df = pd.read_csv(io.BytesIO(contents))
+        if file.filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            df = pd.read_csv(io.BytesIO(contents))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse CSV: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to parse file: {e}")
 
     session_id = store.create()
     session = store.get(session_id)

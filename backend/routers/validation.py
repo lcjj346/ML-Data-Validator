@@ -51,17 +51,20 @@ def _get_session(session_id: str):
 
 @router.post("/upload", response_model=FileInfoResponse)
 async def upload_csv(file: UploadFile = File(...)):
-    if not file.filename or not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are accepted")
+    if not file.filename or not (file.filename.endswith(".csv") or file.filename.endswith(".xlsx")):
+        raise HTTPException(status_code=400, detail="Only CSV and Excel (.xlsx) files are accepted")
 
     contents = await file.read()
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10MB.")
 
     try:
-        df = pd.read_csv(io.BytesIO(contents))
+        if file.filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            df = pd.read_csv(io.BytesIO(contents))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse CSV: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to parse file: {e}")
 
     session_id = store.create()
     session = store.get(session_id)
@@ -302,6 +305,30 @@ async def export_csv(session_id: str):
     return StreamingResponse(
         io.BytesIO(csv_bytes),
         media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ── Export Excel ─────────────────────────────────────────────
+
+@router.get("/{session_id}/export-xlsx")
+async def export_xlsx(session_id: str):
+    session = _get_session(session_id)
+    if session.df is None:
+        raise HTTPException(status_code=400, detail="No data in session")
+
+    export_df = session.df.drop(columns=["is_valid", "confidence"], errors="ignore")
+
+    buffer = io.BytesIO()
+    export_df.to_excel(buffer, index=False, engine="openpyxl")
+    buffer.seek(0)
+
+    base = session.filename.rsplit(".", 1)[0] if session.filename else "validated_data"
+    filename = f"validated_{base}.xlsx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

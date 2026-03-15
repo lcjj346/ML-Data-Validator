@@ -87,25 +87,10 @@ export default function TrainTab() {
 
           <div className="border-t border-white/5 my-8" />
 
-          {/* Step 2: Column config */}
+          {/* Step 2: Training mode */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <StepBadge n={2} />
-              <span className="text-sm font-semibold text-slate-200">Configure columns</span>
-            </div>
-            <ColumnConfig
-              allColumns={t.uploadInfo.column_names}
-              excluded={excludeCols}
-              onChange={setExcludeCols}
-            />
-          </div>
-
-          <div className="border-t border-white/5 my-8" />
-
-          {/* Step 3: Training mode */}
-          <div className="mb-8">
-            <div className="flex items-center mb-3">
-              <StepBadge n={3} />
               <span className="text-sm font-semibold text-slate-200">Choose training mode</span>
             </div>
             <TrainingMode
@@ -115,6 +100,21 @@ export default function TrainTab() {
               onModelNameChange={setModelName}
               useReferenceLists={useRefLists}
               onReferenceListsChange={setUseRefLists}
+            />
+          </div>
+
+          <div className="border-t border-white/5 my-8" />
+
+          {/* Step 3: Column config */}
+          <div className="mb-8">
+            <div className="flex items-center mb-3">
+              <StepBadge n={3} />
+              <span className="text-sm font-semibold text-slate-200">Configure columns</span>
+            </div>
+            <ColumnConfig
+              allColumns={t.uploadInfo.column_names}
+              excluded={excludeCols}
+              onChange={setExcludeCols}
             />
           </div>
 

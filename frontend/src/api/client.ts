@@ -95,6 +95,10 @@ export function getExportUrl(sessionId: string): string {
   return `${BASE}/validate/${sessionId}/export`;
 }
 
+export function getExportXlsxUrl(sessionId: string): string {
+  return `${BASE}/validate/${sessionId}/export-xlsx`;
+}
+
 export function getSummaryReportUrl(sessionId: string): string {
   return `${BASE}/validate/${sessionId}/export-report`;
 }
