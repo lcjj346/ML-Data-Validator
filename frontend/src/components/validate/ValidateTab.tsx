@@ -33,9 +33,10 @@ export default function ValidateTab() {
       const info = await v.upload(file);
       if (info) {
         setUploadKey((k) => k + 1);
+        addToast(`Uploaded "${file.name}"`, 'info');
       }
     },
-    [v],
+    [v, addToast],
   );
 
   const handleModelSelect = useCallback(

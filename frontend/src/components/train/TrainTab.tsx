@@ -33,9 +33,12 @@ export default function TrainTab() {
     async (file: File) => {
       t.reset();
       setExcludeCols([]);
-      await t.upload(file);
+      const info = await t.upload(file);
+      if (info) {
+        addToast(`Uploaded "${file.name}"`, 'info');
+      }
     },
-    [t],
+    [t, addToast],
   );
 
   const handleTrain = useCallback(() => {
