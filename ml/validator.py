@@ -11,6 +11,7 @@ All training data rows are treated as VALID examples.
 import os
 import random
 import joblib
+import numpy as np
 import difflib
 import pandas as pd
 from typing import List, Tuple, Optional, Dict
@@ -275,6 +276,9 @@ class UnifiedMLValidator:
                 # Fit scaler on training data only
                 X_train_scaled = self.column_scalers[col].fit_transform(X_train)
                 X_test_scaled = self.column_scalers[col].transform(X_test)
+                # Replace any NaN/inf produced by scaler overflow with 0
+                X_train_scaled = np.nan_to_num(X_train_scaled, nan=0.0, posinf=0.0, neginf=0.0)
+                X_test_scaled = np.nan_to_num(X_test_scaled, nan=0.0, posinf=0.0, neginf=0.0)
 
                 # Tune regularization strength C via cross-validation
                 # Adaptive folds: at most 5, bounded by smallest class count
