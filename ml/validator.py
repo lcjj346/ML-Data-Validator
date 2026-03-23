@@ -158,6 +158,16 @@ class UnifiedMLValidator:
             return []
 
         invalid = []
+
+        def _numeric_multiply(x):
+            return str(float(x) * random.choice([5, 10, 50, 100]))
+
+        def _numeric_negate(x):
+            return str(-abs(float(x)))
+
+        def _numeric_extreme(x):
+            return str(float(x) * 1000)
+
         mutations = [
             lambda x: x[:len(x)//2] if len(x) > 2 else "",           # Truncate
             lambda x: x + "???",                                      # Add garbage suffix
@@ -171,6 +181,9 @@ class UnifiedMLValidator:
             lambda x: ''.join(c if random.random() > 0.3 else chr(random.randint(33, 126)) for c in x),  # Random char replacement
             lambda x: x.upper() + "123" if x.islower() else x.lower() + "ABC",  # Case change + garbage
             lambda x: "   " + x + "   " if random.random() > 0.5 else "\t\t",  # Extra whitespace or just tabs
+            _numeric_multiply,   # Out-of-range: multiply valid number (e.g. age 35 → 350)
+            _numeric_negate,     # Out-of-range: negate valid number (e.g. age 35 → -35)
+            _numeric_extreme,    # Out-of-range: extreme multiply (e.g. age 35 → 35000)
         ]
 
         for _ in range(count):
