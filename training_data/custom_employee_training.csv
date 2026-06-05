@@ -1,5 +1,5 @@
 employee_id,department,job_title,employment_type,salary
-E001,Finance,Analyst,Full-time,5200
+E001,Finance,Intern,Full-time,5200
 E002,HR,Coordinator,Full-time,4500
 E003,IT,Developer,Full-time,7200
 E004,Marketing,Specialist,Full-time,4800
