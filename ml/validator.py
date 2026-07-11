@@ -9,17 +9,44 @@ All training data rows are treated as VALID examples.
 """
 
 import os
+import re
 import random
+import logging
 import joblib
 import numpy as np
 import difflib
 import pandas as pd
 from typing import List, Tuple, Optional, Dict
+from scipy.sparse import hstack, csr_matrix
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from ml.feature_extractor import GenericFeatureExtractor
+
+logger = logging.getLogger(__name__)
+
+try:
+    from rapidfuzz import fuzz as _rapidfuzz
+
+    def _similarity(a: str, b: str) -> float:
+        """String similarity 0.0-1.0 (rapidfuzz, ~50x faster than difflib)."""
+        return _rapidfuzz.ratio(a, b) / 100.0
+except ImportError:  # pragma: no cover - fallback when rapidfuzz not installed
+    def _similarity(a: str, b: str) -> float:
+        """String similarity 0.0-1.0 (difflib fallback)."""
+        return difflib.SequenceMatcher(None, a, b).ratio()
+
+
+def _best_match(text: str, candidates) -> Tuple[Optional[str], float]:
+    """Find the candidate most similar to text. Returns (match, similarity)."""
+    best_val, best_sim = None, 0.0
+    for candidate in candidates:
+        sim = _similarity(text, candidate)
+        if sim > best_sim:
+            best_val, best_sim = candidate, sim
+    return best_val, best_sim
 
 
 class UnifiedMLValidator:
@@ -32,10 +59,6 @@ class UnifiedMLValidator:
     - One model file stores all column validators
     """
 
-    # Columns that are open-ended (no strict typo detection)
-    # These columns have unlimited valid values, so fuzzy matching would cause false positives
-    OPEN_ENDED_COLUMNS = ['name', 'phone', 'address', 'email', 'age', 'blood_sugar', 'salary', 'price', 'amount', 'percentage', 'date']
-
     # Numeric columns - don't suggest corrections (numbers don't have "typos")
     NUMERIC_COLUMNS = ['age', 'blood_sugar', 'salary', 'price', 'amount', 'percentage', 'income', 'cost', 'quantity']
 
@@ -45,6 +68,11 @@ class UnifiedMLValidator:
 
     # Regularization strengths to try during hyperparameter tuning
     C_GRID = [0.01, 0.1, 1.0, 10.0, 100.0]
+
+    # ML stage only flags a value when P(invalid) reaches this threshold.
+    # Precision over recall: a 51% "maybe" from the classifier should not
+    # paint a cell red - users stop trusting flags that are coin flips.
+    ML_INVALID_THRESHOLD = 0.65
 
     # Base model validation rules (hardcoded for known columns)
     VALIDATION_RULES = {
@@ -93,12 +121,32 @@ class UnifiedMLValidator:
             'min': 0,
             'max': 100,
         },
+        'percent': {
+            'type': 'numeric',
+            'min': 0,
+            'max': 100,
+        },
         'phone': {
-            'type': 'pattern',
+            'type': 'phone',
+            'min_digits': 7,
+        },
+        'mobile': {
+            'type': 'phone',
+            'min_digits': 7,
+        },
+        'telephone': {
+            'type': 'phone',
+            'min_digits': 7,
+        },
+        'tel': {
+            'type': 'phone',
             'min_digits': 7,
         },
         'email': {
-            'type': 'pattern',
+            'type': 'email',
+        },
+        'mail': {
+            'type': 'email',
         },
         'country': {
             'type': 'reference',
@@ -129,6 +177,9 @@ class UnifiedMLValidator:
         """
         self.column_models = {}      # {col_name: LogisticRegression}
         self.column_scalers = {}     # {col_name: StandardScaler}
+        self.column_vectorizers = {} # {col_name: TfidfVectorizer (char n-grams)}
+        self.column_shape_vectorizers = {}  # {col_name: TfidfVectorizer (shape-token n-grams)}
+        self.column_numeric_ranges = {}     # {col_name: (min, max)} learned from training data
         self.column_whitelists = {}  # {col_name: set of valid values}
         self.column_examples = {}    # {col_name: list of valid examples} (for corrector)
         self.reference_lists = {}    # {col_name: set of valid values from reference files}
@@ -138,18 +189,224 @@ class UnifiedMLValidator:
         self.is_trained = False
         self.model_name = "unnamed"
         self.feature_extractor = GenericFeatureExtractor()
+        self._ref_list_file_cache = {}  # {col_name: set} cached reference_lists/*.txt loads
 
         # Try to load if path provided
         if model_path and os.path.exists(model_path):
             self.load(model_path)
 
-    def _generate_invalid_examples(self, valid_examples: List[str], count: int) -> List[str]:
+    # ── Rule resolution ──────────────────────────────────────
+
+    @staticmethod
+    def _column_tokens(column_name: str) -> set:
+        """Split a column name into lowercase word tokens ('Customer Email' -> {customer, email})."""
+        if not column_name:
+            return set()
+        return {t for t in re.split(r'[^a-z0-9]+', column_name.lower()) if t}
+
+    @classmethod
+    def _rule_key_for_column(cls, column_name: str) -> Optional[str]:
         """
-        Generate synthetic invalid data for training.
+        Resolve which VALIDATION_RULES entry applies to a column, matching
+        whole word tokens only. 'customer_email' -> 'email', but
+        'mailing_address' -> None and 'percentage' never matches 'age'.
+        """
+        if not column_name:
+            return None
+        col_lower = column_name.lower().strip()
+        if col_lower in cls.VALIDATION_RULES:
+            return col_lower
+
+        tokens = cls._column_tokens(column_name)
+        normalized = re.sub(r'[^a-z0-9]+', '', col_lower)
+
+        best = None
+        for key in cls.VALIDATION_RULES:
+            key_tokens = key.split('_')
+            key_normalized = key.replace('_', '')
+            if all(t in tokens for t in key_tokens) or key_normalized == normalized:
+                if best is None or len(key) > len(best):
+                    best = key
+        return best
+
+    @staticmethod
+    def _parse_numeric(text_str: str) -> Optional[float]:
+        """Parse a numeric value, tolerating currency symbols, commas and %."""
+        cleaned = text_str.replace(',', '').replace('$', '').replace('£', '').replace('€', '').replace('%', '').strip()
+        try:
+            return float(cleaned)
+        except (ValueError, TypeError):
+            return None
+
+    def _apply_rules(self, text_str: str, column_name: str) -> Optional[Tuple[bool, float, Optional[str]]]:
+        """
+        Apply deterministic validation rules for a column.
+
+        Returns (is_valid, confidence, reason) when a rule decides the value
+        (reason is None for positive short-circuits), or None if no rule
+        applies (validation continues to whitelist/ML).
+        This is the single implementation shared by validate() and validate_batch().
+        """
+        rule_key = self._rule_key_for_column(column_name)
+        if not rule_key:
+            return None
+
+        rules = self.VALIDATION_RULES[rule_key]
+        rule_type = rules.get('type')
+        label = rule_key.replace('_', ' ').title()
+
+        if rule_type == 'numeric':
+            num_val = self._parse_numeric(text_str)
+            if num_val is None:
+                return False, 0.95, f"{label} must be a valid number"
+            if 'min' in rules and num_val < rules['min']:
+                if num_val < 0:
+                    return False, 0.95, f"{label} cannot be negative"
+                return False, 0.95, f"{label} is below minimum ({rules['min']})"
+            if 'max' in rules and num_val > rules['max']:
+                return False, 0.90, f"{label} must be between {rules['min']} and {rules['max']}"
+
+        elif rule_type == 'phone':
+            digit_count = sum(1 for c in text_str if c.isdigit())
+            if digit_count == 0:
+                return False, 0.95, "Phone number must contain digits"
+            if digit_count < rules.get('min_digits', 7):
+                return False, 0.90, f"Incomplete phone number ({digit_count} digits, minimum {rules.get('min_digits', 7)} required)"
+            # Well-formed phone (only digits and separators, plausible length)
+            # = valid without consulting the ML model. Precision over recall:
+            # a structurally perfect phone number should never be flagged.
+            if digit_count <= 15 and re.fullmatch(r'\+?[\d\s().-]+', text_str):
+                return True, 0.90, None
+
+        elif rule_type == 'email':
+            if '@' not in text_str:
+                return False, 0.95, "Email must contain @ symbol"
+            if text_str.count('@') > 1:
+                return False, 0.95, "Email cannot have multiple @ symbols"
+            domain_part = text_str.split('@')[-1]
+            if '.' not in domain_part:
+                return False, 0.90, "Email must have a valid domain (e.g., .com, .org)"
+            # Well-formed address = valid (user@domain.tld with sane characters)
+            if re.fullmatch(r"[A-Za-z0-9._%+'-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text_str):
+                return True, 0.90, None
+
+        elif rule_type == 'date':
+            date_patterns = [
+                r'\d{4}-\d{2}-\d{2}',      # YYYY-MM-DD
+                r'\d{2}/\d{2}/\d{4}',      # DD/MM/YYYY or MM/DD/YYYY
+                r'\d{2}-\d{2}-\d{4}',      # DD-MM-YYYY
+                r'\d{1,2}/\d{1,2}/\d{2,4}',  # D/M/YY or similar
+            ]
+            is_date_format = any(re.match(p, text_str) for p in date_patterns)
+            if not is_date_format and not text_str.replace('-', '').replace('/', '').isdigit():
+                return False, 0.85, "Invalid date format (use: YYYY-MM-DD, DD/MM/YYYY, etc.)"
+
+        return None
+
+    # ── Feature pipeline (char n-grams + shape n-grams + structural features) ──
+
+    @staticmethod
+    def _shape_encode(text: str) -> str:
+        """
+        Encode a string's character-class shape: letters -> x, digits -> d,
+        other characters kept. 'P101' -> 'xddd', 'ORD-042' -> 'xxx-ddd'.
+        Shape n-grams generalise better than raw characters for ID/code columns.
+        """
+        return ''.join('x' if c.isalpha() else 'd' if c.isdigit() else c for c in text)
+
+    def _structural_matrix(self, texts: List[str], column_name: str) -> np.ndarray:
+        """Extract the hand-crafted structural feature matrix for a list of texts."""
+        X = np.array(
+            [self.feature_extractor.extract_features(t, column_name) for t in texts],
+            dtype=float,
+        )
+        return np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+
+    def _fit_features(self, texts: List[str], column_name: str):
+        """
+        Fit the feature pipeline for a column on training texts and return the
+        combined matrix: char n-gram TF-IDF + shape-token n-grams (both learned
+        per column) + scaled structural features. Char n-grams learn this
+        column's vocabulary, shape n-grams learn its character-class pattern
+        (xddd for P101), structural features carry length/ratio/magnitude.
+        """
+        vectorizer = TfidfVectorizer(
+            analyzer='char_wb', ngram_range=(1, 3), max_features=300, lowercase=True
+        )
+        tfidf = vectorizer.fit_transform(texts)
+        self.column_vectorizers[column_name] = vectorizer
+
+        shape_vectorizer = TfidfVectorizer(
+            analyzer='char_wb', ngram_range=(2, 4), max_features=100, lowercase=False
+        )
+        shapes = [self._shape_encode(t) for t in texts]
+        shape_tfidf = shape_vectorizer.fit_transform(shapes)
+        self.column_shape_vectorizers[column_name] = shape_vectorizer
+
+        structural = self._structural_matrix(texts, column_name)
+        scaler = StandardScaler()
+        structural_scaled = np.nan_to_num(
+            scaler.fit_transform(structural), nan=0.0, posinf=0.0, neginf=0.0
+        )
+        self.column_scalers[column_name] = scaler
+
+        return hstack([tfidf, shape_tfidf, csr_matrix(structural_scaled)]).tocsr()
+
+    def _transform_features(self, texts: List[str], column_name: str):
+        """Transform texts with the fitted pipeline for a column."""
+        structural = self._structural_matrix(texts, column_name)
+        scaler = self.column_scalers.get(column_name)
+        if scaler is not None:
+            structural = np.nan_to_num(
+                scaler.transform(structural), nan=0.0, posinf=0.0, neginf=0.0
+            )
+
+        vectorizer = self.column_vectorizers.get(column_name)
+        if vectorizer is None:
+            # Models trained before v3.0 used structural features only
+            return structural
+
+        parts = [vectorizer.transform(texts)]
+
+        shape_vectorizer = self.column_shape_vectorizers.get(column_name)
+        if shape_vectorizer is not None:
+            parts.append(shape_vectorizer.transform([self._shape_encode(t) for t in texts]))
+
+        parts.append(csr_matrix(structural))
+        return hstack(parts).tocsr()
+
+    # Keyboard adjacency map for realistic typo simulation (QWERTY neighbours)
+    _KEYBOARD_NEIGHBOURS = {
+        'a': 'sq', 'b': 'vn', 'c': 'xv', 'd': 'sf', 'e': 'wr', 'f': 'dg',
+        'g': 'fh', 'h': 'gj', 'i': 'uo', 'j': 'hk', 'k': 'jl', 'l': 'k',
+        'm': 'n', 'n': 'bm', 'o': 'ip', 'p': 'o', 'q': 'wa', 'r': 'et',
+        's': 'ad', 't': 'ry', 'u': 'yi', 'v': 'cb', 'w': 'qe', 'x': 'zc',
+        'y': 'tu', 'z': 'x', '0': '9', '1': '2', '2': '13', '3': '24',
+        '4': '35', '5': '46', '6': '57', '7': '68', '8': '79', '9': '80',
+    }
+
+    def _generate_invalid_examples(self, valid_examples: List[str], count: int,
+                                   column_kind: str = 'open') -> List[str]:
+        """
+        Generate synthetic invalid data for training, matched to the column type.
+
+        column_kind controls which error families are simulated:
+        - 'finite' (categorical): realistic typos (transposed/adjacent-key/dropped
+          chars) + structural corruption. A typo of a category IS invalid.
+        - 'numeric': numeric entry errors (decimal shift, negation, extreme
+          values) + structural corruption.
+        - 'open' (names, addresses, IDs, free text): structural corruption ONLY.
+          A one-character variation of an open-ended value is usually still a
+          legitimate value (names have no canonical spelling), so training on
+          near-identical negatives teaches the model to reject valid data.
+
+        Mutations that collide with a real valid value are discarded so the
+        classifier is never trained on contradictory labels.
 
         Args:
             valid_examples: List of valid example strings
             count: Number of invalid examples to generate
+            column_kind: 'finite' | 'numeric' | 'open'
 
         Returns:
             List of synthetic invalid strings
@@ -157,10 +414,42 @@ class UnifiedMLValidator:
         if not valid_examples:
             return []
 
+        valid_set = {str(v).strip().lower() for v in valid_examples}
         invalid = []
 
-        def _numeric_multiply(x):
-            return str(float(x) * random.choice([5, 10, 50, 100]))
+        def _transpose_chars(x):
+            # Swap two adjacent characters: "12345" -> "12435", "John" -> "Jhon"
+            if len(x) < 3:
+                return x + "??"
+            i = random.randint(0, len(x) - 2)
+            return x[:i] + x[i + 1] + x[i] + x[i + 2:]
+
+        def _keyboard_typo(x):
+            # Replace a character with its keyboard neighbour: "gmail" -> "gnail"
+            positions = [i for i, c in enumerate(x.lower()) if c in self._KEYBOARD_NEIGHBOURS]
+            if not positions:
+                return x + "#"
+            i = random.choice(positions)
+            replacement = random.choice(self._KEYBOARD_NEIGHBOURS[x[i].lower()])
+            return x[:i] + replacement + x[i + 1:]
+
+        def _drop_char(x):
+            # Delete one character: "Singapore" -> "Singpore"
+            if len(x) < 3:
+                return ""
+            i = random.randint(0, len(x) - 1)
+            return x[:i] + x[i + 1:]
+
+        def _double_char(x):
+            # Duplicate one character: "email" -> "emaail"
+            if not x:
+                return "??"
+            i = random.randint(0, len(x) - 1)
+            return x[:i] + x[i] + x[i:]
+
+        def _decimal_shift(x):
+            # Unit/entry error: value 10x or 0.1x off (95.0 -> 950.0)
+            return str(round(float(x) * random.choice([10, 100, 0.1]), 4))
 
         def _numeric_negate(x):
             return str(-abs(float(x)))
@@ -168,32 +457,55 @@ class UnifiedMLValidator:
         def _numeric_extreme(x):
             return str(float(x) * 1000)
 
-        mutations = [
-            lambda x: x[:len(x)//2] if len(x) > 2 else "",           # Truncate
-            lambda x: x + "???",                                      # Add garbage suffix
-            lambda x: "???" + x,                                      # Add garbage prefix
+        structural_corruption = [
+            lambda x: x[:len(x) // 2] if len(x) > 2 else "",          # Truncate
+            lambda x: x + "???",                                       # Garbage suffix
             lambda x: ''.join(random.sample(x, len(x))) if len(x) > 1 else x + "X",  # Shuffle
-            lambda x: x.replace(x[0], '@') if x else "@",            # Replace first char
-            lambda x: "",                                             # Empty
+            lambda x: "",                                              # Empty
             lambda x: "invalid_" + x[:3] if len(x) >= 3 else "invalid_X",  # Prefix garbage
-            lambda x: x[:len(x)//3] if len(x) > 3 else "X",          # Severe truncate
-            lambda x: x + x if len(x) < 20 else x[:10] + "###" + x[-10:],  # Duplicate or corrupt middle
-            lambda x: ''.join(c if random.random() > 0.3 else chr(random.randint(33, 126)) for c in x),  # Random char replacement
-            lambda x: x.upper() + "123" if x.islower() else x.lower() + "ABC",  # Case change + garbage
-            lambda x: "   " + x + "   " if random.random() > 0.5 else "\t\t",  # Extra whitespace or just tabs
-            _numeric_multiply,   # Out-of-range: multiply valid number (e.g. age 35 → 350)
-            _numeric_negate,     # Out-of-range: negate valid number (e.g. age 35 → -35)
-            _numeric_extreme,    # Out-of-range: extreme multiply (e.g. age 35 → 35000)
+            lambda x: ''.join(c if random.random() > 0.3 else chr(random.randint(33, 126)) for c in x),  # Random noise
+        ]
+        realistic_typos = [
+            _transpose_chars,
+            _transpose_chars,
+            _keyboard_typo,
+            _keyboard_typo,
+            _drop_char,
+            _double_char,
+        ]
+        numeric_errors = [
+            _decimal_shift,
+            _decimal_shift,
+            _numeric_negate,
+            _numeric_extreme,
         ]
 
-        for _ in range(count):
-            example = random.choice(valid_examples)
+        if column_kind == 'finite':
+            mutations = realistic_typos + structural_corruption
+        elif column_kind == 'numeric':
+            mutations = numeric_errors + structural_corruption
+        else:  # 'open'
+            mutations = structural_corruption
+
+        attempts = 0
+        max_attempts = count * 4
+        while len(invalid) < count and attempts < max_attempts:
+            attempts += 1
+            example = str(random.choice(valid_examples))
             mutation = random.choice(mutations)
             try:
-                mutated = mutation(str(example))
-                invalid.append(mutated)
-            except Exception:
-                invalid.append("")  # Fallback to empty string
+                mutated = mutation(example)
+            except (ValueError, TypeError):
+                continue  # e.g. numeric mutation on non-numeric value
+
+            # Never label a real valid value as invalid
+            if mutated.strip().lower() in valid_set and mutated.strip():
+                continue
+            invalid.append(mutated)
+
+        # Top up with unambiguous garbage if too many mutations collided
+        while len(invalid) < count:
+            invalid.append("")
 
         return invalid
 
@@ -211,64 +523,75 @@ class UnifiedMLValidator:
         Returns:
             dict: Per-column training metrics
         """
-        print(f"Training Unified ML Validator '{model_name}'...")
-        print(f"Total rows: {len(df)}")
+        logger.info("Training Unified ML Validator '%s' (%d rows)", model_name, len(df))
 
         if exclude_columns is None:
             exclude_columns = []
 
         # Determine columns to train
         columns_to_train = [col for col in df.columns if col not in exclude_columns]
-        print(f"Training on {len(columns_to_train)} columns: {columns_to_train}")
+        logger.info("Training on %d columns: %s", len(columns_to_train), columns_to_train)
 
         if len(df) < 5:
-            print("WARNING: Very small dataset (< 5 rows). Model may not perform well.")
+            logger.warning("Very small dataset (< 5 rows). Model may not perform well.")
 
         self.model_name = model_name
         self.columns = columns_to_train
         self.training_metrics = {}
         self.categorical_columns = set()
+        self.column_numeric_ranges = {}
 
         for col in columns_to_train:
-            print(f"\n--- Training column: {col} ---")
+            logger.info("Training column: %s", col)
 
             # Get valid examples (all rows as valid)
             valid_values = df[col].dropna().astype(str).tolist()
             valid_values = [v.strip() for v in valid_values if v.strip()]
 
             if not valid_values:
-                print(f"  Skipping '{col}': no valid values")
+                logger.info("  Skipping '%s': no valid values", col)
                 continue
 
             unique_valid = list(set(valid_values))
-            print(f"  Valid examples: {len(valid_values)} ({len(unique_valid)} unique)")
+            logger.info("  Valid examples: %d (%d unique)", len(valid_values), len(unique_valid))
 
             # Auto-detect categorical columns (finite set of valid values)
             # Heuristic: fewer than 30% unique ratio AND at most 20 unique values
             unique_ratio = len(unique_valid) / max(len(df), 1)
             if unique_ratio < 0.3 and len(unique_valid) <= 20:
                 self.categorical_columns.add(col)
-                print(f"  Auto-detected as categorical ({len(unique_valid)} unique values, {unique_ratio:.1%} ratio)")
+                logger.info("  Auto-detected as categorical (%d unique values, %.1f%% ratio)", len(unique_valid), unique_ratio * 100)
 
             # Store whitelist and examples for correction
             self.column_whitelists[col] = set(v.lower() for v in unique_valid)
             self.column_examples[col] = unique_valid
 
+            # Pick the synthetic-error family that matches the column type
+            numeric_share = sum(1 for v in unique_valid if self._parse_numeric(v) is not None) / len(unique_valid)
+            if col in self.categorical_columns:
+                column_kind = 'finite'
+            elif numeric_share >= 0.8:
+                column_kind = 'numeric'
+            else:
+                column_kind = 'open'
+
+            # For continuous numeric columns, learn the observed value range.
+            # Validation rejects values far outside it (range stage).
+            if column_kind == 'numeric':
+                numeric_vals = [n for n in (self._parse_numeric(v) for v in unique_valid) if n is not None]
+                if numeric_vals:
+                    self.column_numeric_ranges[col] = (min(numeric_vals), max(numeric_vals))
+
             # Generate synthetic invalid examples
             invalid_count = max(len(valid_values), 50)  # At least 50 or match valid count
-            invalid_values = self._generate_invalid_examples(unique_valid, invalid_count)
-            print(f"  Generated {len(invalid_values)} synthetic invalid examples")
+            invalid_values = self._generate_invalid_examples(unique_valid, invalid_count, column_kind)
+            logger.info("  Generated %d synthetic invalid examples (%s)", len(invalid_values), column_kind)
 
             # Prepare training data
             all_texts = valid_values + invalid_values
             all_labels = [1] * len(valid_values) + [0] * len(invalid_values)
 
-            # Extract features
-            X = [self.feature_extractor.extract_features(text, col) for text in all_texts]
             y = all_labels
-
-            # Initialize scaler
-            self.column_scalers[col] = StandardScaler()
 
             col_metrics = {
                 'total_samples': len(all_texts),
@@ -278,20 +601,17 @@ class UnifiedMLValidator:
             }
 
             if len(all_texts) >= 10 and min(len(valid_values), len(invalid_values)) >= 4:
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=test_size, stratify=y, random_state=42
+                texts_train, texts_test, y_train, y_test = train_test_split(
+                    all_texts, y, test_size=test_size, stratify=y, random_state=42
                 )
 
                 col_metrics['used_split'] = True
-                col_metrics['train_size'] = len(X_train)
-                col_metrics['test_size'] = len(X_test)
+                col_metrics['train_size'] = len(texts_train)
+                col_metrics['test_size'] = len(texts_test)
 
-                # Fit scaler on training data only
-                X_train_scaled = self.column_scalers[col].fit_transform(X_train)
-                X_test_scaled = self.column_scalers[col].transform(X_test)
-                # Replace any NaN/inf produced by scaler overflow with 0
-                X_train_scaled = np.nan_to_num(X_train_scaled, nan=0.0, posinf=0.0, neginf=0.0)
-                X_test_scaled = np.nan_to_num(X_test_scaled, nan=0.0, posinf=0.0, neginf=0.0)
+                # Fit feature pipeline (n-gram vectorizer + scaler) on training data only
+                X_train_scaled = self._fit_features(texts_train, col)
+                X_test_scaled = self._transform_features(texts_test, col)
 
                 # Tune regularization strength C via cross-validation
                 # Adaptive folds: at most 5, bounded by smallest class count
@@ -308,7 +628,7 @@ class UnifiedMLValidator:
                     self.column_models[col] = grid.best_estimator_
                     col_metrics['best_C'] = grid.best_params_['C']
                     col_metrics['cv_f1_score'] = round(grid.best_score_, 4)
-                    print(f"  Best C: {grid.best_params_['C']} (CV F1: {grid.best_score_:.1%})")
+                    logger.info("  Best C: %s (CV F1: %.1f%%)", grid.best_params_['C'], grid.best_score_ * 100)
                 else:
                     # Not enough samples per class for CV - use default C
                     lr = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
@@ -324,8 +644,8 @@ class UnifiedMLValidator:
                 col_metrics.update(self._calculate_metrics(y_train, y_train_pred, 'train'))
                 col_metrics.update(self._calculate_metrics(y_test, y_test_pred, 'test'))
 
-                print(f"  Train accuracy: {col_metrics['train_accuracy']:.1%}")
-                print(f"  Test accuracy: {col_metrics['test_accuracy']:.1%}")
+                logger.info("  Train accuracy: %.1f%%", col_metrics['train_accuracy'] * 100)
+                logger.info("  Test accuracy: %.1f%%", col_metrics['test_accuracy'] * 100)
 
             else:
                 # Too small for split - train on all data
@@ -334,7 +654,7 @@ class UnifiedMLValidator:
                 col_metrics['best_C'] = 1.0
                 col_metrics['cv_f1_score'] = None
 
-                X_scaled = self.column_scalers[col].fit_transform(X)
+                X_scaled = self._fit_features(all_texts, col)
                 lr = LogisticRegression(max_iter=5000, random_state=42, class_weight='balanced', solver='lbfgs')
                 lr.fit(X_scaled, y)
                 self.column_models[col] = lr
@@ -342,12 +662,12 @@ class UnifiedMLValidator:
                 y_pred = self.column_models[col].predict(X_scaled)
                 col_metrics.update(self._calculate_metrics(y, y_pred, 'train'))
 
-                print(f"  Train accuracy (no split): {col_metrics['train_accuracy']:.1%}")
+                logger.info("  Train accuracy (no split): %.1f%%", col_metrics['train_accuracy'] * 100)
 
             self.training_metrics[col] = col_metrics
 
         self.is_trained = True
-        print(f"\nTraining complete for {len(self.column_models)} columns!")
+        logger.info("Training complete for %d columns", len(self.column_models))
 
         return self.training_metrics
 
@@ -419,191 +739,38 @@ class UnifiedMLValidator:
         return mapping
 
     def _load_reference_list_for_column(self, column_name: str) -> set:
-        """Load reference list for a column from file if available."""
-        import os
-        ref_dir = "reference_lists"
-        if not os.path.exists(ref_dir):
-            return set()
+        """Load reference list for a column from file if available (cached)."""
+        if column_name in self._ref_list_file_cache:
+            return self._ref_list_file_cache[column_name]
 
-        # Try exact filename match
-        filepath = os.path.join(ref_dir, f"{column_name}.txt")
+        values = set()
+        filepath = os.path.join("reference_lists", f"{column_name}.txt")
         if os.path.exists(filepath):
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
-                    values = set()
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith('#'):
                             values.add(line.lower())
-                    return values
-            except Exception:
-                pass
-        return set()
+            except OSError as e:
+                logger.warning("Could not read reference list %s: %s", filepath, e)
+
+        self._ref_list_file_cache[column_name] = values
+        return values
 
     def validate(self, text: str, column_name: str) -> Tuple[bool, float]:
         """
         Validate a single value for a specific column.
 
-        Args:
-            text: Text to validate
-            column_name: Column name this value belongs to
+        Delegates to validate_batch() so single-value and batch validation
+        share one implementation and can never disagree.
 
         Returns:
             (is_valid, confidence) where:
                 is_valid: True if valid, False if invalid
                 confidence: 0.0-1.0 confidence score
         """
-        if not self.is_trained:
-            raise ValueError("Model not trained. Call train() or load() first.")
-
-        text_str = str(text).strip()
-        text_lower = text_str.lower()
-        col_lower = column_name.lower() if column_name else ''
-
-        # HARDCODED VALIDATION for known base model columns
-        # This catches invalid values BEFORE checking if column is trained
-        # Allows validation of untrained columns like salary, percentage, etc.
-
-        # Age validation
-        if 'age' in col_lower:
-            try:
-                age_val = float(text_str)
-                if age_val < 0:
-                    return False, 0.95  # Negative age is definitely invalid
-                if age_val > 120:
-                    return False, 0.90  # Age > 120 is invalid
-            except (ValueError, TypeError):
-                return False, 0.95  # Non-numeric age is invalid
-
-        # Blood sugar validation
-        if 'blood_sugar' in col_lower or 'bloodsugar' in col_lower:
-            try:
-                bs_val = float(text_str)
-                if bs_val < 0:
-                    return False, 0.95  # Negative blood sugar is invalid
-                if bs_val > 500:
-                    return False, 0.85  # Extremely high blood sugar is suspicious
-            except (ValueError, TypeError):
-                return False, 0.95  # Non-numeric blood sugar is invalid
-
-        # Phone validation - minimum digits check
-        if 'phone' in col_lower or 'mobile' in col_lower or 'tel' in col_lower:
-            digit_count = sum(1 for c in text_str if c.isdigit())
-            if digit_count == 0:
-                return False, 0.95  # Phone must have digits
-            if digit_count < 7:
-                return False, 0.90  # Incomplete phone number
-
-        # Email validation - must have @ and domain
-        if 'email' in col_lower or 'mail' in col_lower:
-            if '@' not in text_str:
-                return False, 0.95  # Email must have @
-            if text_str.count('@') > 1:
-                return False, 0.95  # Multiple @ is invalid
-            domain_part = text_str.split('@')[-1]
-            if '.' not in domain_part:
-                return False, 0.90  # Must have domain extension
-
-        # Salary/Price/Amount/Income/Cost validation - must be non-negative numeric
-        if any(kw in col_lower for kw in ['salary', 'price', 'amount', 'income', 'cost', 'quantity']):
-            try:
-                val = float(text_str.replace(',', '').replace('$', '').replace('£', '').replace('€', ''))
-                if val < 0:
-                    return False, 0.95  # Cannot be negative
-            except (ValueError, TypeError):
-                return False, 0.95  # Must be numeric
-
-        # Percentage validation - must be 0-100
-        if 'percent' in col_lower or col_lower.endswith('%'):
-            try:
-                pct_val = float(text_str.replace('%', ''))
-                if pct_val < 0:
-                    return False, 0.95  # Cannot be negative
-                if pct_val > 100:
-                    return False, 0.90  # Cannot exceed 100%
-            except (ValueError, TypeError):
-                return False, 0.95  # Must be numeric
-
-        # Date validation - basic format check
-        if 'date' in col_lower:
-            import re
-            # Check for common date patterns
-            date_patterns = [
-                r'\d{4}-\d{2}-\d{2}',  # YYYY-MM-DD
-                r'\d{2}/\d{2}/\d{4}',  # DD/MM/YYYY or MM/DD/YYYY
-                r'\d{2}-\d{2}-\d{4}',  # DD-MM-YYYY
-                r'\d{1,2}/\d{1,2}/\d{2,4}',  # D/M/YY or similar
-            ]
-            is_date_format = any(re.match(pattern, text_str) for pattern in date_patterns)
-            if not is_date_format and not text_str.replace('-', '').replace('/', '').isdigit():
-                return False, 0.85  # Doesn't look like a date
-
-        # Check if column is trained - if not and passed hardcoded rules, return valid with low confidence
-        if column_name not in self.column_models:
-            # Column not trained in ML model
-            # If we got here, it passed hardcoded rules (if any applied)
-            # Check reference lists for untrained columns
-            if column_name and col_lower in ['gender', 'currency', 'status']:
-                # Load reference list if available
-                ref_list = self._load_reference_list_for_column(col_lower)
-                if ref_list:
-                    if text_lower in ref_list:
-                        return True, 1.0
-                    # Check for typos
-                    for valid in ref_list:
-                        sim = difflib.SequenceMatcher(None, text_lower, valid.lower()).ratio()
-                        if sim >= 0.8:
-                            return False, sim  # Likely typo
-                    return False, 0.7  # Not in reference list
-            return True, 0.5  # Uncertain - column not trained
-
-        # Get combined whitelist (training data + reference lists)
-        whitelist = self._get_combined_whitelist(column_name)
-
-        if whitelist:
-            # Exact match = definitely valid
-            if text_lower in whitelist:
-                return True, 1.0
-
-            # For numeric values, try normalized comparison (95 == 95.0)
-            try:
-                numeric_val = float(text_str)
-                # Check both integer and float string representations
-                if str(int(numeric_val)) in whitelist or str(numeric_val) in whitelist or f"{numeric_val:.1f}" in whitelist:
-                    return True, 1.0
-            except (ValueError, TypeError):
-                pass  # Not numeric, continue with normal flow
-
-            # Strict typo detection only for categorical columns or columns with reference lists.
-            # High-cardinality columns (order_id, customer_name, etc.) should NOT use fuzzy
-            # matching — new unseen values that follow the same pattern are valid, not typos.
-            # The ML classifier handles those correctly via structural features.
-            use_strict_typo_detection = (
-                column_name in self.categorical_columns
-                or column_name in self.reference_lists
-            )
-
-            if use_strict_typo_detection:
-                # Fuzzy match to catch typos - if similar to a valid value but not exact, it's likely a typo
-                for valid_value in whitelist:
-                    similarity = difflib.SequenceMatcher(None, text_lower, valid_value).ratio()
-
-                    # High similarity (>0.8) but not exact = likely typo = INVALID
-                    if similarity >= 0.8:
-                        return False, similarity  # Invalid - it's a typo of a known value
-
-        # For categorical columns: value not in whitelist and not a known typo = unknown category
-        if column_name in self.categorical_columns:
-            return False, 0.85
-
-        # For values not similar to whitelist, use ML model
-        features = self.feature_extractor.extract_features(text_str, column_name)
-        features_scaled = self.column_scalers[column_name].transform([features])
-        prediction = self.column_models[column_name].predict(features_scaled)[0]
-        probabilities = self.column_models[column_name].predict_proba(features_scaled)[0]
-        confidence = float(max(probabilities))
-
-        return bool(prediction), confidence
+        return self.validate_batch([text], column_name)[0]
 
     def validate_row(self, row: pd.Series, column_mapping: Dict[str, str] = None) -> Dict[str, Tuple[bool, float]]:
         """
@@ -663,94 +830,181 @@ class UnifiedMLValidator:
 
         return pd.DataFrame(results, index=df.index)
 
-    def validate_batch(self, texts: List[str], column_name: str) -> List[Tuple[bool, float]]:
-        """
-        Validate multiple values at once for a specific column (faster).
+    def _unknown_value_reason(self, column_name: str) -> str:
+        """Human-readable reason for a value outside a closed valid set."""
+        rule_key = self._rule_key_for_column(column_name)
+        if rule_key and self.VALIDATION_RULES[rule_key].get('type') == 'reference':
+            return f"{rule_key.replace('_', ' ').title()} not recognized"
 
-        Args:
-            texts: List of texts to validate
-            column_name: Column name these values belong to
+        examples = self.column_examples.get(column_name, [])
+        if examples:
+            sample = ', '.join(sorted(str(v) for v in examples[:8]))
+            suffix = f' (+{len(examples) - 8} more)' if len(examples) > 8 else ''
+            return f"Not a valid {column_name} (expected: {sample}{suffix})"
+        return f"Not a recognized value for {column_name}"
+
+    def validate_batch_detailed(self, texts: List[str], column_name: str) -> List[dict]:
+        """
+        Validate multiple values for a specific column.
+
+        This is THE validation implementation — validate() and validate_batch()
+        delegate here, so the verdict, confidence and explanation always come
+        from the same pass.
+
+        Pipeline per value:
+          1. Empty / missing check
+          2. Deterministic rules (age range, email format, phone digits, ...)
+          3. Whitelist exact / numeric-normalized match
+          4. Learned numeric range (continuous numeric columns)
+          5. Fuzzy typo detection (categorical / reference-list columns only)
+          6. Closed-set rejection (unknown category / reference value)
+          7. ML classifier (char n-grams + shape n-grams + structural features)
 
         Returns:
-            List of (is_valid, confidence) tuples
+            List of dicts: {'is_valid', 'confidence', 'stage', 'reason'}
+            stage is one of: empty, rule, reference, not-trained, whitelist,
+            range, typo, unknown-value, ml. reason is None for valid values.
         """
         if not self.is_trained:
             raise ValueError("Model not trained. Call train() or load() first.")
 
-        if column_name not in self.column_models:
-            return [(True, 0.5)] * len(texts)
+        def entry(is_valid, confidence, stage, reason=None):
+            return {'is_valid': is_valid, 'confidence': confidence, 'stage': stage, 'reason': reason}
 
-        results = []
+        results: List[Optional[dict]] = [None] * len(texts)
         texts_for_ml = []
         ml_indices = []
 
-        # Get combined whitelist (training data + reference lists)
-        whitelist = self._get_combined_whitelist(column_name)
+        is_trained_column = column_name in self.column_models
+
+        # Combined whitelist (training data + reference lists)
+        whitelist = self._get_combined_whitelist(column_name) if is_trained_column else set()
 
         # Strict typo detection only for categorical columns or columns with reference lists.
         # High-cardinality columns (order_id, customer_name, etc.) should NOT use fuzzy
         # matching — new unseen values that follow the same pattern are valid, not typos.
-        # The ML classifier handles those correctly via structural features.
-        col_lower = column_name.lower()
+        # The ML classifier handles those correctly via learned features.
         use_strict_typo_detection = (
             column_name in self.categorical_columns
             or column_name in self.reference_lists
         )
 
-        # First pass: check whitelist with fuzzy matching
+        numeric_range = self.column_numeric_ranges.get(column_name)
+
+        # For untrained reference-type columns (gender, currency, status, country...)
+        # fall back to the bundled reference list files.
+        untrained_ref_list = set()
+        if not is_trained_column and column_name:
+            rule_key = self._rule_key_for_column(column_name)
+            if rule_key and self.VALIDATION_RULES[rule_key].get('type') == 'reference':
+                untrained_ref_list = self._load_reference_list_for_column(rule_key)
+
         for i, text in enumerate(texts):
             text_str = str(text).strip()
             text_lower = text_str.lower()
 
-            # Exact match = valid
-            if text_lower in whitelist:
-                results.append((True, 1.0))
+            # 1. Empty / missing value
+            if not text_str or text_lower in ('nan', 'none', 'null'):
+                results[i] = entry(False, 0.95, 'empty', 'Empty or missing value')
                 continue
 
-            # For numeric values, try normalized comparison (95 == 95.0)
-            numeric_match = False
+            # 2. Deterministic rules (run for trained AND untrained columns)
+            rule_result = self._apply_rules(text_str, column_name)
+            if rule_result is not None:
+                is_valid, confidence, reason = rule_result
+                results[i] = entry(is_valid, confidence, 'rule', reason)
+                continue
+
+            # Untrained column: reference list if available, else uncertain-valid
+            if not is_trained_column:
+                if untrained_ref_list:
+                    if text_lower in untrained_ref_list:
+                        results[i] = entry(True, 1.0, 'reference')
+                    else:
+                        match, best_sim = _best_match(text_lower, untrained_ref_list)
+                        if best_sim >= 0.8:
+                            results[i] = entry(False, best_sim, 'typo', f"Possible typo - did you mean '{match}'?")
+                        else:
+                            results[i] = entry(False, 0.7, 'unknown-value', self._unknown_value_reason(column_name))
+                else:
+                    results[i] = entry(True, 0.5, 'not-trained')  # Column not trained - uncertain
+                continue
+
+            # 3. Whitelist exact match
+            if text_lower in whitelist:
+                results[i] = entry(True, 1.0, 'whitelist')
+                continue
+
+            # Numeric-normalized whitelist match (95 == 95.0)
+            parsed_numeric = None
             try:
-                numeric_val = float(text_str)
-                if str(int(numeric_val)) in whitelist or str(numeric_val) in whitelist or f"{numeric_val:.1f}" in whitelist:
-                    results.append((True, 1.0))
-                    numeric_match = True
-            except (ValueError, TypeError):
+                parsed_numeric = float(text_str)
+                if (str(int(parsed_numeric)) in whitelist
+                        or str(parsed_numeric) in whitelist
+                        or f"{parsed_numeric:.1f}" in whitelist):
+                    results[i] = entry(True, 1.0, 'whitelist')
+                    continue
+            except (ValueError, TypeError, OverflowError):
                 pass
 
-            if numeric_match:
+            # 4. Learned numeric range - values far outside what training data
+            # showed for a continuous numeric column are invalid
+            if numeric_range is not None and parsed_numeric is not None:
+                lo, hi = numeric_range
+                margin = (hi - lo) * 0.1 if hi > lo else abs(hi) * 0.1
+                if parsed_numeric < lo - margin or parsed_numeric > hi + margin:
+                    results[i] = entry(False, 0.90, 'range',
+                                       f"Outside the range seen in training data ({lo:g} to {hi:g})")
+                    continue
+
+            # 5. Fuzzy typo detection (finite-valued columns only) - best match
+            # so the flagged similarity refers to the same value we'd suggest
+            if use_strict_typo_detection:
+                match, best_sim = _best_match(text_lower, whitelist)
+                if best_sim >= 0.8:  # High similarity but not exact = typo
+                    results[i] = entry(False, best_sim, 'typo', f"Possible typo - did you mean '{match}'?")
+                    continue
+
+                # 6. Closed set: unknown value that isn't a near-typo is
+                # invalid - no ML guessing
+                results[i] = entry(False, 0.85, 'unknown-value', self._unknown_value_reason(column_name))
                 continue
 
-            # Fuzzy match to catch typos (only for columns with finite valid values)
-            found_typo = False
-            if use_strict_typo_detection:
-                for valid_value in whitelist:
-                    similarity = difflib.SequenceMatcher(None, text_lower, valid_value).ratio()
-                    if similarity >= 0.8:  # High similarity but not exact = typo
-                        results.append((False, similarity))  # Invalid - typo
-                        found_typo = True
-                        break
+            # 7. ML classifier
+            texts_for_ml.append(text_str)
+            ml_indices.append(i)
 
-            if not found_typo:
-                if column_name in self.categorical_columns:
-                    results.append((False, 0.85))  # Unknown category - whitelist-only validation
-                else:
-                    results.append(None)  # Placeholder for ML
-                    texts_for_ml.append(text_str)
-                    ml_indices.append(i)
-
-        # Second pass: ML for entries not matching whitelist
+        # Batch-predict all values that reached the ML stage
         if texts_for_ml:
-            X = [self.feature_extractor.extract_features(text, column_name) for text in texts_for_ml]
-            X_scaled = self.column_scalers[column_name].transform(X)
-            predictions = self.column_models[column_name].predict(X_scaled)
-            probabilities = self.column_models[column_name].predict_proba(X_scaled)
+            try:
+                model = self.column_models[column_name]
+                X = self._transform_features(texts_for_ml, column_name)
+                probabilities = model.predict_proba(X)
+                invalid_class_idx = list(model.classes_).index(0)
 
-            for idx, pred, prob in zip(ml_indices, predictions, probabilities):
-                is_valid = bool(pred)
-                confidence = float(max(prob))
-                results[idx] = (is_valid, confidence)
+                for idx, prob in zip(ml_indices, probabilities):
+                    p_invalid = float(prob[invalid_class_idx])
+                    if p_invalid >= self.ML_INVALID_THRESHOLD:
+                        results[idx] = entry(False, p_invalid, 'ml',
+                                             "Doesn't match the pattern learned from training data")
+                    else:
+                        results[idx] = entry(True, 1.0 - p_invalid, 'ml')
+            except ValueError as e:
+                # Feature-shape mismatch: model was trained with an older
+                # feature pipeline. Whitelist/rule stages still work.
+                logger.error("ML stage failed for column '%s' (model needs retraining): %s", column_name, e)
+                for idx in ml_indices:
+                    results[idx] = entry(True, 0.5, 'ml', None)
 
         return results
+
+    def validate_batch(self, texts: List[str], column_name: str) -> List[Tuple[bool, float]]:
+        """
+        Validate multiple values for a column. Thin wrapper around
+        validate_batch_detailed() returning (is_valid, confidence) tuples.
+        """
+        return [(r['is_valid'], r['confidence'])
+                for r in self.validate_batch_detailed(texts, column_name)]
 
     def correct(self, value: str, column_name: str) -> Optional[str]:
         """
@@ -775,16 +1029,20 @@ class UnifiedMLValidator:
             return None
 
         text_str = str(value).strip()
-        col_lower = column_name.lower() if column_name else ''
+        col_tokens = self._column_tokens(column_name)
 
         # RULE 1: Never suggest corrections for numeric columns
         # Numbers don't have "typos" - a wrong number is just wrong
-        for num_col in self.NUMERIC_COLUMNS:
-            if num_col in col_lower:
-                return None  # No correction for age, blood_sugar, etc.
+        # (token match so 'percentage'/'mileage' never match 'age')
+        if any(num_col in col_tokens or num_col.replace('_', '') in col_tokens
+               for num_col in self.NUMERIC_COLUMNS):
+            return None  # No correction for age, blood_sugar, etc.
+        rule_key = self._rule_key_for_column(column_name)
+        if rule_key and self.VALIDATION_RULES[rule_key].get('type') == 'numeric':
+            return None
 
         # RULE 2: Simple email typo fixes (double @@ -> single @)
-        if 'email' in col_lower or 'mail' in col_lower:
+        if rule_key in ('email', 'mail'):
             if '@@' in text_str:
                 # Fix double @@ to single @
                 fixed_email = text_str.replace('@@', '@')
@@ -796,10 +1054,11 @@ class UnifiedMLValidator:
 
         # RULE 3: For phone/email, require very high similarity (85%)
         # Prevents suggesting random phone numbers for incomplete inputs
-        is_high_similarity_column = any(col in col_lower for col in self.HIGH_SIMILARITY_COLUMNS)
+        is_phone_column = rule_key in ('phone', 'mobile', 'telephone', 'tel')
+        is_high_similarity_column = is_phone_column or rule_key in ('email', 'mail')
 
         # RULE 4: For phone numbers, also check digit count similarity
-        if 'phone' in col_lower:
+        if is_phone_column:
             input_digits = sum(1 for c in text_str if c.isdigit())
             # If input has very few digits, don't suggest
             if input_digits < 5:
@@ -814,7 +1073,7 @@ class UnifiedMLValidator:
         # Determine similarity threshold based on column type
         if is_high_similarity_column:
             similarity_threshold = self.HIGH_SIMILARITY_THRESHOLD  # 85%
-        elif 'country' in col_lower:
+        elif rule_key == 'country':
             similarity_threshold = 0.7  # 70% for countries (typo detection)
         else:
             similarity_threshold = 0.6  # 60% default for names, etc.
@@ -827,7 +1086,7 @@ class UnifiedMLValidator:
 
             if similarity >= similarity_threshold:
                 # For phone numbers, also check digit count is similar
-                if 'phone' in col_lower:
+                if is_phone_column:
                     input_digits = sum(1 for c in text_str if c.isdigit())
                     example_digits = sum(1 for c in valid_example_str if c.isdigit())
                     # Require digit counts to be within 2 of each other
@@ -882,54 +1141,37 @@ class UnifiedMLValidator:
         text_str = str(text).strip()
         issues = []
 
-        # Check hardcoded rules for known base model columns
+        # Check deterministic rules using the same rule resolution as validation
         if column_name:
-            col_lower = column_name.lower()
-
-            # Find matching rule set (prefer exact match, then word boundary match)
-            rule_key = None
-            # First try exact match
-            if col_lower in self.VALIDATION_RULES:
-                rule_key = col_lower
-            else:
-                # Try word boundary match (avoid 'age' matching 'percentage')
-                import re
-                for key in self.VALIDATION_RULES:
-                    # Match as whole word
-                    if re.search(r'\b' + re.escape(key) + r'\b', col_lower):
-                        rule_key = key
-                        break
-                    # Or if column starts with key
-                    if col_lower.startswith(key + '_') or col_lower.startswith(key):
-                        if rule_key is None or len(key) > len(rule_key):
-                            rule_key = key
+            rule_key = self._rule_key_for_column(column_name)
 
             if rule_key:
                 rules = self.VALIDATION_RULES[rule_key]
+                rule_type = rules.get('type')
+                label = rule_key.replace('_', ' ').title()
 
-                # Numeric column validation (age, blood_sugar)
-                if rules.get('type') == 'numeric':
-                    try:
-                        num_val = float(text_str)
-                        if 'min' in rules and num_val < rules['min']:
-                            if num_val < 0:
-                                return f"{rule_key.replace('_', ' ').title()} cannot be negative"
-                            return f"{rule_key.replace('_', ' ').title()} is below minimum ({rules['min']})"
-                        if 'max' in rules and num_val > rules['max']:
-                            return f"{rule_key.replace('_', ' ').title()} must be between {rules['min']} and {rules['max']}"
-                    except (ValueError, TypeError):
-                        return f"{rule_key.replace('_', ' ').title()} must be a valid number"
+                # Numeric column validation (age, blood_sugar, salary, ...)
+                if rule_type == 'numeric':
+                    num_val = self._parse_numeric(text_str)
+                    if num_val is None:
+                        return f"{label} must be a valid number"
+                    if 'min' in rules and num_val < rules['min']:
+                        if num_val < 0:
+                            return f"{label} cannot be negative"
+                        return f"{label} is below minimum ({rules['min']})"
+                    if 'max' in rules and num_val > rules['max']:
+                        return f"{label} must be between {rules['min']} and {rules['max']}"
 
                 # Phone validation
-                elif rule_key == 'phone':
+                elif rule_type == 'phone':
                     digit_count = sum(1 for c in text_str if c.isdigit())
                     if digit_count == 0:
                         return "Phone number must contain digits"
-                    if digit_count < 7:
+                    if digit_count < rules.get('min_digits', 7):
                         return f"Incomplete phone number ({digit_count} digits, minimum 7 required)"
 
                 # Email validation
-                elif rule_key == 'email':
+                elif rule_type == 'email':
                     if '@' not in text_str:
                         return "Email must contain @ symbol"
                     if text_str.count('@') > 1:
@@ -969,43 +1211,15 @@ class UnifiedMLValidator:
 
                 # Currency validation (check against reference list)
                 elif rule_key == 'currency':
-                    if 'currency' in self.reference_lists:
-                        return "Currency code not recognized (use: USD, EUR, GBP, SGD, etc.)"
-                    return "Invalid currency code"
+                    return "Currency code not recognized (use: USD, EUR, GBP, SGD, etc.)"
 
                 # Status validation (check against reference list)
                 elif rule_key == 'status':
-                    if 'status' in self.reference_lists:
-                        return "Status not recognized (use: Active, Inactive, Pending, etc.)"
-                    return "Invalid status value"
+                    return "Status not recognized (use: Active, Inactive, Pending, etc.)"
 
                 # Date validation
-                elif rule_key == 'date':
+                elif rule_type == 'date':
                     return "Invalid date format (use: YYYY-MM-DD, DD/MM/YYYY, etc.)"
-
-        # Additional checks for columns not in VALIDATION_RULES but with keywords
-        if column_name:
-            col_lower = column_name.lower()
-
-            # Salary/Price/Amount validation
-            if any(kw in col_lower for kw in ['salary', 'price', 'amount', 'income', 'cost', 'quantity']):
-                try:
-                    val = float(text_str.replace(',', '').replace('$', '').replace('£', '').replace('€', ''))
-                    if val < 0:
-                        return f"{col_lower.title()} cannot be negative"
-                except (ValueError, TypeError):
-                    return f"{col_lower.title()} must be a valid number"
-
-            # Percentage validation
-            if 'percent' in col_lower:
-                try:
-                    pct_val = float(text_str.replace('%', ''))
-                    if pct_val < 0:
-                        return "Percentage cannot be negative"
-                    if pct_val > 100:
-                        return "Percentage cannot exceed 100%"
-                except (ValueError, TypeError):
-                    return "Percentage must be a valid number"
 
         # Categorical column - value not in the valid set seen during training
         if column_name and column_name in self.categorical_columns:
@@ -1016,17 +1230,15 @@ class UnifiedMLValidator:
                 return f"Not a valid {column_name} (expected: {sample}{suffix})"
             return f"Not a recognized value for {column_name}"
 
-        # Fallback: Extract features for generic analysis
-        features = self.feature_extractor.extract_features(text, column_name)
-
-        # General pattern issues
-        if len(features) > 46 and features[46] > 0:  # triple_chars
+        # Fallback: generic structural analysis
+        text_l = text_str.lower()
+        if any(text_l[i] == text_l[i + 1] == text_l[i + 2] for i in range(len(text_l) - 2)):
             issues.append("contains repeated characters")
 
         # Length checks for unknown columns
-        if features[0] < 2:
+        if len(text_str) < 2:
             issues.append("value too short")
-        elif features[0] > 200:
+        elif len(text_str) > 200:
             issues.append("value too long")
 
         if not issues:
@@ -1051,17 +1263,20 @@ class UnifiedMLValidator:
             'columns': self.columns,
             'column_models': self.column_models,
             'column_scalers': self.column_scalers,
+            'column_vectorizers': self.column_vectorizers,
+            'column_shape_vectorizers': self.column_shape_vectorizers,
+            'column_numeric_ranges': self.column_numeric_ranges,
             'column_whitelists': self.column_whitelists,
             'column_examples': self.column_examples,
             'reference_lists': self.reference_lists,
             'training_metrics': self.training_metrics,
             'categorical_columns': self.categorical_columns,
             'is_trained': self.is_trained,
-            'version': '2.2',  # Updated with categorical column detection
+            'version': '3.1',  # Char + shape n-grams, learned numeric ranges, staged pipeline
         }
 
         joblib.dump(model_data, filepath)
-        print(f"Model saved to {filepath}")
+        logger.info("Model saved to %s", filepath)
 
     def load(self, filepath: str) -> bool:
         """
@@ -1074,7 +1289,7 @@ class UnifiedMLValidator:
             True if successful, False otherwise
         """
         if not os.path.exists(filepath):
-            print(f"Model file not found: {filepath}")
+            logger.warning("Model file not found: %s", filepath)
             return False
 
         try:
@@ -1082,13 +1297,22 @@ class UnifiedMLValidator:
 
             # Check version
             version = model_data.get('version', '1.0')
-            if version not in ['2.0', '2.1', '2.2']:
-                print(f"Warning: Loading old model format (v{version}). Some features may not work.")
+            if version != '3.1':
+                logger.warning(
+                    "Model format v%s predates the current feature pipeline (v3.1). "
+                    "Rule/whitelist validation still works but the ML stage may be "
+                    "degraded - retraining is recommended.", version,
+                )
 
             self.model_name = model_data.get('model_name', 'unknown')
             self.columns = model_data.get('columns', [])
             self.column_models = model_data.get('column_models', {})
             self.column_scalers = model_data.get('column_scalers', {})
+            # Pre-3.0 models have no vectorizers; _transform_features falls back
+            # to structural features only for them
+            self.column_vectorizers = model_data.get('column_vectorizers', {})
+            self.column_shape_vectorizers = model_data.get('column_shape_vectorizers', {})
+            self.column_numeric_ranges = model_data.get('column_numeric_ranges', {})
             self.column_whitelists = model_data.get('column_whitelists', {})
             self.column_examples = model_data.get('column_examples', {})
             self.reference_lists = model_data.get('reference_lists', {})
@@ -1098,7 +1322,7 @@ class UnifiedMLValidator:
 
             return True
         except Exception as e:
-            print(f"Error loading model: {e}")
+            logger.error("Error loading model %s: %s", filepath, e)
             return False
 
     def get_trained_columns(self) -> List[str]:
@@ -1126,7 +1350,7 @@ class UnifiedMLValidator:
         if not self.is_trained:
             raise ValueError("No existing model to add to. Use train() first.")
 
-        print(f"Adding {len(df)} rows to existing model '{self.model_name}'...")
+        logger.info("Adding %d rows to existing model '%s'", len(df), self.model_name)
 
         # Add new examples to existing whitelists and examples
         for col in df.columns:
@@ -1151,13 +1375,13 @@ class UnifiedMLValidator:
                     if v not in existing:
                         self.column_examples[col].append(v)
 
-                print(f"  {col}: Added {len(new_values)} examples (total whitelist: {len(self.column_whitelists[col])})")
+                logger.info("  %s: Added %d examples (total whitelist: %d)", col, len(new_values), len(self.column_whitelists[col]))
             else:
-                print(f"  {col}: Skipped (not in trained columns)")
+                logger.info("  %s: Skipped (not in trained columns)", col)
 
         # Optionally retrain ML models with combined data
         if retrain:
-            print("\nRetraining ML models with combined data...")
+            logger.info("Retraining ML models with combined data...")
             # We need to retrain from scratch with all examples
             # Build combined training data from whitelists
             combined_data = {}
@@ -1193,7 +1417,7 @@ class UnifiedMLValidator:
             True if successful, False otherwise
         """
         if not os.path.exists(filepath):
-            print(f"Reference list not found: {filepath}")
+            logger.warning("Reference list not found: %s", filepath)
             return False
 
         try:
@@ -1218,10 +1442,10 @@ class UnifiedMLValidator:
                 if val not in existing:
                     self.column_examples[column_name].append(val)
 
-            print(f"Loaded {len(values)} values for '{column_name}' from {filepath}")
+            logger.info("Loaded %d values for '%s' from %s", len(values), column_name, filepath)
             return True
         except Exception as e:
-            print(f"Error loading reference list: {e}")
+            logger.error("Error loading reference list %s: %s", filepath, e)
             return False
 
     def load_reference_lists_from_dir(self, directory: str) -> Dict[str, int]:
@@ -1238,7 +1462,7 @@ class UnifiedMLValidator:
         """
         results = {}
         if not os.path.exists(directory):
-            print(f"Reference directory not found: {directory}")
+            logger.warning("Reference directory not found: %s", directory)
             return results
 
         for filename in os.listdir(directory):

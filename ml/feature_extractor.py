@@ -107,16 +107,9 @@ class GenericFeatureExtractor:
         features.append(len(re.findall(r'[A-Z][a-z]+', text)))  # Number of capitalized words
         features.append(len(re.findall(r'\b\d{4,}\b', text)))  # Long digit sequences (4+)
 
-        # ========== COMMON KEYWORDS (learned from data) ==========
-        # These will be learned patterns from your training data
-        common_patterns = [
-            'blk', 'ave', 'road', 'street', 'singapore',  # Address keywords
-            'com', 'net', 'org', 'edu',  # Domain keywords
-            '@', '+', '#',  # Structural markers
-        ]
-
-        for pattern in common_patterns:
-            features.append(1 if pattern.lower() in text.lower() else 0)
+        # NOTE: hardcoded keyword flags (street names, email domains) were
+        # removed in v3.1 - the per-column char n-gram vectorizer in the
+        # validator learns column vocabulary from the user's own data instead.
 
         # ========== CHARACTER N-GRAMS (for typo detection) ==========
         # Character bigrams and trigrams help detect valid vs invalid patterns
@@ -177,16 +170,15 @@ class GenericFeatureExtractor:
             # Check if it's NaN (special float value)
             if math.isnan(numeric_value) or math.isinf(numeric_value):
                 # Not a valid number - add dummy features
-                features.extend([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                features.extend([0] * 19)
             else:
                 # Feature 1: The actual numeric value (most important!)
                 features.append(numeric_value)
                 # Feature 2: Is numeric flag
                 features.append(1)
                 # Feature 3: Squared value (helps with non-linear boundaries)
+                # (cube removed in v3.1 - overflowed the scaler on large values)
                 features.append(numeric_value ** 2)
-                # Feature 4: Cubed value (captures higher order patterns)
-                features.append(numeric_value ** 3)
                 # Feature 5: Square root (if positive)
                 features.append(math.sqrt(abs(numeric_value)) if numeric_value >= 0 else 0)
                 # Feature 6: Log value (helps with exponential patterns)
@@ -221,10 +213,10 @@ class GenericFeatureExtractor:
                     features.append(0)
 
         except (ValueError, TypeError):
-            # Not a number - add dummy features (20 features)
-            features.extend([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            # Not a number - add dummy features (19 features)
+            features.extend([0] * 19)
 
-        # ========== TOTAL: ~71 FEATURES ==========
+        # ========== TOTAL: ~58 FEATURES ==========
 
         return features
 

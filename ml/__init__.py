@@ -9,11 +9,10 @@ A pure ML approach for data validation:
 """
 
 from ml.feature_extractor import GenericFeatureExtractor
-from ml.validator import GenericMLValidator
-from ml.corrector import GenericMLCorrector
+from ml.validator import GenericMLValidator, UnifiedMLValidator
 
 __all__ = [
     'GenericFeatureExtractor',
     'GenericMLValidator',
-    'GenericMLCorrector',
+    'UnifiedMLValidator',
 ]

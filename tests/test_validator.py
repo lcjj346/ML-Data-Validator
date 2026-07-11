@@ -10,14 +10,12 @@ import pandas as pd
 import os
 import sys
 import tempfile
-import shutil
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ml.validator import UnifiedMLValidator
 from ml.feature_extractor import GenericFeatureExtractor
-from ml.corrector import GenericMLCorrector
 
 
 class TestFeatureExtractor:
@@ -79,12 +77,6 @@ class TestUnifiedMLValidator:
         assert self.validator.is_trained == False
         assert self.validator.columns == []
         assert self.validator.column_models == {}
-
-    def test_open_ended_columns_constant(self):
-        """OPEN_ENDED_COLUMNS should be defined"""
-        assert hasattr(UnifiedMLValidator, 'OPEN_ENDED_COLUMNS')
-        assert 'name' in UnifiedMLValidator.OPEN_ENDED_COLUMNS
-        assert 'email' in UnifiedMLValidator.OPEN_ENDED_COLUMNS
 
     def test_train_on_dataframe(self):
         """Training on a DataFrame should work"""
@@ -266,39 +258,6 @@ class TestModelStacking:
         assert is_valid == True
 
 
-class TestCorrector:
-    """Tests for GenericMLCorrector"""
-
-    def setup_method(self):
-        self.corrector = GenericMLCorrector()
-
-    def test_corrector_initialization(self):
-        """Corrector should initialize properly"""
-        assert self.corrector is not None
-
-    def test_valid_examples_attribute(self):
-        """Setting valid examples should work"""
-        examples = ['Singapore', 'USA', 'UK']
-        self.corrector.valid_examples = examples
-        self.corrector.is_trained = True
-        assert len(self.corrector.valid_examples) == 3
-
-    def test_correct_finds_similar(self):
-        """Correction should find similar values"""
-        self.corrector.valid_examples = ['Singapore', 'USA', 'United Kingdom']
-        self.corrector.is_trained = True
-        correction = self.corrector.correct('Singaproe')
-        assert correction is not None
-        assert correction.lower() == 'singapore'
-
-    def test_correct_no_match(self):
-        """No correction for completely different values"""
-        self.corrector.valid_examples = ['Singapore', 'USA', 'UK']
-        self.corrector.is_trained = True
-        correction = self.corrector.correct('xyz123abc')
-        # Either None or a low-confidence match
-
-
 class TestEdgeCases:
     """Tests for edge cases and error handling"""
 
@@ -306,13 +265,9 @@ class TestEdgeCases:
         self.validator = UnifiedMLValidator()
 
     def test_validate_before_training(self):
-        """Validation before training should handle gracefully"""
-        # Should not crash
-        try:
-            result = self.validator.validate('test', 'nonexistent')
-        except Exception as e:
-            # Expected to raise an error or return a default
-            pass
+        """Validation before training should raise a clear error"""
+        with pytest.raises(ValueError):
+            self.validator.validate('test', 'nonexistent')
 
     def test_empty_dataframe_training(self):
         """Training on empty dataframe should handle gracefully"""
@@ -341,6 +296,174 @@ class TestEdgeCases:
 
         is_valid, _ = self.validator.validate('田中太郎', 'name')
         assert is_valid == True
+
+
+class TestRuleColumnMatching:
+    """Regression tests: rules must match whole column-name tokens, not substrings"""
+
+    def test_mailing_address_is_not_email(self):
+        """'mailing_address' must not trigger email validation ('mail' substring bug)"""
+        assert UnifiedMLValidator._rule_key_for_column('mailing_address') is None
+
+    def test_customer_email_matches_email(self):
+        assert UnifiedMLValidator._rule_key_for_column('customer_email') == 'email'
+
+    def test_percentage_does_not_match_age(self):
+        """'percentage' must not trigger the age 0-120 rule ('age' substring bug)"""
+        assert UnifiedMLValidator._rule_key_for_column('percentage') == 'percentage'
+
+    def test_mileage_and_wage_match_nothing(self):
+        assert UnifiedMLValidator._rule_key_for_column('mileage') is None
+        assert UnifiedMLValidator._rule_key_for_column('wage') is None
+
+    def test_hotel_is_not_phone(self):
+        """'hotel' must not trigger phone validation ('tel' substring bug)"""
+        assert UnifiedMLValidator._rule_key_for_column('hotel') is None
+
+    def test_phone_number_matches_phone(self):
+        assert UnifiedMLValidator._rule_key_for_column('phone_number') == 'phone'
+
+    def test_blood_sugar_variants(self):
+        assert UnifiedMLValidator._rule_key_for_column('blood_sugar') == 'blood_sugar'
+        assert UnifiedMLValidator._rule_key_for_column('bloodsugar') == 'blood_sugar'
+
+    def test_unit_price_matches_price(self):
+        assert UnifiedMLValidator._rule_key_for_column('unit_price') == 'price'
+
+
+class TestRulesRunInBatch:
+    """Regression: deterministic rules must fire in validate_batch (the code path the API uses)"""
+
+    def setup_method(self):
+        self.validator = UnifiedMLValidator()
+        df = pd.DataFrame({
+            'age': [str(v) for v in range(20, 70)],
+            'email': [f'user{i}@example.com' for i in range(50)],
+        })
+        self.validator.train(df, model_name='test_model')
+
+    def test_negative_age_invalid_in_batch(self):
+        assert self.validator.validate_batch(['-5'], 'age')[0][0] == False
+
+    def test_age_above_120_invalid_in_batch(self):
+        assert self.validator.validate_batch(['150'], 'age')[0][0] == False
+
+    def test_email_without_at_invalid_in_batch(self):
+        assert self.validator.validate_batch(['not-an-email'], 'email')[0][0] == False
+
+    def test_double_at_email_invalid_in_batch(self):
+        assert self.validator.validate_batch(['user@@example.com'], 'email')[0][0] == False
+
+    def test_single_and_batch_validation_agree(self):
+        """validate() and validate_batch() share one implementation and must never disagree"""
+        values = ['-5', '30', '150', 'abc', '65']
+        batch = self.validator.validate_batch(values, 'age')
+        singles = [self.validator.validate(v, 'age') for v in values]
+        assert batch == singles
+
+
+class TestSyntheticNegatives:
+    """Tests for the synthetic invalid example generator"""
+
+    def test_mutations_never_collide_with_valid_values(self):
+        """A mutation that equals a real valid value must not be labelled invalid"""
+        validator = UnifiedMLValidator()
+        valid = ['Ward A', 'Ward B', 'Ward C', 'Ward D']
+        invalid = validator._generate_invalid_examples(valid, 300)
+        valid_set = {v.lower() for v in valid}
+        for mutated in invalid:
+            assert mutated.strip().lower() not in valid_set or not mutated.strip()
+
+    def test_generates_requested_count(self):
+        validator = UnifiedMLValidator()
+        invalid = validator._generate_invalid_examples(['john@example.com', 'jane@test.org'], 50)
+        assert len(invalid) == 50
+
+
+class TestNgramPipeline:
+    """Tests for the char n-gram + structural feature pipeline (v3.0)"""
+
+    def test_pattern_conforming_unseen_id_is_valid(self):
+        """Unseen IDs following the training pattern should be accepted by the ML stage"""
+        validator = UnifiedMLValidator()
+        df = pd.DataFrame({'order_id': [f'ORD{i:04d}' for i in range(100)]})
+        validator.train(df, model_name='test_model')
+
+        is_valid, _ = validator.validate('ORD9876', 'order_id')
+        assert is_valid == True
+
+        is_valid, _ = validator.validate('completely wrong!!', 'order_id')
+        assert is_valid == False
+
+    def test_save_load_preserves_vectorizers(self):
+        validator = UnifiedMLValidator()
+        df = pd.DataFrame({'code': [f'SKU-{i:03d}' for i in range(60)]})
+        validator.train(df, model_name='test_model')
+
+        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as f:
+            temp_path = f.name
+
+        try:
+            validator.save(temp_path)
+            loaded = UnifiedMLValidator(temp_path)
+            assert 'code' in loaded.column_vectorizers
+            # Saved and loaded models must give identical verdicts
+            for value in ['SKU-042', 'SKU-999', 'garbage###', '']:
+                assert loaded.validate(value, 'code') == validator.validate(value, 'code')
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+
+class TestDetailedPipeline:
+    """Tests for validate_batch_detailed: stage attribution and reasons"""
+
+    def setup_method(self):
+        self.validator = UnifiedMLValidator()
+        df = pd.DataFrame({
+            'age': [str(v) for v in range(20, 70)],
+            'ward': (['Ward A', 'Ward B', 'Ward C', 'Ward D', 'Ward E'] * 10),
+            'weight': [str(round(50 + i * 0.7, 1)) for i in range(50)],  # 50.0 - 84.3
+        })
+        self.validator.train(df, model_name='test_model')
+
+    def _one(self, value, column):
+        return self.validator.validate_batch_detailed([value], column)[0]
+
+    def test_rule_stage(self):
+        r = self._one('-5', 'age')
+        assert r['is_valid'] == False and r['stage'] == 'rule'
+        assert 'negative' in r['reason'].lower()
+
+    def test_empty_stage(self):
+        r = self._one('', 'ward')
+        assert r['is_valid'] == False and r['stage'] == 'empty'
+
+    def test_whitelist_stage(self):
+        r = self._one('Ward A', 'ward')
+        assert r['is_valid'] == True and r['stage'] == 'whitelist' and r['reason'] is None
+
+    def test_typo_stage_names_best_match(self):
+        r = self._one('Ward Bb', 'ward')
+        assert r['is_valid'] == False and r['stage'] == 'typo'
+        assert 'ward b' in r['reason'].lower()
+
+    def test_unknown_value_stage(self):
+        r = self._one('Intensive Care', 'ward')
+        assert r['is_valid'] == False and r['stage'] == 'unknown-value'
+        assert 'Ward A' in r['reason']
+
+    def test_range_stage(self):
+        # weight is continuous numeric (not categorical): 500 is far outside 50-84.3
+        r = self._one('500', 'weight')
+        assert r['is_valid'] == False and r['stage'] == 'range'
+        assert 'range' in r['reason'].lower()
+
+    def test_wrapper_consistency(self):
+        values = ['-5', '30', 'abc', '']
+        detailed = self.validator.validate_batch_detailed(values, 'age')
+        tuples = self.validator.validate_batch(values, 'age')
+        assert tuples == [(r['is_valid'], r['confidence']) for r in detailed]
 
 
 # Run tests if executed directly
