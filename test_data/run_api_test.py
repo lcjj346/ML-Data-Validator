@@ -42,7 +42,7 @@ ok("Upload returns 200", r.status_code == 200, f"status={r.status_code}")
 session = r.json()
 session_id = session["session_id"]
 ok("Session ID returned", bool(session_id))
-ok("Correct row count", session["rows"] == 9, f"rows={session['rows']}")
+ok("Correct row count", session["rows"] == 14, f"rows={session['rows']}")
 
 # Match columns
 r = requests.post(f"{BASE}/validate/match-columns",
@@ -98,7 +98,7 @@ print("  TEST 2: Train custom hospital model")
 print("==========================================")
 
 # Upload training data
-with open("test_data/custom_hospital_training.csv", "rb") as f:
+with open("training_data/custom_hospital_training.csv", "rb") as f:
     r = requests.post(f"{BASE}/train/upload",
         files={"file": ("custom_hospital_training.csv", f, "text/csv")})
 ok("Training upload returns 200", r.status_code == 200, f"status={r.status_code}")

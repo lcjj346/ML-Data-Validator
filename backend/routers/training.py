@@ -2,15 +2,14 @@
 Training endpoints - upload training data, run training, list models.
 """
 
-import io
 import json
 import os
 from typing import List
 
-import pandas as pd
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
+from backend.parsing import parse_upload
 from backend.schemas import ModelInfo, TrainUploadResponse
 from backend.state import store
 from ml.validator import UnifiedMLValidator
@@ -37,13 +36,7 @@ async def upload_training_csv(file: UploadFile = File(...)):
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10MB.")
 
-    try:
-        if file.filename.endswith(".xlsx"):
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            df = pd.read_csv(io.BytesIO(contents))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse file: {e}")
+    df, parse_warning = parse_upload(file.filename, contents)
 
     session_id = store.create()
     session = store.get(session_id)
@@ -59,6 +52,7 @@ async def upload_training_csv(file: UploadFile = File(...)):
         columns=len(df.columns),
         column_names=df.columns.tolist(),
         preview=preview,
+        parse_warning=parse_warning,
     )
 
 

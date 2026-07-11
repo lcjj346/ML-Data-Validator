@@ -15,6 +15,7 @@ class FileInfoResponse(BaseModel):
     columns: int
     column_names: List[str]
     preview: List[Dict[str, Any]]  # first 10 rows as list of dicts
+    parse_warning: Optional[str] = None  # set when malformed rows were skipped
 
 
 class MatchColumnsRequest(BaseModel):
@@ -49,6 +50,7 @@ class CorrectionItem(BaseModel):
     has_correction: bool
     reason: str
     confidence: float = 0.0
+    stage: str = "ml"  # which pipeline stage flagged it: empty|rule|range|typo|unknown-value|ml
 
 
 class ValidationResultsResponse(BaseModel):
@@ -72,6 +74,7 @@ class TrainUploadResponse(BaseModel):
     columns: int
     column_names: List[str]
     preview: List[Dict[str, Any]]
+    parse_warning: Optional[str] = None  # set when malformed rows were skipped
 
 
 class ColumnMetrics(BaseModel):

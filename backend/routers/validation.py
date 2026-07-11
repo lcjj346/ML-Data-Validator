@@ -5,6 +5,7 @@ Validation endpoints - upload, validate, correct, export.
 import io
 import json
 import os
+from datetime import datetime, timezone
 
 import pandas as pd
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -19,6 +20,7 @@ from backend.schemas import (
     MatchColumnsResponse,
     ValidationResultsResponse,
 )
+from backend.parsing import parse_upload
 from backend.state import store
 from ml.validator import UnifiedMLValidator
 
@@ -47,6 +49,18 @@ def _get_session(session_id: str):
     return session
 
 
+def _audit(session, row: int, column: str, old_value, new_value, source: str):
+    """Record a cell change in the session audit log (exported for compliance)."""
+    session.audit_log.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "row": int(row) + 1,  # 1-based for humans
+        "column": column,
+        "original": str(old_value),
+        "new": str(new_value),
+        "source": source,  # "manual-edit" | "suggestion" | "apply-all"
+    })
+
+
 # ── Upload ──────────────────────────────────────────────────
 
 @router.post("/upload", response_model=FileInfoResponse)
@@ -58,13 +72,7 @@ async def upload_csv(file: UploadFile = File(...)):
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10MB.")
 
-    try:
-        if file.filename.endswith(".xlsx"):
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            df = pd.read_csv(io.BytesIO(contents))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse file: {e}")
+    df, parse_warning = parse_upload(file.filename, contents)
 
     session_id = store.create()
     session = store.get(session_id)
@@ -81,6 +89,7 @@ async def upload_csv(file: UploadFile = File(...)):
         columns=len(df.columns),
         column_names=df.columns.tolist(),
         preview=preview,
+        parse_warning=parse_warning,
     )
 
 
@@ -143,26 +152,25 @@ async def run_validation(session_id: str, model_name: str):
             progress = col_idx / total_columns if total_columns else 0
             yield f"data: {json.dumps({'type': 'progress', 'progress': progress, 'message': f'Validating column: {input_col}...'})}\n\n"
 
-            # Validate batch
-            results = validator.validate_batch(
-                df[input_col].astype(str).tolist(), trained_col
-            )
+            # Validate batch - detailed results carry stage + reason from the
+            # same pass that produced the verdict (single source of truth)
+            values = df[input_col].astype(str).tolist()
+            results = validator.validate_batch_detailed(values, trained_col)
 
-            for idx, (is_valid, confidence) in enumerate(results):
+            for idx, r in enumerate(results):
                 key = f"{idx}_{input_col}"
-                cell_validity[key] = is_valid
-                session.cell_confidence[key] = round(float(confidence), 3)
+                cell_validity[key] = r["is_valid"]
+                session.cell_confidence[key] = round(float(r["confidence"]), 3)
 
             # Get corrections for invalid cells
-            for idx, row in df.iterrows():
-                if not results[idx][0]:
-                    original = str(row[input_col])
+            for idx, r in enumerate(results):
+                if not r["is_valid"]:
+                    original = values[idx]
                     corrected = validator.correct(original, trained_col)
-                    reason = validator.explain_invalidity(original, trained_col)
+                    reason = r["reason"] or validator.explain_invalidity(original, trained_col)
 
                     suggested = corrected if (corrected and corrected != original) else original
                     has_correction = corrected is not None and corrected != original
-                    conf = session.cell_confidence.get(f"{idx}_{input_col}", 0.0)
 
                     all_corrections.append(
                         CorrectionItem(
@@ -173,7 +181,8 @@ async def run_validation(session_id: str, model_name: str):
                             suggested=suggested,
                             has_correction=has_correction,
                             reason=reason or "Unknown",
-                            confidence=conf,
+                            confidence=round(float(r["confidence"]), 3),
+                            stage=r["stage"],
                         ).model_dump()
                     )
 
@@ -228,9 +237,11 @@ async def edit_cell(session_id: str, req: EditCellRequest):
     if req.column not in session.df.columns:
         raise HTTPException(status_code=400, detail=f"Column '{req.column}' not found")
 
+    old_value = session.df.at[req.row, req.column]
     target_dtype = session.df[req.column].dtype
     casted = _safe_cast_value(req.value, target_dtype)
     session.df.at[req.row, req.column] = casted
+    _audit(session, req.row, req.column, old_value, casted, "manual-edit")
 
     key = f"{req.row}_{req.column}"
     session.modified_cells.add(key)
@@ -251,9 +262,11 @@ async def apply_correction(session_id: str, req: ApplyCorrectionRequest):
     if req.column not in session.df.columns:
         raise HTTPException(status_code=400, detail=f"Column '{req.column}' not found")
 
+    old_value = session.df.at[req.row, req.column]
     target_dtype = session.df[req.column].dtype
     casted = _safe_cast_value(req.suggested, target_dtype)
     session.df.at[req.row, req.column] = casted
+    _audit(session, req.row, req.column, old_value, casted, "suggestion")
 
     key = f"{req.row}_{req.column}"
     session.modified_cells.add(key)
@@ -280,9 +293,11 @@ async def apply_all_corrections(session_id: str):
         if key in session.modified_cells:
             continue
 
+        old_value = session.df.at[row_idx, col]
         target_dtype = session.df[col].dtype
         casted = _safe_cast_value(correction["suggested"], target_dtype)
         session.df.at[row_idx, col] = casted
+        _audit(session, row_idx, col, old_value, casted, "apply-all")
         session.modified_cells.add(key)
         applied += 1
 
@@ -388,6 +403,33 @@ async def export_summary_report(session_id: str):
 
     csv_bytes = "\n".join(lines).encode("utf-8")
     filename = f"validation_report_{session.filename}" if session.filename else "validation_report.csv"
+
+    return StreamingResponse(
+        io.BytesIO(csv_bytes),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ── Audit Trail Export ───────────────────────────────────────
+
+@router.get("/{session_id}/export-audit")
+async def export_audit_log(session_id: str):
+    """Export the chronological record of every cell change (compliance trail)."""
+    session = _get_session(session_id)
+
+    def esc(value: str) -> str:
+        value = str(value)
+        return f'"{value.replace(chr(34), chr(34) * 2)}"' if any(c in value for c in ',"\n') else value
+
+    lines = ["timestamp,row,column,original_value,new_value,source"]
+    for e in session.audit_log:
+        lines.append(
+            f"{e['timestamp']},{e['row']},{esc(e['column'])},{esc(e['original'])},{esc(e['new'])},{e['source']}"
+        )
+
+    csv_bytes = "\n".join(lines).encode("utf-8")
+    filename = f"audit_log_{session.filename}" if session.filename else "audit_log.csv"
 
     return StreamingResponse(
         io.BytesIO(csv_bytes),

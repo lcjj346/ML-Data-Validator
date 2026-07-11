@@ -9,7 +9,7 @@ import time
 import uuid
 import threading
 import pandas as pd
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 
 class Session:
@@ -30,6 +30,7 @@ class Session:
         self.modified_cells: set = set()  # set of "row_col" keys
         self.column_mappings: Dict[str, str] = {}
         self.corrections: list = []
+        self.audit_log: list = []  # chronological record of every cell change
 
         # Training state
         self.training_df: Optional[pd.DataFrame] = None
