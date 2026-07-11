@@ -7,6 +7,7 @@ export interface FileInfo {
   columns: number;
   column_names: string[];
   preview: Record<string, unknown>[];
+  parse_warning?: string | null; // set when malformed rows were skipped during parsing
 }
 
 export interface MatchColumnsResponse {
@@ -24,6 +25,7 @@ export interface CorrectionItem {
   has_correction: boolean;
   reason: string;
   confidence?: number;
+  stage?: string; // pipeline stage that flagged it: empty|rule|range|typo|unknown-value|ml
 }
 
 export interface ValidationResults {

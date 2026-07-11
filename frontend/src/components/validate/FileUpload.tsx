@@ -3,6 +3,7 @@ import { useCallback, useState, type DragEvent } from 'react';
 interface Props {
   onFile: (file: File) => void;
   disabled?: boolean;
+  uploadError?: string | null; // server rejected the file - show failure, not success
 }
 
 function formatFileSize(bytes: number) {
@@ -11,7 +12,7 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function FileUpload({ onFile, disabled }: Props) {
+export default function FileUpload({ onFile, disabled, uploadError }: Props) {
   const [dragging, setDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
@@ -20,7 +21,7 @@ export default function FileUpload({ onFile, disabled }: Props) {
       e.preventDefault();
       setDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) {
+      if (file && (file.name.endsWith('.csv') || file.name.endsWith('.xlsx'))) {
         setUploadedFile(file);
         onFile(file);
       }
@@ -51,18 +52,29 @@ export default function FileUpload({ onFile, disabled }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-slate-200 text-sm font-medium truncate">{uploadedFile.name}</p>
-            <p className="text-slate-500 text-xs mt-0.5">{formatFileSize(uploadedFile.size)}</p>
+            <p className="text-slate-500 text-xs mt-0.5">
+              {formatFileSize(uploadedFile.size)}
+              {uploadError && <span className="text-red-400 ml-2">- upload rejected</span>}
+            </p>
           </div>
-          <div className="flex-shrink-0 w-7 h-7 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center">
-            <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          </div>
+          {uploadError ? (
+            <div className="flex-shrink-0 w-7 h-7 bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          ) : (
+            <div className="flex-shrink-0 w-7 h-7 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+          )}
         </div>
         <div className="mt-3 pt-3 border-t border-white/5">
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx"
             onChange={handleChange}
             className="hidden"
             id="file-upload-replace"
@@ -93,15 +105,15 @@ export default function FileUpload({ onFile, disabled }: Props) {
       <svg className="w-10 h-10 mx-auto mb-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
       </svg>
-      <p className="text-slate-300 mb-1">Drag & drop a CSV file here, or click to browse</p>
+      <p className="text-slate-300 mb-1">Drag & drop a CSV or Excel file here, or click to browse</p>
       <p className="text-slate-500 text-xs mb-4 flex items-center justify-center gap-2">
-        <span className="inline-flex items-center px-2 py-0.5 bg-slate-800/80 rounded-full text-slate-400">.csv</span>
+        <span className="inline-flex items-center px-2 py-0.5 bg-slate-800/80 rounded-full text-slate-400">.csv / .xlsx</span>
         <span className="text-slate-600">·</span>
         <span>Max 10 MB</span>
       </p>
       <input
         type="file"
-        accept=".csv"
+        accept=".csv,.xlsx"
         onChange={handleChange}
         className="hidden"
         id="file-upload"

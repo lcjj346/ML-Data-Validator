@@ -34,6 +34,8 @@ export default function ValidateTab() {
       if (info) {
         setUploadKey((k) => k + 1);
         addToast(`Uploaded "${file.name}"`, 'info');
+      } else {
+        addToast(`Upload failed for "${file.name}"`, 'error');
       }
     },
     [v, addToast],
@@ -93,11 +95,26 @@ export default function ValidateTab() {
           <StepBadge n={1} />
           <span className="text-sm font-semibold text-slate-200">Upload your CSV file</span>
         </div>
-        <FileUpload onFile={handleFile} disabled={v.isValidating} />
+        <FileUpload onFile={handleFile} disabled={v.isValidating} uploadError={!v.fileInfo ? v.error : null} />
       </div>
+
+      {/* Errors must render even when upload failed (fileInfo is null then) */}
+      {v.error && (
+        <div className="glass-card border-red-500/30 p-4 text-red-300 text-sm mb-8">
+          {v.error}
+        </div>
+      )}
 
       {v.fileInfo && (
         <>
+          {v.fileInfo.parse_warning && (
+            <div className="glass-card border-amber-500/30 p-4 text-amber-300 text-sm mb-4 flex items-start gap-2">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              {v.fileInfo.parse_warning}
+            </div>
+          )}
           <FileInfo filename={v.fileInfo.filename} rows={v.fileInfo.rows} columns={v.fileInfo.columns} />
           <DataPreview preview={v.fileInfo.preview} columns={v.fileInfo.column_names} />
 
@@ -132,12 +149,6 @@ export default function ValidateTab() {
           </div>
 
           {v.isValidating && <ProgressBar progress={v.progress} message={v.progressMessage} />}
-
-          {v.error && (
-            <div className="glass-card border-red-500/30 p-4 text-red-300 text-sm mb-4">
-              {v.error}
-            </div>
-          )}
 
           {/* Results */}
           {v.results && (

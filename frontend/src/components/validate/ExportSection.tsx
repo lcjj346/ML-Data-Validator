@@ -1,4 +1,4 @@
-import { getExportUrl, getExportXlsxUrl, getSummaryReportUrl } from '../../api/client';
+import { getExportUrl, getExportXlsxUrl, getSummaryReportUrl, getAuditLogUrl } from '../../api/client';
 import Collapsible from '../Collapsible';
 
 interface Props {
@@ -39,6 +39,17 @@ export default function ExportSection({ sessionId, totalRows }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Download Summary Report
+        </a>
+        <a
+          href={getAuditLogUrl(sessionId)}
+          download
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-700/80 hover:bg-slate-600/80 text-white text-sm font-medium rounded-xl transition-all duration-200 border border-white/10 hover:scale-[1.02] active:scale-[0.98]"
+          title="Chronological record of every cell change (who/what/when) for compliance"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Download Audit Log
         </a>
         <div className="glass-card px-5 py-2.5 text-center">
           <div className="text-slate-400 text-xs uppercase tracking-wide">Total Rows</div>

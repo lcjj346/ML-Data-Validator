@@ -10,6 +10,25 @@ interface Props {
   applying?: boolean;
 }
 
+// Which pipeline stage flagged the cell - colors match how deterministic the check is
+const STAGE_STYLES: Record<string, { label: string; cls: string }> = {
+  empty: { label: 'empty', cls: 'bg-slate-500/20 text-slate-300 border-slate-400/30' },
+  rule: { label: 'rule', cls: 'bg-purple-500/20 text-purple-300 border-purple-400/30' },
+  range: { label: 'range', cls: 'bg-blue-500/20 text-blue-300 border-blue-400/30' },
+  typo: { label: 'typo', cls: 'bg-amber-500/20 text-amber-300 border-amber-400/30' },
+  'unknown-value': { label: 'unknown', cls: 'bg-orange-500/20 text-orange-300 border-orange-400/30' },
+  ml: { label: 'ML', cls: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30' },
+};
+
+function StageBadge({ stage }: { stage?: string }) {
+  const s = STAGE_STYLES[stage ?? 'ml'] ?? STAGE_STYLES.ml;
+  return (
+    <span className={`inline-block px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+}
+
 export default function CorrectionsPanel({ corrections, modifiedCells, onApplySingle, onApplyAll, applying }: Props) {
   const modifiedSet = useMemo(() => new Set(modifiedCells), [modifiedCells]);
 
@@ -77,12 +96,13 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
       {/* Table: header sticky inside scroll container so columns always align */}
       <div className="max-h-[400px] overflow-y-auto">
         {/* Header */}
-        <div className="grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px] gap-2 text-xs font-semibold text-white uppercase tracking-wide border-b border-white/10 pb-2 mb-2 pl-2 border-l-2 border-l-transparent sticky top-0 bg-slate-900/95 z-10">
+        <div className="grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_70px_80px_70px] gap-2 text-xs font-semibold text-white uppercase tracking-wide border-b border-white/10 pb-2 mb-2 pl-2 border-l-2 border-l-transparent sticky top-0 bg-slate-900/95 z-10">
           <span>Row</span>
           <span>Column</span>
           <span>Original</span>
           <span>Suggestion</span>
           <span>Reason</span>
+          <span>Stage</span>
           <span>Confidence</span>
           <span>Action</span>
         </div>
@@ -90,7 +110,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
         {filtered.map((c, i) => (
           <div
             key={`${c.row_index}_${c.column}_${i}`}
-            className={`grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_120px_70px] gap-2 items-center py-2.5 text-sm border-b border-white/5 hover:bg-white/5 transition-colors pl-2 border-l-2 ${
+            className={`grid grid-cols-[40px_0.4fr_0.5fr_0.5fr_0.6fr_70px_80px_70px] gap-2 items-center py-2.5 text-sm border-b border-white/5 hover:bg-white/5 transition-colors pl-2 border-l-2 ${
               c.has_correction ? 'border-l-green-500/60' : 'border-l-red-500/60'
             }`}
           >
@@ -110,6 +130,7 @@ export default function CorrectionsPanel({ corrections, modifiedCells, onApplySi
               )}
             </span>
             <span className="text-slate-400 text-xs truncate cursor-help" title={c.reason}>{c.reason}</span>
+            <span><StageBadge stage={c.stage} /></span>
             <span className="text-xs text-slate-400">
               {c.confidence != null ? `${(c.confidence * 100).toFixed(0)}%` : '—'}
             </span>

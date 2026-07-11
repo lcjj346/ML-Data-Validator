@@ -103,6 +103,10 @@ export function getSummaryReportUrl(sessionId: string): string {
   return `${BASE}/validate/${sessionId}/export-report`;
 }
 
+export function getAuditLogUrl(sessionId: string): string {
+  return `${BASE}/validate/${sessionId}/export-audit`;
+}
+
 // ── Training ────────────────────────────────────────────────
 
 export async function uploadTrainingFile(file: File): Promise<TrainUploadInfo> {

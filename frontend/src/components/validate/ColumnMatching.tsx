@@ -34,10 +34,17 @@ export default function ColumnMatching({ match }: Props) {
       )}
 
       {match.unmatched.length > 0 && (
-        <p className="text-sm text-slate-400">
-          <span className="font-medium">Unmatched (will be skipped):</span>{' '}
-          {match.unmatched.join(', ')}
-        </p>
+        <div className="glass-card border-amber-500/20 p-3 text-sm">
+          <p className="text-slate-300 mb-1">
+            <span className="font-medium text-amber-300">Not validated by this model:</span>{' '}
+            {match.unmatched.join(', ')}
+          </p>
+          <p className="text-xs text-slate-400">
+            This model wasn't trained on these columns, so they'll be skipped. To validate them,
+            go to <span className="text-cyan-400 font-medium">Train Models</span> and train a custom
+            model on a clean sample of your own data (~50+ rows) — it learns any column type automatically.
+          </p>
+        </div>
       )}
     </Collapsible>
   );

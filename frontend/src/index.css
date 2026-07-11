@@ -58,6 +58,12 @@ body {
   font-weight: 600 !important;
 }
 
+/* AG Grid v35 cell text - the new theming engine ignores --ag-data-color,
+   so give cells without an inline style a readable default */
+.ag-theme-alpine-dark .ag-cell {
+  color: #cbd5e1;
+}
+
 /* AG Grid cell editing - ensure dark bg + light text */
 .ag-theme-alpine-dark .ag-cell-inline-editing {
   background-color: #0d1f33 !important;
