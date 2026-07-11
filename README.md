@@ -10,6 +10,16 @@ Teams whose data is too sensitive for the cloud. A clinical research coordinator
 
 *The full go-to-market narrative lives in [docs/product_storyboard.html](docs/product_storyboard.html) — a nine-frame storyboard from problem to positioning.*
 
+## Screenshots
+
+**Validation results** — every cell colour-coded, quality metrics at a glance, one row of planted errors caught:
+
+![Validation results grid with flagged cells](docs/screenshots/02-validation-results.png)
+
+**Suggested corrections** — each flag shows the pipeline stage that caught it (rule / typo / unknown / ML / empty), the reason, confidence, and a one-click fix where a correction exists:
+
+![Corrections panel with stage badges and suggestions](docs/screenshots/03-corrections.png)
+
 ## Positioning
 
 | | Learns from your data | Suggests fixes | Fully offline |

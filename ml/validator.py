@@ -957,12 +957,14 @@ class UnifiedMLValidator:
                                        f"Outside the range seen in training data ({lo:g} to {hi:g})")
                     continue
 
-            # 5. Fuzzy typo detection (finite-valued columns only) - best match
-            # so the flagged similarity refers to the same value we'd suggest
+            # 5. Fuzzy typo detection (finite-valued columns only)
             if use_strict_typo_detection:
                 match, best_sim = _best_match(text_lower, whitelist)
                 if best_sim >= 0.8:  # High similarity but not exact = typo
-                    results[i] = entry(False, best_sim, 'typo', f"Possible typo - did you mean '{match}'?")
+                    # Name the same value the correction engine will suggest, so
+                    # the reason and the suggestion never disagree on ties
+                    suggestion = self.correct(text_str, column_name) or match
+                    results[i] = entry(False, best_sim, 'typo', f"Possible typo - did you mean '{suggestion}'?")
                     continue
 
                 # 6. Closed set: unknown value that isn't a near-typo is
