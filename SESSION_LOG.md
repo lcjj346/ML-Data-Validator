@@ -678,6 +678,38 @@ Target: 3–5 classmates / testers. Results to go into report under **User Evalu
 
 ---
 
+### 2026-07-09 / 2026-07-10 (Portfolio Revamp — Pipeline v3.1, Audit Trail, Single-URL App)
+
+#### ML pipeline revamp (`ml/validator.py` — model format v3.1)
+- **Unified validation path:** `validate()` and `validate_batch()` now share one implementation (`validate_batch_detailed`). Fixed the critical bug where hardcoded rules only ran in `validate()` while the API used `validate_batch()` — rules never fired in the real app.
+- **Token-based rule matching:** fixed substring bugs (`mailing_address` got email rules, `hotel` got phone rules, `percentage`/`mileage`/`wage` triggered the age rule).
+- **Staged pipeline with reasons:** every verdict now carries `(is_valid, confidence, stage, reason)` — stages: empty → rule → whitelist → range → typo → unknown-value → ML. Explanations can no longer disagree with the flagging logic.
+- **Features:** per-column char n-gram TF-IDF + shape-token n-grams (`P101` → `xddd`) + ~58 structural features (pruned hardcoded keyword flags and the overflow-prone cube term). Validated by ablation: structural+n-grams beats either alone on every column.
+- **Synthetic negatives matched to column kind:** realistic typos for categorical, entry errors for numeric, structural corruption for open-ended text; collision filtering so mutations equal to valid values are never mislabelled.
+- **Precision controls:** ML flags only at P(invalid) ≥ 65%; well-formed emails/phones short-circuit as valid; reference-listed columns reject unknown values (closed set); learned numeric ranges reject out-of-range values.
+- **rapidfuzz** replaces difflib (best-match, ~50x faster). Removed dead `ml/corrector.py` + `OPEN_ENDED_COLUMNS`.
+- **ID columns now trainable** (n-grams learn the pattern) — all models retrained with ID columns included; `INVALID_ID` caught at 100%, unseen valid IDs pass.
+
+#### Backend
+- **Audit trail:** every cell change recorded (timestamp, row, column, original, new, source) — `GET /{session_id}/export-audit` CSV. For GCP/PDPA compliance narrative.
+- **Tolerant upload parsing** (`backend/parsing.py`): malformed rows skipped with a precise warning ("row 3 has 4 values instead of 2"); hopeless files get human-readable errors instead of pandas tokenizer-speak.
+- **Single-URL serving:** `python run.py` → http://localhost:8000 serves API + built frontend. Hardened SPA catch-all against path traversal; bind changed 0.0.0.0 → 127.0.0.1 (offline tool should not be LAN-reachable).
+- 10MB guard unchanged; `stage` added to CorrectionItem schema.
+
+#### Frontend
+- Stage badges (rule/typo/range/unknown/ML/empty) in corrections panel; "Show invalid rows only" filter (original-index safe); audit log download button; upload errors now surface (error banner rendered outside the fileInfo block, red ✕ on rejected file card); readable text for unvalidated columns (AG Grid v35 ignores --ag-data-color); `.xlsx` accepted by picker to match backend.
+
+#### Data & docs
+- Fixed malformed `demo_validation_test_2.csv` (row 17 had 8 fields).
+- README rewritten as portfolio piece: story/persona, positioning table, measured results, precision-first accuracy framing (no unconditional "0% FP" claims). Product storyboard at `docs/product_storyboard.html`.
+- Fixed stale API test (row count, moved training file path).
+
+- **Files:** `ml/*`, `backend/*`, `frontend/src/*`, `models/*.pkl` (retrained, v3.1), `tests/test_validator.py`, `requirements.txt`, `run.py`, `README.md`, `CLAUDE.md`, `docs/product_storyboard.html`, `backend/parsing.py` (new), `ml/corrector.py` (deleted)
+- **Tested:** Yes — 49/49 pytest, pyflakes clean, frontend typecheck clean, 37/37 live API integration checks, demo datasets exact (retail 5/5 injected errors zero FP, employee 1, hospital 8 incl. INVALID_ID, base 32)
+- **Notes:** Old .pkl models (pre-v3.1) load with a retrain warning; ML stage fails safe. Key portfolio claims: "5/5 planted errors, zero false positives, 700 cells, ~2s" and the ablation table.
+
+---
+
 ## Future Sessions
 
 <!-- Template for new entries:

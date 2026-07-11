@@ -26,8 +26,9 @@ app.include_router(validation.router, prefix="/api/validate", tags=["validation"
 app.include_router(training.router, prefix="/api/train", tags=["training"])
 app.include_router(training.models_router, prefix="/api/models", tags=["models"])
 
-# Serve built React frontend (production)
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+# Serve built React frontend so the whole app runs on ONE port.
+# Build it once with: cd frontend && npm run build
+FRONTEND_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 
 if os.path.isdir(FRONTEND_DIR):
     app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
@@ -35,7 +36,8 @@ if os.path.isdir(FRONTEND_DIR):
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         """Serve React SPA - all non-API routes return index.html."""
-        file_path = os.path.join(FRONTEND_DIR, full_path)
-        if os.path.isfile(file_path):
+        file_path = os.path.realpath(os.path.join(FRONTEND_DIR, full_path))
+        # Never serve anything outside the dist directory (path traversal guard)
+        if file_path.startswith(FRONTEND_DIR + os.sep) and os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))

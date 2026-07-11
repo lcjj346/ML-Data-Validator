@@ -45,3 +45,6 @@ Thumbs.db
 *.tmp
 *.bak
 _old_files_to_delete/
+
+# Personal documents (report, slides, prep notes) - not part of the codebase
+local_docs/

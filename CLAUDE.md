@@ -3,8 +3,8 @@
 ## Project Overview
 ML Data Validator - A full-stack web app (React + FastAPI) for training ML models to validate data (phone numbers, emails, names, etc.) and suggest corrections. Runs fully offline — no LLM, no external API.
 
-- **Run backend:** `python run.py` (FastAPI on port 8000)
-- **Run frontend:** `cd frontend && npm run dev` (Vite on port 5173)
+- **Run everything (single URL):** `python run.py` → http://localhost:8000 (serves API + built frontend; build once with `cd frontend && npm run build`)
+- **Frontend dev mode:** `cd frontend && npm run dev` (Vite on port 5173, proxies /api to 8000)
 - **Main branch:** `main`
 - **Working branch:** `Remaster`
 
@@ -87,21 +87,22 @@ Expands `training_data/base_training_data.csv` and retrains
 ```
 
 ## Key Files
-- `run.py` - Entry point (starts uvicorn/FastAPI backend)
-- `backend/main.py` - FastAPI app, CORS, router registration
-- `backend/routers/validation.py` - Upload, validate, correct, export endpoints
+- `run.py` - Entry point (serves API + built frontend on localhost:8000)
+- `backend/main.py` - FastAPI app, CORS, router registration, SPA static serving
+- `backend/parsing.py` - Tolerant CSV/Excel upload parsing with friendly errors
+- `backend/routers/validation.py` - Upload, validate, correct, audit log, export endpoints
 - `backend/routers/training.py` - Train, list models, delete model endpoints
 - `backend/schemas.py` - Pydantic request/response models
-- `backend/state.py` - In-memory session store (30 min TTL)
-- `ml/validator.py` - UnifiedMLValidator (train, validate, correct, explain)
-- `ml/feature_extractor.py` - GenericFeatureExtractor (67 features)
+- `backend/state.py` - In-memory session store (30 min TTL) + audit log
+- `ml/validator.py` - UnifiedMLValidator (7-stage pipeline: rules → whitelist → range → typo → closed-set → ML; train, validate, correct, explain)
+- `ml/feature_extractor.py` - GenericFeatureExtractor (~58 structural features; char/shape n-grams live in the validator's per-column vectorizers)
 - `frontend/src/` - React + TypeScript frontend
-- `models/` - Trained .pkl model files (base_model.pkl always present)
+- `models/` - Trained .pkl model files, format v3.1 (base_model.pkl always present)
 - `training_data/` - Training CSV files
 - `reference_lists/` - Valid values for reference-list columns
-- `tests/` - Pytest test suite (30 tests)
+- `tests/` - Pytest test suite (49 tests)
+- `docs/product_storyboard.html` - Go-to-market storyboard
 - `SESSION_LOG.md` - Progress tracking log
-- `MODEL_GUIDE.md` - How to improve model accuracy
 
 ## Sub-Agent Workflows
 
